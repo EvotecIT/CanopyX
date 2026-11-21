@@ -38,6 +38,7 @@ public sealed partial class CanopyLabels {
         LayoutFit = "Ajustar al ancho",
         LayoutScroll = "Todas las columnas, desplazamiento horizontal",
         LayoutCards = "Tarjetas",
+        LayoutAuto = "Automático",
         LayoutDensity = "Densidad",
         LayoutCompact = "Compacta",
         LayoutNormal = "Normal",

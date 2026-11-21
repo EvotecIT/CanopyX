@@ -25,6 +25,8 @@ public sealed partial class CanopyLabels {
     public string LayoutScroll { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the card layout's name. Default "Cards".</summary>
     public string LayoutCards { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the automatic layout's name: cards in a narrow container, the wide layout otherwise. Default "Automatic".</summary>
+    public string LayoutAuto { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the density group's name. Default "Density".</summary>
     public string LayoutDensity { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the compact density's name. Default "Compact".</summary>

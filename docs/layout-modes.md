@@ -8,6 +8,7 @@ the rows are, and the choice is part of the state saved views and the remembered
 | **Fit to width** (`fit`) | Today's behaviour: columns size to their content and give way by priority; hidden fields wait behind "+N" and the record drawer. | grids, trees |
 | **All columns, scroll sideways** (`scroll`) | Every column keeps its own width, the identity column (the row header, or a tree's tree column) stays pinned, and the view scrolls sideways. | grids, trees |
 | **Cards** (`cards`) | Records form a responsive grid of raised cards, with the first shown column as the title, presenter status pills and labeled fields. Phones show one card across. Group headings and expanded details retain their single-column projection. | grids |
+| **Automatic** (`auto`) | Cards while the view's host is narrower than `cardsBelow` (640 px by default), and the wide layout (`wide`: fit or scroll) otherwise. It follows the host, not the window, so a grid in a narrow panel shows cards on a desktop too. | grids |
 
 | Density | Grid rows | Tree rows |
 | --- | --- | --- |
@@ -37,6 +38,24 @@ createDataGrid(host, { view: { ...view, layout: { mode: "cards", modes: ["cards"
 | `modes` | every layout the view supports | The layouts the menu offers, in order. |
 | `density` | the view's own density | The density the view opens with. A flat grid's `layout.density` takes the place of its `density` field. |
 
+### Automatic layout
+
+```csharp
+grid.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto };                 // fit when wide, cards below 640 px
+grid.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto, Wide = CanopyLayoutMode.Scroll, CardsBelow = 720 };
+```
+
+```js
+layout: { mode: "auto", wide: "scroll", cardsBelow: 720 }
+```
+
+Starting in `auto` adds **Automatic** at the top of the menu; with your own `modes`, list `auto`, `cards` and the wide layout.
+The runtime watches the host's width with a `ResizeObserver` and switches between the two layouts as it crosses
+`cardsBelow`. Cards are virtual rows with measured geometry, so a stylesheet container query alone cannot switch them. The
+reader's choice stays `auto` in saved state, `getLayout()` reports it as `mode` with the applied layout as `active`, and every
+switch fires `canopyx:layout` with `{ mode: "auto", active, density }`. A hidden host keeps its layout until it is shown.
+Choosing another layout from the menu stops the automatic switching until the reader chooses Automatic again.
+
 `toolbar.layout: false` (`Toolbar.Layout = false`) leaves the menu out while `setLayout` keeps working, so a host can
 switch layouts from its own controls, for example by the panel's width.
 
@@ -46,7 +65,7 @@ Switching never runs a new query: the sort, the filters, the search and the sele
 cells now shown (a card or the scroll layout shows the columns fit had hidden). The first
 row in view stays in view (at the same share of its height), and keyboard focus stays on the same row and the same column's
 cell. The menu and `setLayout` announce the new layout through the live region ("Layout: Cards, Compact"), fire
-`canopyx:layout` with `{ mode, density }`, and save it with the view's state (`layout: { mode, density }`); **Reset view**
+`canopyx:layout` with `{ mode, active, density }`, and save it with the view's state (`layout: { mode, density }`); **Reset view**
 returns to the declared layout. A flat grid's remembered fit or scroll layout and density are in place before its first rows
 are painted; cards, and a tree's remembered layout, follow as soon as the layouts part is installed.
 
@@ -124,9 +143,9 @@ with the original export projection. A tree prints its outline table in every la
 
 | Member | Meaning |
 | --- | --- |
-| `getLayout()` | `{ mode, density, modes }`. |
+| `getLayout()` | `{ mode, active, density, modes }`: the choice, the layout it applies now, the density and the offered layouts. |
 | `setLayout({ mode, density })` | Switches either or both; resolves to the new `getLayout()`. Rejects a mode the view does not offer. |
-| `canopyx:layout` event | `{ mode, density }` after each switch. |
+| `canopyx:layout` event | `{ mode, active, density }` after each switch; `active` is the layout `auto` applies. |
 
 `setLayout` rejects on a view that does not declare `layout`.
 

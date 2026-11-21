@@ -7,5 +7,10 @@ public enum CanopyLayoutMode {
     /// <summary>Every column keeps its own width, the identity column stays pinned and the view scrolls sideways.</summary>
     Scroll,
     /// <summary>Each record is a card of labelled fields under its title, for phones and narrow panels. Flat grids only.</summary>
-    Cards
+    Cards,
+    /// <summary>
+    /// Cards while the host is narrower than <see cref="CanopyLayoutOptions.CardsBelow"/>, and <see cref="CanopyLayoutOptions.Wide"/>
+    /// otherwise, switching as the host's width changes: a compact table that works in any panel. Flat grids only.
+    /// </summary>
+    Auto
 }

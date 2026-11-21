@@ -34,6 +34,7 @@ const labels = Object.freeze({
   layoutFit: "Adatta alla larghezza",
   layoutScroll: "Tutte le colonne, scorrimento orizzontale",
   layoutCards: "Schede",
+  layoutAuto: "Automatico",
   layoutDensity: "Densità",
   layoutCompact: "Compatta",
   layoutNormal: "Normale",

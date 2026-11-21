@@ -7,11 +7,12 @@
     matchesHighlight: "Highlight matches", matchesCount: "[one]{count} match[other]{count} matches", matchesPosition: "{current} of {count}",
     matchesNone: "No matches", matchesLoaded: "[one]{count} match in loaded rows[other]{count} matches in loaded rows", matchesPrevious: "Previous match",
     matchesNext: "Next match", matchesAnnounce: "Match {current} of {count}, {column}",
-    layoutMenu: "Layout", layoutFit: "Fit to width", layoutScroll: "All columns, scroll sideways", layoutCards: "Cards",
+    layoutMenu: "Layout", layoutFit: "Fit to width", layoutScroll: "All columns, scroll sideways", layoutCards: "Cards", layoutAuto: "Automatic",
     layoutDensity: "Density", layoutCompact: "Compact", layoutNormal: "Normal", layoutComfortable: "Comfortable",
     layoutChanged: "Layout: {mode}, {density}", layoutSort: "Sort by"
   }));
-  const LAYOUT_MODES = ["fit", "scroll", "cards"], LAYOUT_DENSITIES = ["compact", "default", "comfortable"];
+  // A layout choice is one of the modes or "auto", which applies cards or the wide mode by the host's width (layoutFor).
+  const LAYOUT_MODES = ["fit", "scroll", "cards"], LAYOUT_CHOICES = [...LAYOUT_MODES, "auto"], LAYOUT_DENSITIES = ["compact", "default", "comfortable"];
   // Row height steps per density, relative to the view's own row height and declared density.
   const DENSITY_STEP = { compact: -8, default: 0, comfortable: 0 };
   // Filled by the parts when they install: highlightStart, setHighlight, matches, step, layoutsStart and setLayout.
@@ -33,17 +34,33 @@
       filterTones: Object.freeze({ ...options.filterTones }) });
   }
 
-  /** Validates a view's layout ({ mode, modes, density }); trees offer fit and scroll. Returns the complete options, or null. */
+  /**
+   * Validates a view's layout ({ mode, modes, density }, and on flat grids cardsBelow and wide for the automatic layout); trees
+   * offer fit and scroll. Returns the complete options, or null.
+   */
   function readLayout(value, kind, density) {
     if (value === undefined) return null;
-    const all = kind === "tree" ? LAYOUT_MODES.slice(0, 2) : LAYOUT_MODES;
-    if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(key => !["mode", "modes", "density"].includes(key)) ||
+    const grid = kind !== "tree", all = grid ? LAYOUT_MODES : LAYOUT_MODES.slice(0, 2), choices = grid ? LAYOUT_CHOICES : all;
+    const keys = grid ? ["mode", "modes", "density", "cardsBelow", "wide"] : ["mode", "modes", "density"];
+    if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(key => !keys.includes(key)) ||
         value.modes !== undefined && (!Array.isArray(value.modes) || !value.modes.length || new Set(value.modes).size !== value.modes.length ||
-          value.modes.some(mode => !all.includes(mode))) ||
-        value.mode !== undefined && !(value.modes || all).includes(value.mode) || value.density !== undefined && !LAYOUT_DENSITIES.includes(value.density))
+          value.modes.some(mode => !choices.includes(mode))) || value.density !== undefined && !LAYOUT_DENSITIES.includes(value.density) ||
+        value.cardsBelow !== undefined && (!Number.isInteger(value.cardsBelow) || value.cardsBelow < 240 || value.cardsBelow > 4096) ||
+        value.wide !== undefined && !["fit", "scroll"].includes(value.wide))
       throw new Error("CanopyX: invalid layout options.");
-    const modes = Object.freeze((value.modes || all).slice());
-    return Object.freeze({ mode: value.mode || (modes.includes("fit") ? "fit" : modes[0]), modes, density: value.density || density || "default" });
+    // Starting in auto offers it beside every layout, unless the view lists its own.
+    const modes = Object.freeze((value.modes || (value.mode === "auto" ? ["auto", ...all] : all)).slice());
+    const mode = value.mode || (modes.includes("fit") ? "fit" : modes[0]), wide = value.wide || "fit";
+    if (!modes.includes(mode) || modes.includes("auto") && !(modes.includes("cards") && modes.includes(wide)))
+      throw new Error("CanopyX: invalid layout options.");
+    return Object.freeze({ mode, modes, density: value.density || density || "default", cardsBelow: value.cardsBelow || 640, wide });
+  }
+
+  /** The layout a choice applies: auto is cards while the host is narrower than cardsBelow, and the wide layout otherwise. */
+  function layoutFor(view, choice) {
+    if (choice !== "auto") return choice;
+    const width = view.host.clientWidth, options = view.layoutOptions;
+    return width && width < options.cardsBelow ? "cards" : options.wide;
   }
 
   /** Reads the reader's saved layout and highlight choice; null when the state holds none or the view does not offer them. */
@@ -51,7 +68,7 @@
     const result = {};
     if (state.layout !== undefined) {
       const layout = state.layout, options = view.layoutOptions;
-      if (!layout || typeof layout !== "object" || !LAYOUT_MODES.includes(layout.mode) || !LAYOUT_DENSITIES.includes(layout.density))
+      if (!layout || typeof layout !== "object" || !LAYOUT_CHOICES.includes(layout.mode) || !LAYOUT_DENSITIES.includes(layout.density))
         throw new Error("CanopyX: invalid saved layout.");
       if (options) result.layout = { mode: options.modes.includes(layout.mode) ? layout.mode : options.mode, density: layout.density };
     }
@@ -82,19 +99,19 @@
     },
     // Takes a saved state's choices (readModeState) before the view builds itself, so its first rows use them.
     adoptModes(choice) {
-      if (choice.layout) { this.layoutMode = choice.layout.mode; this.density = choice.layout.density; }
+      if (choice.layout) { this.layoutChoice = choice.layout.mode; this.layoutMode = layoutFor(this, choice.layout.mode); this.density = choice.layout.density; }
       if (choice.highlight !== undefined) this.highlightOn = choice.highlight;
       this.rowH = densityRowHeight(this, this.density);
       if (this.layoutMode === "fit") this.host.removeAttribute("data-cx-layout"); else this.host.setAttribute("data-cx-layout", this.layoutMode);
     },
     // The saved-state fields of the modes a view offers.
     modeState(state) {
-      if (this.layoutOptions) state.layout = { mode: this.layoutMode, density: this.density };
+      if (this.layoutOptions) state.layout = { mode: this.layoutChoice, density: this.density };
       if (this.highlightOptions) state.highlight = !!this.highlightOn;
       return state;
     },
     applyModeState(state) {
-      if (state.layout && (state.layout.mode !== this.layoutMode || state.layout.density !== this.density))
+      if (state.layout && (state.layout.mode !== this.layoutChoice || state.layout.density !== this.density))
         this.setLayout(state.layout).catch(error => this.emit("error", { error }));
       if (state.highlight !== undefined && state.highlight !== !!this.highlightOn)
         this.setSearchHighlight(state.highlight).catch(error => this.emit("error", { error }));
@@ -106,7 +123,7 @@
         .catch(error => this.emit("error", { error }))));
     },
     getLayout() {
-      return Object.freeze({ mode: this.layoutMode, density: this.density, modes: this.layoutOptions ? this.layoutOptions.modes : Object.freeze(["fit"]) });
+      return Object.freeze({ mode: this.layoutChoice, active: this.layoutMode, density: this.density, modes: this.layoutOptions ? this.layoutOptions.modes : Object.freeze(["fit"]) });
     },
     setLayout(change) {
       if (!this.layoutOptions) return Promise.reject(new Error("CanopyX: this view declares no layout modes."));
@@ -131,7 +148,7 @@
   // Both view kinds load the same two parts; whichever view loads a part first installs it for every view of the runtime.
   // The flat-grid runtimes add their helpers to VIEW_MODES (86-grid-view-modes.js) before any view is created.
   const viewModeContext = () => ({ VIEW_MODES, TreeGrid, h, setText, fill, numberFormat, foldText, cellText, cellValue, isCellObject,
-    setAttr, toneOf, toneVariable, watchFlyout, densityRowHeight, layoutAnchor, layoutRows, layoutApplyTree, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural, svgIcon });
+    setAttr, toneOf, toneVariable, watchFlyout, densityRowHeight, layoutFor, layoutAnchor, layoutRows, layoutApplyTree, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural, svgIcon });
   definePart(TreeGrid, "highlight", "search highlighting", viewModeContext);
   definePart(TreeGrid, "layouts", "layout modes", viewModeContext);
   // A tree starts its declared modes once its tree tools part (and so its toolbar menus) is installed.

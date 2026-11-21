@@ -143,18 +143,26 @@ export interface SearchHighlightOptions {
 }
 /** How a view lays out its columns (docs/layout-modes.md). Trees offer fit and scroll. */
 export type LayoutMode = "fit" | "scroll" | "cards";
+/** A layout the reader can choose: a mode, or "auto" (flat grids), which applies cards in a narrow host and the wide mode otherwise. */
+export type LayoutChoice = LayoutMode | "auto";
 /** Row spacing; "default" is the Normal density. */
 export type LayoutDensity = "compact" | "default" | "comfortable";
 /** The Layout menu of a view: the layouts the reader can choose, and the starting layout and density. */
-export interface LayoutOptions<M extends LayoutMode = LayoutMode> {
+export interface LayoutOptions<M extends LayoutChoice = LayoutChoice> {
   mode?: M;
   modes?: readonly M[];
   density?: LayoutDensity;
+  /** With "auto": the host width, in pixels from 240 to 4096, below which cards apply. Default 640. Flat grids only. */
+  cardsBelow?: number;
+  /** With "auto": the layout of a wider host. Default "fit". Flat grids only. */
+  wide?: "fit" | "scroll";
 }
 /** The reader's layout choice, as saved state keeps it. */
-export interface LayoutState { mode: LayoutMode; density: LayoutDensity; }
+export interface LayoutState { mode: LayoutChoice; density: LayoutDensity; }
+/** The layout choice and the layout it applies now ("auto" resolves to cards or the wide mode), as the layout event reports them. */
+export interface LayoutChange extends LayoutState { readonly active: LayoutMode; }
 /** The current layout and the layouts the view offers. */
-export interface LayoutInfo extends LayoutState { readonly modes: readonly LayoutMode[]; }
+export interface LayoutInfo extends LayoutChange { readonly modes: readonly LayoutChoice[]; }
 /** The match count: total matches (in the loaded rows while complete is false) and the 1-based current match, or 0. */
 export interface MatchInfo { readonly enabled: boolean; readonly total: number; readonly current: number; readonly complete: boolean; }
 /** Search highlighting and layout methods of every tree and flat grid; they reject when the view does not declare the feature. */
@@ -234,7 +242,7 @@ export type LabelName =
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridNoExportColumns" | "gridPrint"
   | "gridExportWorkbookHint" | "gridExportPdfHint" | "gridExportCsvHint" | "gridExportCopy"
   | "matchesHighlight" | "matchesCount" | "matchesPosition" | "matchesNone" | "matchesLoaded" | "matchesPrevious" | "matchesNext" | "matchesAnnounce"
-  | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged" | "layoutSort"
+  | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutAuto" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged" | "layoutSort"
   | "gridFitContent"
   | "gridUnpin"
   | "gridWhere"
@@ -327,7 +335,7 @@ interface ViewDefinitionBase {
   /** Marks the search box's words in the tree column (docs/search-highlight.md). */
   searchHighlight?: boolean | SearchHighlightOptions;
   /** The Layout menu: fit and scroll, and the density (docs/layout-modes.md). */
-  layout?: LayoutOptions<"fit" | "scroll">;
+  layout?: Omit<LayoutOptions<"fit" | "scroll">, "cardsBelow" | "wide">;
   /** Per-control toolbar switches (the search box is the search property). */
   toolbar?: TreeToolbarControls;
   /** Identities of registered export formats the Export menu offers after CSV, in order. */

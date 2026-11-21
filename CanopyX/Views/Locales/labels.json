@@ -2434,6 +2434,13 @@
     "Cartes",
     "Schede"
   ],
+  "LayoutAuto": [
+    "Automatycznie",
+    "Automatisch",
+    "Automático",
+    "Automatique",
+    "Automatico"
+  ],
   "LayoutDensity": [
     "Gęstość",
     "Dichte",
