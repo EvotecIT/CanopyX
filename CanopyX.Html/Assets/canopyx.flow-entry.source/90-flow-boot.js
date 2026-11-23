@@ -67,13 +67,15 @@
     return created;
   }
 
-  global.CanopyX = Object.freeze({ createFlow, configure, unconfigure, mount: root => mount(root, false), use, registerPart, setNonce });
+  // The UI factories ride along, so a page with menus, selects or toasts beside its flows needs no data view entry point.
+  global.CanopyX = Object.freeze(Object.assign({ createFlow, configure, unconfigure, mount: root => mount(root, false), use, registerPart, setNonce }, UI_API));
 
   // As the other entry points: wait for DOMContentLoaded unless the page has already been parsed.
   const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;
   if (document.readyState === "loading" || (document.readyState === "interactive" && navigation?.domContentLoadedEventStart === 0)) {
-    document.addEventListener("DOMContentLoaded", () => mount(document, true));
+    document.addEventListener("DOMContentLoaded", () => { mount(document, true); mountUi(document); });
   } else {
     mount(document, true);
+    mountUi(document);
   }
 })(typeof window !== "undefined" ? window : this);

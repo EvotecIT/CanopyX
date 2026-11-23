@@ -1,7 +1,7 @@
 /* CanopyX flow entry: forms and guided flows. */
 /*
- * CanopyX flow entry point: mounts flow documents (docs/flow.md) without grid or tree code. The forms and flow parts load
- * beside it on first use. Assembled by Build/Sync-Assets.ps1 from this folder and a few shared core parts; edit the parts.
+ * CanopyX flow entry point: mounts flow documents (docs/flow.md) and carries the UI factories (docs/ui-primitives.md), without
+ * grid or tree code. The forms, flow and UI parts load beside it on first use. Assembled by Build/Sync-Assets.ps1 from this folder and a few shared core parts; edit the parts.
  */
 (function (global) {
   "use strict";

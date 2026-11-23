@@ -1,6 +1,9 @@
 // Flows (docs/flow.md): guided forms with steps, typed fields, conditions as data, validation, a review page and one
-// proposal to the host. The flow entry point (@evotecit/canopyx/flow) and the grid entry points create them.
+// proposal to the host. The flow entry point (@evotecit/canopyx/flow) and the grid entry points create them; the flow entry
+// point also carries the UI factories, so a page with menus, selects or toasts beside its flows needs no data view entry point.
 import type { CanopyPlugin } from "./plugins.js";
+import type { UiApi } from "./ui.js";
+export * from "./ui.js";
 
 /** A value a field holds: text, a number, a boolean, a list of values, rows of a records field, picked records, or nothing. Secrets never have one. */
 /** A signature field's answer: the drawing or typed name as an SVG document and as a PNG data URI. */
@@ -412,6 +415,6 @@ export declare function mount(root?: ParentNode): FlowApi[];
 export declare function use(plugin: Pick<CanopyPlugin, "name" | "editors">): () => void;
 export declare function registerPart(name: string, part: { version: string; requires?: string[]; install(context: object): void }): void;
 export declare function setNonce(nonce: string): void;
-declare const CanopyX: { createFlow: typeof createFlow; configure: typeof configure; unconfigure: typeof unconfigure; mount: typeof mount;
-  use: typeof use; registerPart: typeof registerPart; setNonce: typeof setNonce };
+declare const CanopyX: Readonly<UiApi & { createFlow: typeof createFlow; configure: typeof configure; unconfigure: typeof unconfigure; mount: typeof mount;
+  use: typeof use; registerPart: typeof registerPart; setNonce: typeof setNonce }>;
 export default CanopyX;

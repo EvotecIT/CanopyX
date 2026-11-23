@@ -137,8 +137,9 @@ public sealed class UiPartAssetsTests {
         Assert.Contains(CanopyHtmlAssets.GetPart("forms").Markup, fragment);
         Assert.Contains(CanopyHtmlAssets.GetPart("flow").Markup, fragment);
         Assert.DoesNotContain("application/x-canopyx-ui-", fragment);
-        // Flow's slim entry point neither ships nor advertises the standalone UI parts.
-        Assert.DoesNotContain(CanopyHtmlAssets.GetParts(CanopyRuntime.Flow), part => part.Name.StartsWith("ui-", StringComparison.Ordinal));
-        Assert.DoesNotContain("canopyx-ui-", ReadableAssets.Script(CanopyRuntime.Flow));
+        // The slim flow entry point carries the UI factories and knows the UI parts, so a page with menus, selects or toasts
+        // beside its flow needs no data view entry point; a flow that uses none of them embeds none.
+        Assert.Contains(CanopyHtmlAssets.GetParts(CanopyRuntime.Flow), part => part.Name == "ui-select");
+        Assert.Contains("mountUi", ReadableAssets.Script(CanopyRuntime.Flow));
     }
 }
