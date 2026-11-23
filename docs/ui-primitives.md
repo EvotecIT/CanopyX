@@ -192,7 +192,7 @@ function showRecord(next, trigger) {
 
 An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-cx-part` and `data-state` hooks.
 
-Custom part selectors use `data-cx-part`. The C# builders take no styling input besides the theme: no variant names, classes or colours.
+Custom part selectors use `data-cx-part`. The C# builders style through tones (such as `Tone.Danger` on a dialog action) and the theme only: no variant names, classes or colours.
 
 ## Embedding in an existing site
 
