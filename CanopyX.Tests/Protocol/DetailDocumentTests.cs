@@ -11,8 +11,8 @@ public sealed class DetailDocumentTests {
     [Fact]
     public void ToJson_DetailWithoutAHeight_LeavesTheHeightToTheRuntime() {
         var page = new CanopyPage("parent");
-        page.Items.Add(new CanopyNode("auto", "Auto") { Detail = new CanopyTableDetail().AddColumns("A", "B").AddRow("1", "2") });
-        page.Items.Add(new CanopyNode("fixed", "Fixed") { Detail = new CanopyPropertiesDetail { Height = 3 }.Add("Owner", "Team") });
+        page.Items.Add(new CanopyNode("auto", "Auto") { Detail = new CanopyTableDetail().Column("A", "B").Row("1", "2") });
+        page.Items.Add(new CanopyNode("fixed", "Fixed") { Detail = new CanopyPropertiesDetail { Height = 3 }.Item("Owner", "Team") });
         var json = page.ToJson();
         var items = JsonNode.Parse(json)!["items"]!.AsArray();
 
@@ -24,7 +24,7 @@ public sealed class DetailDocumentTests {
 
     [Fact]
     public void ToJson_TableDetailWithColumnWidths_WritesOneSharePerColumn() {
-        var table = new CanopyTableDetail("Changes").AddColumns("Setting", "Before", "After").AddRow("Retention", "30 days", "90 days");
+        var table = new CanopyTableDetail("Changes").Column("Setting", "Before", "After").Row("Retention", "30 days", "90 days");
         table.ColumnWidths.Add(2);
         table.ColumnWidths.Add(3);
         table.ColumnWidths.Add(3);
@@ -42,7 +42,7 @@ public sealed class DetailDocumentTests {
     [InlineData(new[] { 1, 0, 3 })]
     [InlineData(new[] { 1, 1001, 3 })]
     public void ToJson_TableDetailWithWidthsThatDoNotFitItsColumns_Throws(int[] widths) {
-        var table = new CanopyTableDetail().AddColumns("A", "B", "C");
+        var table = new CanopyTableDetail().Column("A", "B", "C");
         foreach (var width in widths) {
             table.ColumnWidths.Add(width);
         }
@@ -70,7 +70,7 @@ public sealed class DetailDocumentTests {
     public void Render_TableDetailWithColumnWidths_GivesTheHeadersTheirShare() {
         var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
-        var table = new CanopyTableDetail().AddColumns("Setting", "Value").AddRow("Retention", "90 days");
+        var table = new CanopyTableDetail().Column("Setting", "Value").Row("Retention", "90 days");
         table.ColumnWidths.Add(3);
         table.ColumnWidths.Add(1);
         view.Roots.Add(new CanopyNode("detail", "Detail") { Detail = table });
@@ -90,12 +90,12 @@ public sealed class DetailDocumentTests {
     public void Validation_InvalidDetail_IsRejectedBeforeAnythingIsWritten(string fault) {
         // Validation runs a detail through its writer without building the text, so it rejects what writing would.
         CanopyDetail detail;
-        var table = new CanopyTableDetail().AddColumns("A", "B");
+        var table = new CanopyTableDetail().Column("A", "B");
         switch (fault) {
             case "null header": table.Columns.Add(null!); table.Columns.RemoveAt(0); detail = table; break;
             case "null row": table.Rows.Add(null!); detail = table; break;
             case "short row": table.Rows.Add(new List<CanopyCell> { "a" }); detail = table; break;
-            case "unsafe number": table.AddRow("a", 1e300); detail = table; break;
+            case "unsafe number": table.Row("a", 1e300); detail = table; break;
             default: var properties = new CanopyPropertiesDetail(); properties.Items.Add(null!); detail = properties; break;
         }
 

@@ -36,7 +36,7 @@ public sealed class ContentSecurityTests {
 
     [Fact]
     public void InlineTreePage_NoncesEveryScriptAndStyle_AndHasNoStyleAttributes() {
-        var html = SampleDocuments.FullView().ToHtmlPage(new CanopyHtmlOptions { Nonce = Nonce });
+        var html = SampleDocuments.FullView().ToHtml(new CanopyHtmlOptions { Nonce = Nonce });
 
         AssertStrict(html);
         Assert.Contains("<style nonce=\"" + Nonce + "\">", html);
@@ -51,12 +51,12 @@ public sealed class ContentSecurityTests {
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Rows.Add(new CanopyGridRow("a") { Cells = { ["name"] = "Alpha" } });
 
-        AssertStrict(view.ToHtmlPage(new CanopyHtmlOptions { Nonce = Nonce }));
+        AssertStrict(view.ToHtml(new CanopyHtmlOptions { Nonce = Nonce }));
     }
 
     [Fact]
     public void ExternalPage_NoncesTheScriptAndStylesheetReferences() {
-        var html = SampleDocuments.FullView().ToHtmlPage(new CanopyHtmlOptions { Nonce = Nonce, AssetMode = CanopyAssetMode.External });
+        var html = SampleDocuments.FullView().ToHtml(new CanopyHtmlOptions { Nonce = Nonce, AssetMode = CanopyAssetMode.External });
 
         AssertStrict(html);
         Assert.Matches("<link rel=\"stylesheet\" href=\"assets/canopyx\\.[a-f0-9]{16}\\.css\" nonce=\"" + Regex.Escape(Nonce) + "\">", html);

@@ -17,14 +17,14 @@ internal static class CalendarBasicExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Basic().SaveHtmlPage(Path.Combine(output, "calendar-basic" + suffix + ".html"), new CanopyHtmlOptions { Title = "Team calendar", Theme = theme, Height = "720px" });
-            Layouts().SaveHtmlPage(Path.Combine(output, "calendar-layouts" + suffix + ".html"), new CanopyHtmlOptions { Title = "Calendar layouts", Theme = theme, Height = "720px" });
+            Basic().Save(Path.Combine(output, "calendar-basic" + suffix + ".html"), new CanopyHtmlOptions { Title = "Team calendar", Theme = theme, Height = "720px" });
+            Layouts().Save(Path.Combine(output, "calendar-layouts" + suffix + ".html"), new CanopyHtmlOptions { Title = "Calendar layouts", Theme = theme, Height = "720px" });
             WriteScheduler(output, theme, suffix);
         }
         var rtl = Basic();
         rtl.WeekNumbers = CanopyCalendarWeekNumbers.Iso;
-        rtl.SaveHtmlPage(Path.Combine(output, "calendar-rtl.html"), new CanopyHtmlOptions { Title = "Team calendar, right to left", Height = "720px", Language = "he", Direction = CanopyTextDirection.Rtl });
-        Solo().SaveHtmlPage(Path.Combine(output, "calendar-solo.html"), new CanopyHtmlOptions { Title = "Release timeline", Height = "620px" });
+        rtl.Save(Path.Combine(output, "calendar-rtl.html"), new CanopyHtmlOptions { Title = "Team calendar, right to left", Height = "720px", Language = "he", Direction = CanopyTextDirection.Rtl });
+        Solo().Save(Path.Combine(output, "calendar-solo.html"), new CanopyHtmlOptions { Title = "Release timeline", Height = "620px" });
     }
 
     /// <summary>A small team's month: meetings, a repeating stand-up, a trip, deadlines and a holiday.</summary>

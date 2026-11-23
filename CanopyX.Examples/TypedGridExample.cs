@@ -33,7 +33,7 @@ internal static class TypedGridExample {
 
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            Create().View.SaveHtmlPage(Path.Combine(output, "typed-grid" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().View.Save(Path.Combine(output, "typed-grid" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Servers from typed records", Theme = theme, Height = "600px" });
         }
     }
@@ -61,7 +61,7 @@ internal static class TypedGridExample {
         // Drawer-only values, and settings that name columns through the same members.
         grid.Field(x => x.Owner.Contact, "Contact");
         grid.Field(x => x.Notes);
-        grid.View.FacetPanel = new CanopyFacetPanel().Add(grid.ColumnId(x => x.Site)).Add(grid.ColumnId(x => x.Health)).Add(grid.ColumnId(x => x.LoadAverage));
+        grid.View.FacetPanel = new CanopyFacetPanel().Facet(grid.ColumnId(x => x.Site)).Facet(grid.ColumnId(x => x.Health)).Facet(grid.ColumnId(x => x.LoadAverage));
         return grid.AddRows(Servers());
     }
 

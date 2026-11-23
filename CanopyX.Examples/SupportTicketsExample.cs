@@ -25,8 +25,8 @@ internal static class SupportTicketsExample {
         var tree = KnowledgeBase();
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : "";
-            grid.SaveHtmlPage(Path.Combine(output, "support-tickets" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support tickets", Theme = theme });
-            tree.SaveHtmlPage(Path.Combine(output, "support-tickets-tree" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support knowledge base", Theme = theme });
+            grid.Save(Path.Combine(output, "support-tickets" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support tickets", Theme = theme });
+            tree.Save(Path.Combine(output, "support-tickets-tree" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support knowledge base", Theme = theme });
         }
     }
 

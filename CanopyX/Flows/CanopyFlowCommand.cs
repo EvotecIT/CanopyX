@@ -6,7 +6,7 @@ namespace CanopyX;
 
 /// <summary>
 /// The equivalent command of a flow (<see cref="CanopyFlow.Command"/>): the review page and the proposal show the answers as a command
-/// line, by each field's <see cref="CanopyFlowField.ParameterName"/>, with ConsoleMonster's rules (see "The equivalent command" in
+/// line, by each field's <see cref="CanopyFlowField.Parameter"/>, with ConsoleMonster's rules (see "The equivalent command" in
 /// docs/flow.md). Secrets that were typed read <c>&lt;secret&gt;</c>, never their value.
 /// </summary>
 public sealed class CanopyFlowCommand {

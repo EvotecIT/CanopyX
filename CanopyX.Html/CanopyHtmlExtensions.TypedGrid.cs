@@ -20,7 +20,7 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The page markup.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="grid"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The definition is invalid.</exception>
-    public static string ToHtmlPage<T>(this CanopyDataGridView<T> grid, CanopyHtmlOptions? options = null) => ViewOf(grid).ToHtmlPage(options);
+    public static string ToHtml<T>(this CanopyDataGridView<T> grid, CanopyHtmlOptions? options = null) => ViewOf(grid).ToHtml(options);
 
     /// <summary>Saves the typed grid as a complete page, as UTF-8, creating its directory when needed.</summary>
     /// <typeparam name="T">The record type.</typeparam>
@@ -29,7 +29,7 @@ public static partial class CanopyHtmlExtensions {
     /// <param name="options">Page and asset options.</param>
     /// <exception cref="ArgumentNullException"><paramref name="grid"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
-    public static void SaveHtmlPage<T>(this CanopyDataGridView<T> grid, string path, CanopyHtmlOptions? options = null) => ViewOf(grid).SaveHtmlPage(path, options);
+    public static void Save<T>(this CanopyDataGridView<T> grid, string path, CanopyHtmlOptions? options = null) => ViewOf(grid).Save(path, options);
 
     private static CanopyDataGridView ViewOf<T>(CanopyDataGridView<T> grid) => (grid ?? throw new ArgumentNullException(nameof(grid))).View;
 }

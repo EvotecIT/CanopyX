@@ -58,8 +58,8 @@ public static partial class CanopyStaticHtml {
             html.Append("</pre>");
             return true;
         }
-        if (presenter?.Kind != CanopyGridPresenterKind.State || !presenter.Pill && presenter.Icons.Count == 0 || displayed == "—" || displayed.Length == 0) return false;
-        var glyph = cell?.Value is string raw && presenter.Icons.TryGetValue(raw, out var icon) ? icon : presenter.Pill ? "●" : null;
+        if (presenter?.Kind != CanopyGridPresenterKind.State || !presenter.Pill && presenter.Marks.Count == 0 || displayed == "—" || displayed.Length == 0) return false;
+        var glyph = cell?.Value is string raw && presenter.Marks.TryGetValue(raw, out var icon) ? icon : presenter.Pill ? "●" : null;
         if (glyph != null) html.Append("<span aria-hidden=\"true\">").Append(Encode(glyph)).Append("&#160;</span>");
         AppendVisibleText(html, displayed, text);
         return true;

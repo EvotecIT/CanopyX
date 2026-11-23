@@ -85,7 +85,7 @@ public static class FleetGrid {
         // A grid with a record schema loads each machine's details from the record route when its drawer opens.
         var format = ("csv", "CSV from server (all matching rows)");
         var script = records != null ? CanopyRemoteScript.Element(records, endpoint, format) : CanopyRemoteScript.Element(schema, endpoint, format);
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { Title = "Fleet inventory: " + view.Label, Theme = theme, HeadHtml = script });
+        var html = view.ToHtml(new CanopyHtmlOptions { Title = "Fleet inventory: " + view.Label, Theme = theme, HeadHtml = script });
         return note == null ? html : html.Replace("<main class=\"cx-main\">", "<main class=\"cx-main\">" + note);
     }
 }

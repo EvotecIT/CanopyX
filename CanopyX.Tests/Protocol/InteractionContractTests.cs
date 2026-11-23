@@ -43,7 +43,7 @@ public sealed class InteractionContractTests {
         view.DragDrop = feature == "drop";
         view.Columns[0].Editable = feature == "edit";
         if (feature != "action") view.ContextActions.Clear();
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain });
+        var html = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain });
         Assert.Contains(CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, CanopyRuntime.InteractiveTreeGrid), html);
         var outline = CanopyStaticHtml.Render(view);
         Assert.Contains("Atlas", outline);
@@ -60,7 +60,7 @@ public sealed class InteractionContractTests {
         view.Labels.InteractionFailed = "Błąd: {error}";
         Assert.True(view.Labels.RequiresInteractiveRuntime);
         ProtocolSchema.AssertValid(view.ToJson(), "translated interaction labels");
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain });
+        var html = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain });
         Assert.Contains("canopyx-interactive.js", html);
     }
 }

@@ -1,0 +1,7 @@
+<Project>
+  <!-- PowerForge.Generators is a build-time tool (fluent methods and the shared vocabulary); it is never packed or referenced
+       at run time. Override PowerForgeGeneratorsVersion to build against an unreleased local package. -->
+  <PropertyGroup>
+    <PowerForgeGeneratorsVersion Condition="'$(PowerForgeGeneratorsVersion)' == ''">3.0.196</PowerForgeGeneratorsVersion>
+  </PropertyGroup>
+</Project>

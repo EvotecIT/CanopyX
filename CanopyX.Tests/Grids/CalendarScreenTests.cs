@@ -15,7 +15,7 @@ public sealed class CalendarScreenTests {
         var calendar = new CanopyCalendar(events) {
             Merge = new CanopyCalendarMerge { Tone = Tone.Info }, FadePast = 0.4, ListDays = 3, DayWidth = 140, ListBelow = 3, Reset = true
         };
-        calendar.Sources.Add(new CanopyCalendarSource("anna", "Anna") { Color = "#2563eb", Initials = "AN", Avatar = "data:image/png;base64,iVBORw0KGgo=" });
+        calendar.Sources.Add(new CanopyCalendarSource("anna", "Anna") { Tone = Tone.Info, Initials = "AN", Avatar = "data:image/png;base64,iVBORw0KGgo=" });
         calendar.Sources.Add(new CanopyCalendarSource("tom", "Tom") { Mark = "⚽" });
         calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 10, 16, 15, 0, 0), " 18° sunny ") { Tone = Tone.Warning });
         calendar.Faces.Add(new CanopyCalendarFace("kitchen") { Initials = "K" });

@@ -12,7 +12,7 @@ public sealed class PresenterPartAssetsTests {
         view.Record.Fields.Add(new CanopyColumn("notes", "Notes") { Wrap = true, MaxLines = 2 });
         Assert.All(view.Columns, column => { Assert.Null(column.Presenter); Assert.False(column.Wrap); });
         Assert.Contains(CanopyHtmlAssets.GetPart("presenters"), CanopyHtmlAssets.GetRequiredParts(view));
-        Assert.Contains("application/x-canopyx-presenters", view.ToHtmlPage());
+        Assert.Contains("application/x-canopyx-presenters", view.ToHtml());
     }
     [Fact]
     public void DeclarativePainterIsVersionedBoundedAndCarriedByWrappedViews() {

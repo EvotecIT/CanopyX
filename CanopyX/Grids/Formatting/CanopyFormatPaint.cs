@@ -9,8 +9,6 @@ internal sealed class CanopyFormatPaint {
     internal string? Icon;
     internal string? Badge;
     internal string? Cue;
-    internal string? ClassName;
-    internal IDictionary<string, string>? Css;
     internal double? Bar;
     internal Tone BarTone;
     internal bool BarValue = true;
@@ -30,8 +28,6 @@ internal sealed class CanopyFormatPaint {
         Icon ??= paint.Icon;
         Badge ??= paint.Badge;
         Cue ??= paint.Cue;
-        ClassName ??= paint.ClassName;
-        Css ??= paint.Css;
         if (!Bar.HasValue && paint.Bar.HasValue) { Bar = paint.Bar; BarTone = paint.BarTone; BarValue = paint.BarValue; }
         if (ScaleFrom == null && paint.ScaleFrom != null) { ScaleFrom = paint.ScaleFrom; ScaleTo = paint.ScaleTo; ScaleWeight = paint.ScaleWeight; }
         Band ??= paint.Band;

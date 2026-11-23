@@ -51,7 +51,6 @@ public sealed class CanopyTabs {
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-tabs cx-tabs--").Append(UiHtml.Token(style)).Append("\" data-cx-tabs data-cx-part=\"tabs\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-overflow", UiHtml.Token(Options.Overflow));
         UiHtml.Attribute(html, "data-activation", UiHtml.Token(Options.Activation));
         UiHtml.Attribute(html, "data-collapse", (Options.CollapseToPicker ?? style != CanopyTabsStyle.Segmented) ? "picker" : "none");

@@ -8,7 +8,7 @@ namespace CanopyX.Examples;
 internal static class PathExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            Create().SaveHtmlPage(System.IO.Path.Combine(output, "path" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().Save(System.IO.Path.Combine(output, "path" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Approval routes", Theme = theme, Height = "820px" });
         }
         var html = CanopyStaticHtml.RenderGrid(Create(), options: new CanopyStaticHtmlOptions { Caption = "Approval routes" });

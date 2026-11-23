@@ -13,7 +13,7 @@ public sealed class GridHtmlTests {
         var options = new CanopyHtmlOptions { Height = height, Nonce = nonce, AssetMode = CanopyAssetMode.External };
         var tree = new CanopyTreeView("tree", "Tree");
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        foreach (var page in new[] { View().ToHtmlPage(options), tree.ToHtmlPage(options) }) {
+        foreach (var page in new[] { View().ToHtml(options), tree.ToHtml(options) }) {
             if (height != "auto") {
                 Assert.DoesNotContain("style=\"height:" + height + "\"", page);
                 Assert.DoesNotContain("data-cx-height=\"" + height + "\"", page);
@@ -32,7 +32,7 @@ public sealed class GridHtmlTests {
     public void GridPage_UsesTheSupersetRuntimeAndEscapesHostContent() {
         var view = View();
         view.Rows.Add(new CanopyGridRow("a") { Cells = { ["name"] = "</script><b>unsafe</b>", ["size"] = 2L } });
-        var page = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "<Inventory>", AssetNaming = CanopyAssetNaming.Plain });
+        var page = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "<Inventory>", AssetNaming = CanopyAssetNaming.Plain });
         Assert.Contains("<title>&lt;Inventory&gt;</title>", page);
         Assert.Contains("assets/canopyx-grid.js", page);
         Assert.Contains("assets/canopyx-grid.css", page);
@@ -52,7 +52,7 @@ public sealed class GridHtmlTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-grid-assets-" + Guid.NewGuid().ToString("N"));
         try {
             var files = CanopyHtmlAssets.WriteTo(directory, CanopyAssetNaming.ContentHash, CanopyRuntime.DataGrid);
-            var page = View().ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
+            var page = View().ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
             foreach (var file in files) Assert.Contains(Path.GetFileName(file), page);
             Assert.Equal(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid), File.ReadAllText(files[0]));
             Assert.Equal(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid), File.ReadAllText(files[1]));

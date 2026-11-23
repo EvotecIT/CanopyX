@@ -1,3 +1,4 @@
+using CanopyX;
 using System.Collections.Generic;
 using CanopyX.Json;
 
@@ -25,7 +26,7 @@ public sealed class CanopyFlowPreview {
     /// <param name="value">The value.</param>
     /// <param name="tone">How the value reads.</param>
     /// <returns>The preview.</returns>
-    public CanopyFlowPreview Row(string label, string value, CanopyFlowTone tone = CanopyFlowTone.Neutral) { Rows.Add(new CanopyFlowPreviewRow(label, value, tone)); return this; }
+    public CanopyFlowPreview Row(string label, string value, Tone tone = default) { Rows.Add(new CanopyFlowPreviewRow(label, value, tone)); return this; }
 
     /// <summary>Adds a note.</summary>
     /// <param name="text">The note.</param>
@@ -39,7 +40,7 @@ public sealed class CanopyFlowPreview {
         writer.BeginObject().OptionalProperty("title", Title).Name("rows").BeginArray();
         foreach (var row in Rows) {
             writer.BeginObject().Property("label", row.Label).Property("value", row.Value);
-            if (row.Tone != CanopyFlowTone.Neutral) writer.Property("tone", CanopyFlowJson.Tone(row.Tone));
+            if (row.Tone != Tone.None && row.Tone != Tone.Neutral) writer.Property("tone", row.Tone.Name);
             writer.EndObject();
         }
 

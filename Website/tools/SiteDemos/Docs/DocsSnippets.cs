@@ -177,14 +177,14 @@ internal static class DocsSnippets {
     /// <summary>Delivery: one self-contained file.</summary>
     internal static void Single(CanopyTreeView files) {
         // docs:begin deliver-single
-        files.SaveHtmlPage("files.html");
+        files.Save("files.html");
         // docs:end
     }
 
     /// <summary>Delivery: a page with sidecar data files.</summary>
     internal static void Bundle(CanopyTreeView files) {
         // docs:begin deliver-bundle
-        files.SaveHtmlBundle("file-report");
+        files.SaveBundle("file-report");
         // docs:end
     }
 
@@ -199,7 +199,7 @@ internal static class DocsSnippets {
             "api/files/search?q={query}&limit={limit}",
             "api/files/counts?ids={ids}");
 
-        files.SaveHtmlPage("files.html", new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
+        files.Save("files.html", new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
         CanopyHtmlAssets.WriteTo("assets");
         // docs:end
         return files;

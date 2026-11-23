@@ -66,7 +66,7 @@ internal static class OrdersByRegionExample {
             view.Rows.Add(row);
         }
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX orders by region", Theme = theme });
+            var page = view.ToHtml(new CanopyHtmlOptions { Title = "CanopyX orders by region", Theme = theme });
             File.WriteAllText(Path.Combine(output, "orders-by-region" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page);
         }
     }

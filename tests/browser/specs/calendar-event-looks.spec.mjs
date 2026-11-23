@@ -98,7 +98,7 @@ test("a calendar's own onEventClick hook still runs when the top-level option is
   expect(await page.evaluate(() => window.calls)).toBe(1);
 });
 
-test("a calendar written from C# takes its colours and addresses, and CanopyX.configure gives it an onEventClick hook", async ({ page, context }) => {
+test("a calendar written from C# takes its tones and addresses, and CanopyX.configure gives it an onEventClick hook", async ({ page, context }) => {
   const fs = await import("node:fs"), path = await import("node:path"), { examples } = await import("./support.mjs");
   // A HeadHtml script runs after the runtime and before the page mounts its views, as CanopyHtmlOptions.HeadHtml writes it.
   const html = fs.readFileSync(path.join(examples, "calendar-event-looks.html"), "utf8").replace("</head>",
@@ -106,7 +106,8 @@ test("a calendar written from C# takes its colours and addresses, and CanopyX.co
   await context.route("https://releases.example.test/2026-q4", route => route.fulfill({ contentType: "text/html", body: "<title>Release</title>" }));
   await openBuilt(page, "event-looks.html", html);
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setCalendarView("week"));
-  expect(await look(page, "network")).toMatchObject({ accent: "#0f766e", background: "rgb(204, 251, 241)", text: "rgb(19, 78, 74)" });
+  // From C# an event takes its colours from its tone only.
+  expect((await look(page, "network")).accent).toContain("--hfx-color-status-good-fg");
   // The hook keeps the ticket from opening; the release opens in a new window.
   await event(page, "ticket").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

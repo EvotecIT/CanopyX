@@ -14,11 +14,11 @@ internal static class FontDeliveryExample {
         view.Rows.Add(new CanopyGridRow("second") { Cells = { ["name"] = "Example record", ["code"] = "REC-WWW88888888-000888", ["amount"] = 888888 } });
         var directory = Path.Combine(output, "fonts");
         Directory.CreateDirectory(directory);
-        File.WriteAllText(Path.Combine(directory, "inline.html"), view.ToHtmlPage());
+        File.WriteAllText(Path.Combine(directory, "inline.html"), view.ToHtml());
         foreach (var naming in new[] { CanopyAssetNaming.Plain, CanopyAssetNaming.ContentHash }) {
             var mode = naming == CanopyAssetNaming.Plain ? "plain" : "hashed";
             CanopyHtmlAssets.WriteTo(Path.Combine(directory, mode), naming, CanopyRuntime.DataGrid);
-            File.WriteAllText(Path.Combine(directory, mode + ".html"), view.ToHtmlPage(new CanopyHtmlOptions {
+            File.WriteAllText(Path.Combine(directory, mode + ".html"), view.ToHtml(new CanopyHtmlOptions {
                 AssetMode = CanopyAssetMode.External, AssetNaming = naming, AssetBaseUrl = mode
             }));
         }

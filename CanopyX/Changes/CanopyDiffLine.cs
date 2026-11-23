@@ -7,8 +7,8 @@ public sealed class CanopyDiffLine {
     /// <summary>Creates a line.</summary>
     /// <param name="kind">Unchanged, removed or added.</param>
     /// <param name="text">The text without its line break; at most <see cref="CanopyTextDiff.MaxLineLength"/> characters.</param>
-    /// <param name="beforeNumber">The line's one-based number in the earlier text, for unchanged and removed lines; used by <see cref="CanopyTextDiff.AddLines"/>.</param>
-    /// <param name="afterNumber">The line's one-based number in the later text, for unchanged and added lines; used by <see cref="CanopyTextDiff.AddLines"/>.</param>
+    /// <param name="beforeNumber">The line's one-based number in the earlier text, for unchanged and removed lines; used by <see cref="CanopyTextDiff.Lines"/>.</param>
+    /// <param name="afterNumber">The line's one-based number in the later text, for unchanged and added lines; used by <see cref="CanopyTextDiff.Lines"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
     public CanopyDiffLine(CanopyDiffLineKind kind, string text, int? beforeNumber = null, int? afterNumber = null) {
         Kind = kind;

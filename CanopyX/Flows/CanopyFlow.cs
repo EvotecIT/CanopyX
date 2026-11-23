@@ -71,7 +71,7 @@ public sealed class CanopyFlow {
     public bool IsEditMode { get; set; }
 
     /// <summary>
-    /// Gets the values an edit-mode flow edits, by field id, as <see cref="CanopyFlowField.DefaultValue"/> takes them; empty in
+    /// Gets the values an edit-mode flow edits, by field id, as <see cref="CanopyFlowField.Default"/> takes them; empty in
     /// create mode or when <see cref="IsEditMode"/>, <see cref="StoredSecrets"/> or <see cref="Baseline"/> identifies an edit
     /// with no non-secret initial values.
     /// Secret fields never have one: list them in <see cref="StoredSecrets"/>.
@@ -149,12 +149,6 @@ public sealed class CanopyFlow {
         Presets.Add(preset);
         return this;
     }
-
-    /// <summary>Answers the flow's hooks with the routes CanopyX.AspNetCore's <c>MapCanopyFlow</c> serves (<see cref="Endpoint"/>).</summary>
-    /// <param name="url">The route group's path, for example <c>/api/flows/mail</c>.</param>
-    /// <param name="routes">The routes it serves.</param>
-    /// <returns>The flow.</returns>
-    public CanopyFlow UseEndpoint(string url, CanopyFlowRoutes routes) { Endpoint = new CanopyFlowEndpoint(url, routes); return this; }
 
     /// <summary>
     /// Writes the equivalent command of a set of answers with the browser's rules (see "The equivalent command" in docs/flow.md):

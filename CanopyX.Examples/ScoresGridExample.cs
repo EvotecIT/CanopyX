@@ -31,7 +31,7 @@ internal static class ScoresGridExample {
                 view.Rows.Add(row);
             }
             foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-                view.SaveHtmlPage(Path.Combine(output, "scores-grid-" + language + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
+                view.Save(Path.Combine(output, "scores-grid-" + language + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = title, Language = language, Theme = theme });
             }
         }

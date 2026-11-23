@@ -16,8 +16,8 @@ internal static class RtlExample {
 
     internal static void Write(string output) {
         var options = new CanopyHtmlOptions { Title = "ספריית מסמכים", Language = "he", Direction = CanopyTextDirection.Rtl };
-        Tree().SaveHtmlPage(Path.Combine(output, "rtl-tree.html"), options);
-        Grid().SaveHtmlPage(Path.Combine(output, "rtl-grid.html"), new CanopyHtmlOptions { Title = "רשימת מסמכים", Language = "he", Direction = CanopyTextDirection.Rtl });
+        Tree().Save(Path.Combine(output, "rtl-tree.html"), options);
+        Grid().Save(Path.Combine(output, "rtl-grid.html"), new CanopyHtmlOptions { Title = "רשימת מסמכים", Language = "he", Direction = CanopyTextDirection.Rtl });
     }
 
     private static CanopyTreeView Tree() {
@@ -35,7 +35,7 @@ internal static class RtlExample {
                     folder.Children.Add(Node("doc-" + t + "-" + f + "-" + d, Types[(f + d) % Types.Length] + " " + (d + 1), t, f + d, epoch));
                 if (t == 0 && f == 0)
                     folder.Children.Add(new CanopyNode("doc-0-0-notes", "הערות גרסה") {
-                        Detail = new CanopyPropertiesDetail().Add("מחבר", "צוות " + Teams[0]).Add("גרסה", 3)
+                        Detail = new CanopyPropertiesDetail().Item("מחבר", "צוות " + Teams[0]).Item("גרסה", 3)
                     });
                 team.Children.Add(folder);
             }

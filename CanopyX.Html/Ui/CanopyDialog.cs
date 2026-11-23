@@ -63,7 +63,7 @@ public sealed class CanopyDialog {
     /// <exception cref="InvalidOperationException">The dialog has both footer HTML and actions, two actions share an identity, or its fields have no action to submit them.</exception>
     public string ToHtmlFragment() {
         var footer = ActionsHtml();
-        var html = UiOverlayHtml.Start("dialog", "dialog", Id, TriggerId, Description, Options.Variant, Options.Alert);
+        var html = UiOverlayHtml.Start("dialog", "dialog", Id, TriggerId, Description, Options.Alert);
         UiHtml.Attribute(html, "data-size", UiOverlayHtml.Size(Options.Size));
         UiHtml.Attribute(html, "data-modal", "true");
         UiHtml.Attribute(html, "aria-modal", "true");

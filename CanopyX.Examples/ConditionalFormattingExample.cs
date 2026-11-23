@@ -67,7 +67,7 @@ internal static class ConditionalFormattingExample {
     internal static void Write(string output) {
         var view = View();
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
-            view.SaveHtmlPage(Path.Combine(output, "conditional-formatting" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
+            view.Save(Path.Combine(output, "conditional-formatting" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "CanopyX conditional formatting", Theme = theme });
         // The same rules in the script-free table that email, print and Word receive.
         var fallback = CanopyStaticHtml.RenderGrid(view, (CanopyGridPage?)null, new CanopyStaticHtmlOptions { MaxRows = 24 });

@@ -30,8 +30,6 @@ public sealed class CanopyGridRow {
 
     /// <summary>Gets or sets the row's default semantic or host-defined tone.</summary>
     public Tone Tone { get; set; }
-    /// <summary>Gets or sets additional row CSS classes, at most 1,024 characters without controls.</summary>
-    public string? ClassName { get; set; }
     /// <summary>Gets or sets the record's detail payload for a reporting grid with <see cref="CanopyGridReporting.Detail"/>: a table,
     /// properties or trusted HTML, or the data of the definition's nested grid or tree. Null shows no expander for payload details.</summary>
     public CanopyDetail? Detail { get; set; }
@@ -50,7 +48,6 @@ public sealed class CanopyGridRow {
         CanopyCell.ValidateEntries(Cells, structureDepth);
         CanopyCell.ValidateEntries(_fields, structureDepth);
         if (validateDetail) Detail?.ValidateStructure(structureDepth);
-        CanopyGridHighlightRule.ValidateClassName(ClassName);
         foreach (var cell in Cells) {
             CanopyIdentifiers.Require(cell.Key, nameof(Cells));
             if (columnIds != null && !columnIds.Contains(cell.Key)) {
@@ -68,7 +65,7 @@ public sealed class CanopyGridRow {
             if (cell.Value == null) writer.Null();
             else cell.Value.WriteJson(writer);
         }
-        writer.EndObject().OptionalProperty("tone", Tone.WireName()).OptionalProperty("className", ClassName);
+        writer.EndObject().OptionalProperty("tone", Tone.WireName());
         if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
         if (HasFields) {
             writer.Name("fields").BeginObject();
@@ -78,12 +75,12 @@ public sealed class CanopyGridRow {
         writer.EndObject();
     }
 
-    /// <summary>Writes the compact row of <c>rowData</c>: the id (or an object with the id, tone and class) and the cells in column order, without trailing empty cells.</summary>
+    /// <summary>Writes the compact row of <c>rowData</c>: the id (or an object with the id and tone) and the cells in column order, without trailing empty cells.</summary>
     internal void WriteCompactJson(CanopyJsonWriter writer, IReadOnlyList<string> columns) {
         Validate();
         writer.BeginArray();
-        if (Tone.WireName() == null && ClassName == null) writer.String(Id);
-        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.WireName()).OptionalProperty("className", ClassName).EndObject();
+        if (Tone.WireName() == null) writer.String(Id);
+        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.WireName()).EndObject();
         var last = -1;
         for (var i = 0; i < columns.Count; i++) {
             if (Cells.TryGetValue(columns[i], out var cell) && cell != null) last = i;

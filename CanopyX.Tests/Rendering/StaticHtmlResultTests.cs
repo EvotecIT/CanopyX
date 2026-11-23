@@ -44,10 +44,10 @@ public sealed class StaticHtmlResultTests {
         var changed = new CanopyCell("raw") { Text = "Before & after" };
         changed.Badges.Add(new CanopyBadge("Changed"));
         view.Roots.Add(new CanopyNode("table", "Unprinted table label") {
-            Detail = new CanopyTableDetail("Settings").AddColumns("Key", "Value").AddRow("Retention", changed)
+            Detail = new CanopyTableDetail("Settings").Column("Key", "Value").Row("Retention", changed)
         });
         view.Roots.Add(new CanopyNode("properties", "Unprinted property label") {
-            Detail = new CanopyPropertiesDetail().Add("Status", new CanopyCell(true) { Text = "Enabled" }).Add("Empty", string.Empty)
+            Detail = new CanopyPropertiesDetail().Item("Status", new CanopyCell(true) { Text = "Enabled" }).Item("Empty", string.Empty)
         });
         view.Roots.Add(new CanopyNode("markup", "Unprinted markup label") { Detail = new CanopyHtmlDetail("<b>Literal payload</b>") });
 

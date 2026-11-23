@@ -34,7 +34,7 @@ internal static class ReportingGridExample {
             foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
                 var name = "reporting-grid" + (presentation == CanopyGridPresentation.Continuous ? "-continuous" : "") +
                     (theme == ThemeMode.Dark ? "-dark" : "") + ".html";
-                view.SaveHtmlPage(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX ordered reporting grid", Theme = theme });
+                view.Save(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX ordered reporting grid", Theme = theme });
             }
         }
     }

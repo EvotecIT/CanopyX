@@ -140,8 +140,8 @@ public sealed class RecordTreeCollectionAssetsTests {
                 rows.Columns.Add(new CanopyColumn("name", "Name"));
                 var row = new CanopyGridRow("collection-row") { Cells = { ["name"] = "Collection row" } };
                 if (location == "collection-row-field") row.Fields["members"] = treeValue;
-                if (location == "collection-properties") row.Detail = new CanopyPropertiesDetail().Add("Members", treeValue);
-                if (location == "collection-table") row.Detail = new CanopyTableDetail().AddColumns("Members").AddRow(treeValue);
+                if (location == "collection-properties") row.Detail = new CanopyPropertiesDetail().Item("Members", treeValue);
+                if (location == "collection-table") row.Detail = new CanopyTableDetail().Column("Members").Row(treeValue);
                 if (location.StartsWith("detail-grid-", StringComparison.Ordinal)) {
                     var inner = new CanopyGridRow("inner");
                     if (location == "detail-grid-cell") inner.Cells["members"] = treeValue;

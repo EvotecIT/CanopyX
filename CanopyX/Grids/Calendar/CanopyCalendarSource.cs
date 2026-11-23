@@ -13,7 +13,7 @@ public sealed class CanopyCalendarSource {
     private string _id;
     private string _label;
     private string? _ics;
-    private string? _url, _color, _avatar, _initials, _icon;
+    private string? _url, _avatar, _initials, _icon;
 
     /// <summary>Creates a source.</summary>
     /// <param name="id">The source id that records name in the source column, unique within the calendar.</param>
@@ -67,15 +67,6 @@ public sealed class CanopyCalendarSource {
     /// <summary>Gets the extra query parameters sent with each JSON feed request. Reserved start, end and timeZone parameters are supplied by the calendar.</summary>
     public IDictionary<string, string> FetchParams { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
-    /// <summary>Gets or sets a source colour in six-digit hexadecimal form, for example #2563eb. Null keeps the theme tone.</summary>
-    public string? Color {
-        get => _color;
-        set {
-            if (value != null && !System.Text.RegularExpressions.Regex.IsMatch(value, "^#[0-9a-fA-F]{6}$")) throw new ArgumentException("A source colour is #RRGGBB.", nameof(value));
-            _color = value;
-        }
-    }
-
     /// <summary>
     /// Gets or sets the avatar drawn in front of the source's events and in its legend switch: a relative or same-origin http(s)
     /// URL, or a base64 <c>data:image</c> URL (PNG, JPEG, GIF, WebP or SVG) of at most 100,000 characters; null for none.
@@ -117,7 +108,7 @@ public sealed class CanopyCalendarSource {
     internal void WriteJson(CanopyJsonWriter writer) {
         Validate();
         writer.BeginObject().Property("id", _id).Property("label", _label).OptionalProperty("tone", Tone.WireName()).OptionalProperty("ics", _ics);
-        writer.OptionalProperty("url", _url).OptionalProperty("color", _color);
+        writer.OptionalProperty("url", _url);
         CanopyCalendarFace.WriteFace(writer, _avatar, _initials, _icon);
         if (FetchParams.Count > 0) {
             writer.Name("fetchParams").BeginObject();

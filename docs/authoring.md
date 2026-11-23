@@ -94,7 +94,7 @@ var row = new CanopyGridRow("record-17");
 row.Cells["name"] = "Archive";
 row.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
 inventory.Rows.Add(row);
-inventory.SaveHtmlPage("inventory.html");
+inventory.Save("inventory.html");
 ```
 
 Every model also has fluent methods, generated at build time from its properties, so the same view reads as a chain. They
@@ -119,14 +119,14 @@ For typed records there are two routes, both returning a `CanopyDataGridView<T>`
 
 ```csharp
 // Every public property becomes a column; [CanopyKey], [CanopyColumn] and [CanopyIgnore] adjust them.
-CanopyDataGridView.From(records, x => x.Id).SaveHtmlPage("inventory.html");
+CanopyDataGridView.From(records, x => x.Id).Save("inventory.html");
 
 // Or declare each column from its member, with any column setting.
 var inventory = new CanopyDataGridView<FileRecord>("inventory", "Inventory", record => record.Id);
 inventory.Column(x => x.Name, configure: column => column.Sortable = true);
 inventory.Column(x => x.Bytes, "Size", column => column.Sizing = CanopyColumnSizing.Preferred(140),
     cell: bytes => new CanopyCell(bytes) { Text = bytes / 1024 + " KiB" });
-inventory.AddRows(records).SaveHtmlPage("inventory.html");
+inventory.AddRows(records).Save("inventory.html");
 ```
 
 `FileRecord` and `records` are host-owned. `inventory.Row(record)` writes the same cells into a hosted result page, and
@@ -248,7 +248,7 @@ Safe cell presenters can be declared on any flat-grid column. For example, `new 
 
 Graphite adds enum pills, quiet healthy states, directional deltas, period strips, bar and line sparklines, identifiers with secondary text, tags and missing-value dashes. History metadata lives in `CanopyCell.Series` / `cell.series`; the cell's raw value retains its search, sorting and export meaning. [The protocol reference](data-protocol.md#safe-cell-presenters) describes thresholds and shared scales. The generated `graphite-grid.html` and dark variant show the presenters together, including 90 daily periods and clamped text.
 
-Scheduler-style views have four more. `CanopyGridPresenter.State(tones).WithPill()` sets a dot and the text in a tone pill ("● Active"), and `WithIcons(...)` swaps the dot for a glyph on the values it names (a lock for "Read-only"); the mark is decorative and the text carries the meaning. `SparklineBars().WithSlots()` turns a bar history into a run history: one slot per period, a faint baseline where no run happened, failed (danger) runs taller, height by duration. `RelativeTime(secondaryColumn)` shows a date column as "in 3 hr." or "27 sec. ago" in the page language, with the exact time in the grid's time zone as its tooltip; one timer per grid keeps the visible cells current, pauses while the page is hidden and stops with the grid. `Log(lines, split, levelTones)` shows monospace lines of time, level and message from the cell's `Events` (or its text lines), previews the first line in fixed-height rows and shows bounded lines with Show all and Copy in rows that size to content and in the record drawer. Static output shows the exact time, the mark before the state text and the log as a preformatted block. The generated `scheduled-jobs.html` shows them together.
+Scheduler-style views have four more. `CanopyGridPresenter.State(tones).WithPill()` sets a dot and the text in a tone pill ("● Active"), and `WithMarks(...)` swaps the dot for a glyph on the values it names (a lock for "Read-only"); the mark is decorative and the text carries the meaning. `SparklineBars().WithSlots()` turns a bar history into a run history: one slot per period, a faint baseline where no run happened, failed (danger) runs taller, height by duration. `RelativeTime(secondaryColumn)` shows a date column as "in 3 hr." or "27 sec. ago" in the page language, with the exact time in the grid's time zone as its tooltip; one timer per grid keeps the visible cells current, pauses while the page is hidden and stops with the grid. `Log(lines, split, levelTones)` shows monospace lines of time, level and message from the cell's `Events` (or its text lines), previews the first line in fixed-height rows and shows bounded lines with Show all and Copy in rows that size to content and in the record drawer. Static output shows the exact time, the mark before the state text and the log as a preformatted block. The generated `scheduled-jobs.html` shows them together.
 
 ```csharp
 view.GetColumn("name").Presenter = CanopyGridPresenter.Link("address", newWindow: true);
@@ -484,7 +484,7 @@ plans.Badges.Add(new CanopyBadge("stale", Tone.Warning));
 projects.Children.Add(plans);
 
 view.Roots.Add(projects);
-view.SaveHtmlPage("files.html");
+view.Save("files.html");
 ```
 
 The first column shows each node's label; the other columns show the node's cells by column id.
@@ -492,7 +492,7 @@ The first column shows each node's label; the other columns show the node's cell
 For large trees, write a bundle instead. The data is split into sidecar files that the page loads on demand, and the page works when opened straight from a file share. Small child lists share pack files, so a tree with hundreds of thousands of rows is a few thousand files. The page references the runtime under a name that carries its content hash (`assets/canopyx.<hash>.js`), so it always loads the runtime it was written for and the file can be cached for good; publish the page and its data folder together:
 
 ```csharp
-CanopyBundleResult bundle = view.SaveHtmlBundle("report");
+CanopyBundleResult bundle = view.SaveBundle("report");
 Console.WriteLine($"{bundle.NodeCount:N0} nodes in {bundle.FileCount:N0} files ({bundle.PackCount:N0} packs), largest {bundle.LargestFileBytes:N0} bytes");
 ```
 
@@ -500,7 +500,7 @@ When the tree is too large to build in memory, hand the writer the nodes while i
 
 ```csharp
 var view = new CanopyTreeView("files", "File shares");   // columns as above, no roots
-CanopyBundleResult bundle = view.SaveHtmlBundle("report", ReadShares(), node => ReadChildren(node.Id));
+CanopyBundleResult bundle = view.SaveBundle("report", ReadShares(), node => ReadChildren(node.Id));
 ```
 
 `ReadShares` and `ReadChildren` are the host's own queries and return `IEnumerable<CanopyNode>`; an empty or null result makes the node a leaf. A node that already carries inline `Children` is written as it is.
@@ -551,7 +551,7 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
-A complete page from `ToHtmlPage` or `SaveHtmlPage` carries such a script, or host styles, in `CanopyHtmlOptions.HeadHtml`: it is
+A complete page from `ToHtml` or `Save` carries such a script, or host styles, in `CanopyHtmlOptions.HeadHtml`: it is
 written as given at the end of the page's `head`, after the inline runtime, so `CanopyX.configure` is available to it. With
 external assets the runtime script is deferred; configure from a `DOMContentLoaded` listener there. Put only host-authored
 markup in it, with the response's `Nonce` on its elements under a Content Security Policy.

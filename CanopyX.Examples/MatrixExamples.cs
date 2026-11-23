@@ -16,13 +16,13 @@ internal static class MatrixExamples {
         // The pages set no height: each matrix fills the window, and a matrix whose rows fit is only as tall as they are (AutoHeight).
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Replication().SaveHtmlPage(Path.Combine(output, "matrix-replication" + suffix + ".html"), new CanopyHtmlOptions { Title = "Inbound replication", Theme = theme });
-            Services().SaveHtmlPage(Path.Combine(output, "matrix-services" + suffix + ".html"), new CanopyHtmlOptions { Title = "Services by server", Theme = theme });
-            Consistency().SaveHtmlPage(Path.Combine(output, "matrix-consistency" + suffix + ".html"), new CanopyHtmlOptions { Title = "Policy consistency", Theme = theme });
+            Replication().Save(Path.Combine(output, "matrix-replication" + suffix + ".html"), new CanopyHtmlOptions { Title = "Inbound replication", Theme = theme });
+            Services().Save(Path.Combine(output, "matrix-services" + suffix + ".html"), new CanopyHtmlOptions { Title = "Services by server", Theme = theme });
+            Consistency().Save(Path.Combine(output, "matrix-consistency" + suffix + ".html"), new CanopyHtmlOptions { Title = "Policy consistency", Theme = theme });
         }
 
         // Plain N by N matrices for the scroll benchmarks (tests/browser/bench/matrix-benchmark.mjs, matrix-performance.spec.mjs).
-        foreach (var size in new[] { 150, 400 }) Bench(size).SaveHtmlPage(Path.Combine(output, "large", "matrix-" + size + ".html"), new CanopyHtmlOptions { Title = "Matrix " + size, Height = "820px" });
+        foreach (var size in new[] { 150, 400 }) Bench(size).Save(Path.Combine(output, "large", "matrix-" + size + ".html"), new CanopyHtmlOptions { Title = "Matrix " + size, Height = "820px" });
 
         // The static fallback for email, print and Office, as a host would put it in a message body: tone cells, the servers grouped
         // by site (heading rows with their counts and totals) and the services grouped by tier (bands), then the long list form.

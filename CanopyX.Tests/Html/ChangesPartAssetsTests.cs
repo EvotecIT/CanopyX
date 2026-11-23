@@ -33,7 +33,7 @@ public sealed class ChangesPartAssetsTests {
     public void ChangeViewPages_EmbedOnlyTheChangesPayload() {
         var view = new CanopyPropagation("p", "P");
         view.Witness("a", "A", CanopyPropagationState.Converged);
-        var page = view.ToHtmlPage();
+        var page = view.ToHtml();
         var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "changes" }, embedded);
         Assert.Contains("type=\"application/x-canopyx-changes-style\"", page);

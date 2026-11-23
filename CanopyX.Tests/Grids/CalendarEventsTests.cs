@@ -109,7 +109,7 @@ public sealed class CalendarEventsTests {
         Assert.Equal(new[] { 3, 5 }, scheduler.Capacity!.Thresholds.Select(threshold => threshold.At));
         Assert.Contains("\"capacity\":{\"thresholds\":[{\"at\":3,\"tone\":\"warning\"},{\"at\":5,\"tone\":\"danger\"}]}", scheduler.Grid!.ToJson());
         // A capacity the host set is kept.
-        var custom = new CanopyCalendar(events, CanopyCalendarPreset.Scheduler) { Capacity = new CanopyCalendarCapacity().Add(2, Tone.Danger) };
+        var custom = new CanopyCalendar(events, CanopyCalendarPreset.Scheduler) { Capacity = new CanopyCalendarCapacity().Threshold(2, Tone.Danger) };
         custom.Resources = new CanopyCalendarResources(tree);
         Assert.Single(custom.Capacity!.Thresholds);
     }
@@ -180,7 +180,7 @@ public sealed class CalendarEventsTests {
     [Fact]
     public void Html_WritesACalendarOfEvents_AndRefusesADefinitionWithoutEvents() {
         var calendar = new CanopyCalendar(new[] { new CanopyCalendarEvent("<b>Launch</b>", new DateTime(2026, 10, 19, 9, 0, 0, DateTimeKind.Utc)) });
-        var page = calendar.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "Launches" });
+        var page = calendar.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "Launches" });
         Assert.Contains("<title>Launches</title>", page);
         Assert.Contains("\"calendar\":{\"start\":\"start\"", page);
         Assert.DoesNotContain("<b>Launch</b>", page);
@@ -192,7 +192,7 @@ public sealed class CalendarEventsTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-calendar-" + Guid.NewGuid().ToString("N"));
         try {
             var path = Path.Combine(directory, "nested", "calendar.html");
-            calendar.SaveHtmlPage(path, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
+            calendar.Save(path, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
             Assert.Contains("\"calendar\":{", File.ReadAllText(path));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
@@ -200,26 +200,26 @@ public sealed class CalendarEventsTests {
 
         var definition = new CanopyCalendar("starts");
         Assert.Null(definition.Grid);
-        Assert.Throws<InvalidOperationException>(() => definition.ToHtmlPage());
+        Assert.Throws<InvalidOperationException>(() => definition.ToHtml());
         Assert.Throws<InvalidOperationException>(() => definition.ToHtmlFragment());
-        Assert.Throws<InvalidOperationException>(() => definition.SaveHtmlPage(Path.Combine(directory, "x.html")));
-        Assert.Throws<ArgumentNullException>(() => ((CanopyCalendar)null!).ToHtmlPage());
+        Assert.Throws<InvalidOperationException>(() => definition.Save(Path.Combine(directory, "x.html")));
+        Assert.Throws<ArgumentNullException>(() => ((CanopyCalendar)null!).ToHtml());
     }
 
     [Fact]
     public void Direction_WritesDirOnThePageAndOnFragmentHosts() {
         var grid = new CanopyCalendar(new[] { new CanopyCalendarEvent("Event", new DateTime(2026, 10, 19, 9, 0, 0, DateTimeKind.Utc)) }).Grid!;
-        var page = grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Language = "ar", Direction = CanopyTextDirection.Rtl });
+        var page = grid.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Language = "ar", Direction = CanopyTextDirection.Rtl });
         Assert.Contains("<html lang=\"ar\" dir=\"rtl\">", page);
         Assert.DoesNotContain("{{dir}}", page);
         Assert.Contains("<div class=\"cx-host\" data-canopyx-host id=\"" + grid.Id + "\" dir=\"ltr\"", grid.ToHtmlFragment(new CanopyHtmlOptions { Direction = CanopyTextDirection.Ltr }));
         var defaultHost = System.Text.RegularExpressions.Regex.Match(grid.ToHtmlFragment(), @"<div\b[^>]*\bdata-canopyx-host\b[^>]*>").Value;
         Assert.NotEmpty(defaultHost);
         Assert.DoesNotContain(" dir=", defaultHost);
-        Assert.DoesNotContain(" dir=", grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }).Substring(0, 200));
+        Assert.DoesNotContain(" dir=", grid.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }).Substring(0, 200));
         var tree = new CanopyTreeView("tree", "Tree");
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Contains("dir=\"rtl\">", tree.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Direction = CanopyTextDirection.Rtl }));
+        Assert.Contains("dir=\"rtl\">", tree.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Direction = CanopyTextDirection.Rtl }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyHtmlOptions { Direction = (CanopyTextDirection)3 });
     }
 }

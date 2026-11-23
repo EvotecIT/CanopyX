@@ -36,7 +36,7 @@ foreach (var link in links) {
     if (link.Failures > 0) cell.Text = link.Failures.ToString(CultureInfo.InvariantCulture);
     cell.Detail("Last success", link.LastSuccess.ToString("u", CultureInfo.InvariantCulture));
 }
-matrix.SaveHtmlPage("replication.html");                // a page fills the window; a fragment takes CanopyHtmlOptions.Height
+matrix.Save("replication.html");                // a page fills the window; a fragment takes CanopyHtmlOptions.Height
 ```
 
 `AddCells(records, row, column, state, configure)` adds a cell per record. In JavaScript, `CanopyX.createMatrix(host, { view })`

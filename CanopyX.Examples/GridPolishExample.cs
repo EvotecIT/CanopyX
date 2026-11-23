@@ -12,7 +12,7 @@ internal static class GridPolishExample {
             view.StickyHeader = true;
             const string pageStyle = "<style>html body.cx-page{height:auto;overflow:visible;color:CanvasText;background:Canvas}.cx-main{height:auto;display:block;padding:24px}body.cx-page>.cx-main>.cx-host{height:2600px}.polish-copy{max-width:60rem;margin:0 0 24px;line-height:1.6}</style>";
             const string introduction = "<section class=\"polish-copy\"><h2>Work schedule</h2><p>Scroll the page: the grid header stays in view while this auto-height schedule fits every record. Sort the Name column from the header as usual.</p></section>";
-            var page = view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Height = "2600px", Title = "Work schedule with a page-scroll header", HeadHtml = pageStyle })
+            var page = view.ToHtml(new CanopyHtmlOptions { Theme = theme, Height = "2600px", Title = "Work schedule with a page-scroll header", HeadHtml = pageStyle })
                 .Replace("<main class=\"cx-main\">", "<main class=\"cx-main\">" + introduction);
             File.WriteAllText(Path.Combine(output, "sticky-grid" + suffix + ".html"), page);
 
@@ -21,7 +21,7 @@ internal static class GridPolishExample {
             view.CardTemplate = new CanopyCardTemplate();
             view.CardTemplate.Slots.Add("name", "{name}");
             view.CardTemplate.Slots.Add("due", "{due}");
-            view.SaveHtmlPage(Path.Combine(output, "template-cards" + suffix + ".html"),
+            view.Save(Path.Combine(output, "template-cards" + suffix + ".html"),
                 new CanopyHtmlOptions { Theme = theme, Title = "Work item cards with safe token slots", Height = "720px" });
         }
     }

@@ -25,9 +25,9 @@ internal static class CanopyFlowCommandLine {
         var edit = flow.IsEditMode || flow.Initial.Count > 0 || flow.StoredSecrets.Count > 0 || flow.Baseline != null;
         var arguments = new List<string>();
         foreach (var field in CanopyFlowValidator.Fields(flow)) {
-            if (field.ParameterName == null || !visible.Contains(field.Id) || field.Kind == CanopyFlowFieldKind.Records) continue;
+            if (field.Parameter == null || !visible.Contains(field.Id) || field.Kind == CanopyFlowFieldKind.Records) continue;
             if (field.Kind == CanopyFlowFieldKind.Secret) {
-                if (typed.Contains(field.Id)) arguments.Add(Parameter(field.ParameterName, style) + (style == CanopyFlowCommandStyle.Windows ? ":" : " ") + "<secret>");
+                if (typed.Contains(field.Id)) arguments.Add(Parameter(field.Parameter, style) + (style == CanopyFlowCommandStyle.Windows ? ":" : " ") + "<secret>");
                 continue;
             }
 
@@ -35,14 +35,14 @@ internal static class CanopyFlowCommandLine {
             var value = CanopyFlowValues.TryCanonical(field, raw, out var error);
             if (error != null || IsEmpty(value)) continue;
             object? baseline = edit ? (flow.Initial.TryGetValue(field.Id, out var initial) && initial != null ? CanopyFlowValues.TryCanonical(field, initial, out _) : null) :
-                field.DefaultValue == null ? null : CanopyFlowValues.TryCanonical(field, field.DefaultValue, out _);
+                field.Default == null ? null : CanopyFlowValues.TryCanonical(field, field.Default, out _);
             if (Same(value, IsEmpty(baseline) ? null : baseline)) continue;
             if (value is bool flag && !flag) {
-                if (baseline is bool on && on) arguments.Add(style == CanopyFlowCommandStyle.PowerShell ? Parameter(field.ParameterName, style) + ":$false" : Argument("no-" + field.ParameterName, true, style));
+                if (baseline is bool on && on) arguments.Add(style == CanopyFlowCommandStyle.PowerShell ? Parameter(field.Parameter, style) + ":$false" : Argument("no-" + field.Parameter, true, style));
                 continue;
             }
 
-            arguments.Add(Argument(field.ParameterName, field.Kind == CanopyFlowFieldKind.Pick ? CanopyFlowRecordValues.PickIds(value) : value, style));
+            arguments.Add(Argument(field.Parameter, field.Kind == CanopyFlowFieldKind.Pick ? CanopyFlowRecordValues.PickIds(value) : value, style));
         }
 
         var line = new StringBuilder(flow.Command.Name);

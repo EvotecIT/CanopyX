@@ -121,7 +121,7 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
     internal static void Write(string output) {
         var grid = View();
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var page = grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX editing", Theme = theme });
+            var page = grid.ToHtml(new CanopyHtmlOptions { Title = "CanopyX editing", Theme = theme });
             File.WriteAllText(Path.Combine(output, "editing" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), Inject(page));
         }
     }

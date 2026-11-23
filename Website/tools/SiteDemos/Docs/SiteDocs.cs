@@ -80,12 +80,12 @@ internal sealed class SiteDocs {
     private void GettingStarted() {
         var files = DocsSnippets.ProjectFiles();
         Live(files, "tree");
-        Example("tree", "Program.cs", "csharp", Usings + _snippets["tree"] + "\n\nfiles.SaveHtmlPage(\"files.html\");",
+        Example("tree", "Program.cs", "csharp", Usings + _snippets["tree"] + "\n\nfiles.Save(\"files.html\");",
             Output.Frame("tree", "files.html", Count(files) + " nodes, tree runtime", 300));
 
         var inventory = DocsSnippets.Inventory();
         Live(inventory, "grid");
-        Example("grid", "Program.cs", "csharp", Usings + _snippets["grid"] + "\n\ninventory.SaveHtmlPage(\"inventory.html\");",
+        Example("grid", "Program.cs", "csharp", Usings + _snippets["grid"] + "\n\ninventory.Save(\"inventory.html\");",
             Output.Frame("grid", "inventory.html", inventory.Rows.Count + " rows, grid runtime", 300));
 
         var (tree, grid) = DocsSnippets.StaticTables(files, inventory);
@@ -101,7 +101,7 @@ internal sealed class SiteDocs {
 
         var polish = DocsSnippets.Polish(DocsSnippets.ProjectFiles());
         Live(polish, "labels");
-        Example("labels", "Program.cs", "csharp", _snippets["labels"] + "\nfiles.SaveHtmlPage(\"pliki.html\");",
+        Example("labels", "Program.cs", "csharp", _snippets["labels"] + "\nfiles.Save(\"pliki.html\");",
             Output.Frame("labels", "pliki.html", "Polish labels", 300));
 
         var runtimes = Reference("runtimes", "npm entry points", new[] { "Import", "Use it for", "Stylesheet" }, new[] {
@@ -115,7 +115,7 @@ internal sealed class SiteDocs {
     private CanopyDataGridView Reporting() {
         var devices = DocsSnippets.Devices();
         Live(devices, "reporting");
-        Example("reporting", "Report.cs", "csharp", Usings + _snippets["reporting"] + "\n\ndevices.SaveHtmlPage(\"devices.html\");",
+        Example("reporting", "Report.cs", "csharp", Usings + _snippets["reporting"] + "\n\ndevices.Save(\"devices.html\");",
             Output.Frame("reporting", "devices.html", devices.Rows.Count + " rows, reporting runtime", 470));
         return devices;
     }
@@ -421,12 +421,12 @@ internal sealed class SiteDocs {
 
     private void Live(CanopyTreeView view, string name) {
         CanopyHtmlAssets.WriteTo(_assets, CanopyAssetNaming.ContentHash, CanopyHtmlAssets.GetRuntime(view));
-        view.SaveHtmlPage(Path.Combine(_liveDocs, name + ".html"), LiveOptions(view.Label));
+        view.Save(Path.Combine(_liveDocs, name + ".html"), LiveOptions(view.Label));
     }
 
     private void Live(CanopyDataGridView view, string name) {
         CanopyHtmlAssets.WriteTo(_assets, CanopyAssetNaming.ContentHash, CanopyHtmlAssets.GetRuntime(view));
-        view.SaveHtmlPage(Path.Combine(_liveDocs, name + ".html"), LiveOptions(view.Label));
+        view.Save(Path.Combine(_liveDocs, name + ".html"), LiveOptions(view.Label));
     }
 
     private static CanopyHtmlOptions LiveOptions(string title) =>

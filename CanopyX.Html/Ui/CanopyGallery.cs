@@ -29,7 +29,6 @@ public sealed class CanopyGallery {
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-gallery\" data-cx-lightbox data-cx-part=\"gallery\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         if (Options.Loop) UiHtml.Attribute(html, "data-loop", "true");
         html.Append("><ul class=\"cx-gallery-list\">");
         var templates = new StringBuilder();

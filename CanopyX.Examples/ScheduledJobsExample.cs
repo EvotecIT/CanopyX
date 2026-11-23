@@ -17,7 +17,7 @@ internal static class ScheduledJobsExample {
         var now = DateTime.UtcNow;
         now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
-            Create(now).SaveHtmlPage(Path.Combine(output, "scheduled-jobs" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create(now).Save(Path.Combine(output, "scheduled-jobs" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Scheduled jobs", Theme = theme });
     }
 
@@ -28,7 +28,7 @@ internal static class ScheduledJobsExample {
             Sortable = true,
             Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> {
                 ["Active"] = Tone.Success, ["Error"] = Tone.Danger, ["Paused"] = Tone.Warning, ["Read-only"] = Tone.Neutral
-            }).WithPill().WithIcons(new Dictionary<string, string> { ["Read-only"] = "🔒" })
+            }).WithPill().WithMarks(new Dictionary<string, string> { ["Read-only"] = "🔒" })
         });
         view.Columns.Add(new CanopyColumn("schedule", "Schedule") { Hidden = true });
         view.Columns.Add(new CanopyColumn("next", "Next run") { Kind = CanopyColumnKind.DateTime, Sortable = true, Presenter = CanopyGridPresenter.RelativeTime("schedule") });

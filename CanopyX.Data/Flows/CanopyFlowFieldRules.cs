@@ -42,7 +42,7 @@ internal static class CanopyFlowFieldRules {
                 return null;
             }
             default:
-                return Scalar(field.Validation, field.Kind, field.NumberStep, value, title, labels) ?? Format(field, value, labels) ?? DisabledChoice(field, value, labels);
+                return Scalar(field.Validation, field.Kind, field.Step, value, title, labels) ?? Format(field, value, labels) ?? DisabledChoice(field, value, labels);
         }
     }
 
@@ -91,7 +91,7 @@ internal static class CanopyFlowFieldRules {
         foreach (var entry in items) {
             var item = (string)entry!;
             if (field.ItemRule != CanopyFlowItemRule.None && !Fits(field.ItemRule, item)) return field.Validation.Message ?? Fill(RuleLabel(field.ItemRule, labels), ("item", item));
-            if (field.ListItemPattern != null && !Matches(field.ListItemPattern, item)) return field.Validation.Message ?? Fill(labels.FlowItemPattern, ("item", item));
+            if (field.ItemPattern != null && !Matches(field.ItemPattern, item)) return field.Validation.Message ?? Fill(labels.FlowItemPattern, ("item", item));
         }
 
         return null;
@@ -133,8 +133,8 @@ internal static class CanopyFlowFieldRules {
 
     /// <summary>A text answer that does not have the field's format, as the browser words it.</summary>
     private static string? Format(CanopyFlowField field, object? value, CanopyLabels labels) {
-        if (field.TextFormat == CanopyFlowTextFormat.None || !(value is string text) || text.Length == 0 || CanopyFlowTextFormats.Fits(field.TextFormat, text)) return null;
-        return field.Validation.Message ?? Fill(labels.FlowFormatInvalid, ("field", field.Label), ("example", CanopyFlowTextFormats.Example(field.TextFormat)));
+        if (field.Format == CanopyFlowTextFormat.None || !(value is string text) || text.Length == 0 || CanopyFlowTextFormats.Fits(field.Format, text)) return null;
+        return field.Validation.Message ?? Fill(labels.FlowFormatInvalid, ("field", field.Label), ("example", CanopyFlowTextFormats.Example(field.Format)));
     }
 
     /// <summary>The built-in item rules, as FLOW_ITEM_RULES checks them.</summary>

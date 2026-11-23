@@ -20,8 +20,8 @@ public sealed class HtmlWriterTests {
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         var options = new CanopyHtmlOptions { HostId = hostId, AssetMode = CanopyAssetMode.External };
         foreach (var (id, fragment, page) in new[] {
-            (tree.Id, tree.ToHtmlFragment(options), tree.ToHtmlPage(options)),
-            (grid.Id, grid.ToHtmlFragment(options), grid.ToHtmlPage(options)) }) {
+            (tree.Id, tree.ToHtmlFragment(options), tree.ToHtml(options)),
+            (grid.Id, grid.ToHtmlFragment(options), grid.ToHtml(options)) }) {
             var expected = " id=\"" + WebUtility.HtmlEncode(hostId ?? id) + "\"";
             Assert.Contains(expected, fragment);
             Assert.Contains(expected, page);
@@ -36,7 +36,7 @@ public sealed class HtmlWriterTests {
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-chrome=\"embedded\">", view.ToHtmlFragment(new CanopyHtmlOptions { Chrome = CanopyChrome.Embedded }));
         Assert.DoesNotContain("data-cx-chrome", view.ToHtmlFragment());
         // A page fills the window, so it keeps its own frame whatever the option says.
-        Assert.DoesNotContain("data-cx-chrome", view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Chrome = CanopyChrome.Embedded }));
+        Assert.DoesNotContain("data-cx-chrome", view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Chrome = CanopyChrome.Embedded }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyHtmlOptions { Chrome = (CanopyChrome)2 });
     }
 
@@ -67,7 +67,7 @@ public sealed class HtmlWriterTests {
         options.HiddenFilterIds.Add("week");
 
         var fragment = System.Text.Json.Nodes.JsonNode.Parse(ConfigOf(view.ToHtmlFragment(options)))!["filters"]!.AsArray();
-        var page = System.Text.Json.Nodes.JsonNode.Parse(ConfigOf(view.ToHtmlPage(options)))!["filters"]!.AsArray();
+        var page = System.Text.Json.Nodes.JsonNode.Parse(ConfigOf(view.ToHtml(options)))!["filters"]!.AsArray();
 
         foreach (var filters in new[] { fragment, page }) {
             Assert.True(filters[0]!["hidden"]!.GetValue<bool>());
@@ -82,7 +82,7 @@ public sealed class HtmlWriterTests {
         Assert.Contains("no filter 'year'", Assert.Throws<InvalidOperationException>(() => view.ToHtmlFragment(options)).Message);
         // A bundle fails before its data is written.
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-hidden-" + Guid.NewGuid().ToString("N"));
-        Assert.Throws<InvalidOperationException>(() => view.SaveHtmlBundle(directory, options));
+        Assert.Throws<InvalidOperationException>(() => view.SaveBundle(directory, options));
         Assert.False(Directory.Exists(directory));
     }
 
@@ -92,15 +92,15 @@ public sealed class HtmlWriterTests {
 
         Assert.DoesNotContain("data-cx-mount", view.ToHtmlFragment());
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
-        Assert.Contains(" data-cx-mount=\"manual\"", view.ToHtmlPage(new CanopyHtmlOptions { AutoMount = false, AssetMode = CanopyAssetMode.External }));
+        Assert.Contains(" data-cx-mount=\"manual\"", view.ToHtml(new CanopyHtmlOptions { AutoMount = false, AssetMode = CanopyAssetMode.External }));
     }
 
     [Fact]
-    public void ToHtmlPage_InlineAssets_IsSelfContained() {
+    public void ToHtml_InlineAssets_IsSelfContained() {
         var view = new CanopyTreeView("v", "Files & <folders>");
         view.Columns.Add(new CanopyColumn("name", "Name"));
 
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { Language = "pl" });
+        var html = view.ToHtml(new CanopyHtmlOptions { Language = "pl" });
 
         Assert.Contains("<html lang=\"pl\">", html);
         Assert.Contains("<title>Files &amp; &lt;folders&gt;</title>", html);
@@ -111,11 +111,11 @@ public sealed class HtmlWriterTests {
     }
 
     [Fact]
-    public void ToHtmlPage_ExternalAssets_ReferencesTheAssetFiles() {
+    public void ToHtml_ExternalAssets_ReferencesTheAssetFiles() {
         var view = new CanopyTreeView("v", "Files");
         view.Columns.Add(new CanopyColumn("name", "Name"));
 
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../shared" });
+        var html = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../shared" });
 
         Assert.Contains("<link rel=\"stylesheet\" href=\"../shared/" + CanopyHtmlAssets.HashedStyleFileName + "\">", html);
         Assert.Contains("<script src=\"../shared/" + CanopyHtmlAssets.HashedScriptFileName + "\" defer></script>", html);

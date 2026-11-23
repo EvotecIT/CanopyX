@@ -79,9 +79,9 @@ document.getElementById("export-tree-download").addEventListener("click", () =>
 
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : "";
-            var gridPage = grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX export formats", Theme = theme });
+            var gridPage = grid.ToHtml(new CanopyHtmlOptions { Title = "CanopyX export formats", Theme = theme });
             File.WriteAllText(Path.Combine(output, "export-formats" + suffix + ".html"), gridPage.Replace("</body>", Writers + "</body>"));
-            var treePage = tree.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX tree export", Theme = theme, Runtime = CanopyRuntime.InteractiveTreeGrid });
+            var treePage = tree.ToHtml(new CanopyHtmlOptions { Title = "CanopyX tree export", Theme = theme, Runtime = CanopyRuntime.InteractiveTreeGrid });
             File.WriteAllText(Path.Combine(output, "export-formats-tree" + suffix + ".html"), treePage.Replace("</body>", Writers + TreeButton + "</body>"));
         }
     }

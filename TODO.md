@@ -35,7 +35,7 @@ are dropped by the consumer and are not planned.
 - [x] Free-text footer cells beside or instead of footer aggregates.
 - [x] Group footer rows from a fixed grouping's `footerTemplate`, in place of a DataTables `endRender` script.
 - [x] Rows read from a JSON address for static pages, with an optional refresh, separate from the hosted protocol.
-- [x] Calendar events with their own colour, background and text colour.
+- [x] Calendar events with their own colour, background and text colour. From .NET an event takes a tone (the 0.5 API keeps tones and the theme as the only styling input); JavaScript documents keep the colour fields.
 - [x] A URL per calendar event.
 - [x] An event-click hook that C#-written pages can use.
 

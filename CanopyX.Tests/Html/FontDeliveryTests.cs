@@ -24,7 +24,7 @@ public sealed class FontDeliveryTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-fonts-" + Guid.NewGuid().ToString("N"));
         try {
             CanopyHtmlAssets.WriteTo(directory, naming, CanopyRuntime.DataGrid);
-            var page = Grid().ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
+            var page = Grid().ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
             var fontCss = Regex.Match(page, "href=\"assets/(canopyx-fonts[^\"]*\\.css)\"").Groups[1].Value;
             Assert.NotEmpty(fontCss);
             // The font files are preloaded before the stylesheet asks for them, so they arrive before the first rows are drawn.
@@ -46,7 +46,7 @@ public sealed class FontDeliveryTests {
 
     [Fact]
     public void InlinePages_EmbedQualifiedFonts_WhileHostedFragmentsReuseTheirHostsFaces() {
-        var page = Grid().ToHtmlPage();
+        var page = Grid().ToHtml();
         var embedded = Regex.Matches(page, "data:font/woff2;base64,([A-Za-z0-9+/=]+)");
         Assert.Equal(2, embedded.Count);
         Assert.Equal(Fonts.Values.Order(), embedded.Select(match => Convert.ToHexString(

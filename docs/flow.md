@@ -17,7 +17,9 @@ The document shape on this page is the flow contract. CanopyX owns it, and any h
 (`docs/schema/canopyx-flow-1.schema.json` describes it as a JSON Schema).
 
 The flow ships as the lazily loaded `flow` part with a slim entry point of its own (`canopyx-flow-entry.js`,
-`@evotecit/canopyx/flow`). A page with only forms loads no grid code. Grid pages know the part too: `CanopyX.createFlow`
+`@evotecit/canopyx/flow`). A page with only forms loads no grid code, and the flow entry point carries the
+[UI factories](ui-primitives.md#slim-entry-point) too, so menus, selects, toasts and dialogs beside a form need no other entry
+point. Grid pages know the part too: `CanopyX.createFlow`
 loads it on first use. Flows share their editors and validation with grid editing, the record drawer's edit form and the
 calendar's event form through the `forms` part.
 
@@ -63,7 +65,7 @@ flow.Step("sign-in", "How does it sign in?", step => step
 
 flow.Review(review => review.Declaration("The settings apply to new messages."));
 
-File.WriteAllText("mail-server.html", flow.ToHtmlPage(new CanopyHtmlOptions { Title = "Connect a mail server" }));
+File.WriteAllText("mail-server.html", flow.ToHtml(new CanopyHtmlOptions { Title = "Connect a mail server" }));
 ```
 
 The host answers the proposal in the page:
@@ -144,7 +146,7 @@ Every text in the document is plain text; nothing is read as HTML.
 | `optional` | The rail marks the step optional. Its fields still follow their own `required`. |
 | `declaration`, `changesOnly` | Review steps only: text above the submit button, and whether edit mode shows only changed answers first (default true). |
 | `confirm`, `acknowledge` | Review steps only: [typed confirmation and an acknowledgement](#the-preview-and-consent-on-the-review-page). |
-| `preview` | Review steps only: `true` says the page shows the [host's preview](#the-preview-and-consent-on-the-review-page) (C# `review.Preview()`). |
+| `preview` | Review steps only: `true` says the page shows the [host's preview](#the-preview-and-consent-on-the-review-page) (C# `review.ShowsPreview()`). |
 
 Branching is ordered steps with conditions, not jumps. A hidden step or field keeps its answer while the reader goes back
 and forth, and is left out of the proposal. The rail shows only visible steps, so "Step 3 of 5" stays true.
@@ -339,7 +341,7 @@ hook that throws, rejects or times out fails in place with its message and an `e
 flow.Step("sign-in", "How does it sign in?", step => step
     .Text("user", "User name", f => f.Required().Path("mail.user"))
     .Secret("password", "Password", f => f.Required())
-    .Check("sign-in-test", "Test sign-in", check => check.Fields("host", "user", "password").RequirePass()));
+    .Check("sign-in-test", "Test sign-in", check => check.Field("host").Field("user").Field("password").RequirePass()));
 ```
 
 ```json
@@ -389,7 +391,7 @@ Conditions and dependencies never read secrets, and dependencies never run in a 
 #### Host sections
 
 ```csharp
-.Section("engine-options", "Engine options", section => section.FromHost("engine"))
+.Section("engine-options", "Engine options", section => section.FromHost().DependsOn("engine"))
 ```
 
 A section with `"source": "host"` has no fields of its own: `hooks.fields(sectionId, values, { signal })` answers up to 64
@@ -419,7 +421,7 @@ row ("Row 2: Send to is required."), and the review page says "3 rows". Records 
 
 ```csharp
 flow.Pick("servers", "Which servers?", servers, picker => {
-    picker.Label("name");
+    picker.LabelColumn("name");
     picker.Field.Count(1, 20).Required();
 });
 ```
@@ -506,7 +508,7 @@ flow included; in a linear flow a step past one whose answers are missing opens 
 
 `hooks.preview(values, { signal })` answers what submitting will do, as rows `[{ label, value, tone }]` or `{ title, rows,
 notes }` (`tone`: `info`, `success`, `warning`, `danger`). The review page shows it under "Preview", loading as it opens.
-A document that relies on it says so with `"preview": true` on its review step (C# `review.Preview()`), and an endpoint
+A document that relies on it says so with `"preview": true` on its review step (C# `review.ShowsPreview()`), and an endpoint
 with the preview route does the same: the page then loads the preview part with the flow. A preview hook alone loads the
 part too, but a page that cannot load it still shows the review page, without the preview.
 
@@ -530,14 +532,14 @@ and moves focus there. They are the reader's consent in the browser and do not t
 var handlers = new CanopyFlowHandlers {
     Check = async (context, request) => await mail.TestAsync(request.Values, request.ReadSecret("password")),
     Options = (context, request) => Task.FromResult(relays.For(request.Values.TryGetValue("region", out var region) ? region as string : null)),
-    Preview = (context, request) => Task.FromResult(new CanopyFlowPreview().Row("Applies", "At once", CanopyFlowTone.Success)),
+    Preview = (context, request) => Task.FromResult(new CanopyFlowPreview().Row("Applies", "At once", Tone.Success)),
     Drafts = new MyDraftStore(),
     Submit = async (context, submission) => submission.IsCurrent
         ? await settings.ApplyAsync(submission.Patch, submission.ReadSecret("password"))
         : CanopyFlowAnswer.Conflict()
 };
 app.MapCanopyFlow("/api/flows/mail", context => MailFlow(context), handlers, options => options.AuthorizationPolicy = "Mail.Admin");
-// The page: flow.UseEndpoint("/api/flows/mail", handlers.Routes)
+// The page: flow.Endpoint(new CanopyFlowEndpoint("/api/flows/mail", handlers.Routes))
 ```
 
 Each handler that is set maps its route below the pattern: `POST options`, `fields`, `check`, `validate`, `preview`, `status`
@@ -689,7 +691,7 @@ covered by the automated checks.
 
 | Asset | What it holds | Size guard (gzip) |
 | --- | --- | --- |
-| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure`, the fragment mount, and which feature parts a document needs. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (9.7 KiB measured) |
+| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure`, the fragment mount, which feature parts a document needs, and the UI factories (`mountUi`, `notify`, `select`, `menu`, `dialog` and the others). No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 13 KiB (12.0 KiB measured) |
 | `canopyx-forms.js`, `canopyx-forms.css` | The `forms` part: the typed editors, number and date parsing, the lookup combobox and the field checks. Grid editing requires it too. | 7 KiB (5.4 KiB) |
 | `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal. | 29 KiB (28.9 KiB) |
 | `canopyx-flow-host.js`, `.css` | What the host-connected parts share: hooks with a timeout, answers the flow sets itself, loading lines. The parts marked † require it. | 3 KiB (1.9 KiB) |

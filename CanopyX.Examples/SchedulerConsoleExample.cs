@@ -61,7 +61,7 @@ internal static class SchedulerConsoleExample {
         var view = new CanopyDataGridView("sc-jobs", "Jobs") {
             Noun = "jobs", Density = CanopyGridDensity.Comfortable, RowAction = CanopyGridRowAction.Details, PageSize = 100,
             Live = new CanopyGridLive { Flash = true },
-            FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Toolbar }.Add("type").Add("status").Add("group")
+            FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Toolbar }.Facet("type").Facet("status").Facet("group")
         };
         view.Columns.Add(new CanopyColumn("name", "Job") { Sortable = true, RowHeader = true, Wrap = true, Presenter = CanopyGridPresenter.Identifier(stack: true), Sizing = CanopyColumnSizing.Flex(1, 200, 420, preferredWidth: 260) });
         view.Columns.Add(new CanopyColumn("group", "Group") { Sortable = true, Hidden = true });
@@ -70,7 +70,7 @@ internal static class SchedulerConsoleExample {
         view.Columns.Add(new CanopyColumn("type", "Type") { Sortable = true, Presenter = CanopyGridPresenter.Enum(), Sizing = CanopyColumnSizing.Preferred(132), ResponsivePriority = 4 });
         view.Columns.Add(new CanopyColumn("status", "Status") {
             Sortable = true, Sizing = CanopyColumnSizing.Preferred(136), ResponsivePriority = 1,
-            Presenter = CanopyGridPresenter.State(JobTones.ToDictionary(pair => pair.Key, pair => pair.Value)).WithPill().WithIcons(new Dictionary<string, string> { ["Read-only"] = "🔒" })
+            Presenter = CanopyGridPresenter.State(JobTones.ToDictionary(pair => pair.Key, pair => pair.Value)).WithPill().WithMarks(new Dictionary<string, string> { ["Read-only"] = "🔒" })
         });
         view.Columns.Add(new CanopyColumn("runs", "Recent runs") { Sizing = CanopyColumnSizing.Preferred(168), Presenter = CanopyGridPresenter.SparklineBars().WithSlots(), ResponsivePriority = 3 });
         view.Columns.Add(new CanopyColumn("next", "Next run") { Kind = CanopyColumnKind.DateTime, Sortable = true, Wrap = true, ResponsivePriority = 2, Presenter = CanopyGridPresenter.RelativeTime(), Sizing = CanopyColumnSizing.Flex(1, 170, 320, preferredWidth: 230) });
@@ -81,12 +81,12 @@ internal static class SchedulerConsoleExample {
         view.RowActions.LockedWhen = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Read-only");
         view.RowActions.LockedLabel = "Managed by the platform: read-only";
         view.RowActions
-            .Add(new CanopyRowAction("run", "Run now", CanopyRowActionIcon.Play) { Tone = CanopyRowActionTone.Primary, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Scheduled", "Error") })
-            .Add(new CanopyRowAction("pause", "Pause", CanopyRowActionIcon.Pause) { When = CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Scheduled", "Running", "Error") })
-            .Add(new CanopyRowAction("resume", "Resume", CanopyRowActionIcon.Play) { Tone = CanopyRowActionTone.Primary, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Paused") })
-            .Add(new CanopyRowAction("edit", "Edit", CanopyRowActionIcon.Edit))
-            .Add(new CanopyRowAction("rerun", "Run with different data", CanopyRowActionIcon.Retry) { DisabledWhen = running, DisabledReason = "Wait for the current run to finish." })
-            .Add(new CanopyRowAction("delete", "Delete", CanopyRowActionIcon.Delete) { Tone = CanopyRowActionTone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it." });
+            .Action(new CanopyRowAction("run", "Run now", CanopyActionIcons.Play) { Tone = CanopyRowAction.PrimaryTone, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Scheduled", "Error") })
+            .Action(new CanopyRowAction("pause", "Pause", CanopyActionIcons.Pause) { When = CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Scheduled", "Running", "Error") })
+            .Action(new CanopyRowAction("resume", "Resume", CanopyActionIcons.Play) { Tone = CanopyRowAction.PrimaryTone, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Paused") })
+            .Action(new CanopyRowAction("edit", "Edit", CanopyActionIcons.Edit))
+            .Action(new CanopyRowAction("rerun", "Run with different data", CanopyActionIcons.Retry) { DisabledWhen = running, DisabledReason = "Wait for the current run to finish." })
+            .Action(new CanopyRowAction("delete", "Delete", CanopyActionIcons.Delete) { Tone = Tone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it." });
 
         var record = view.Record = new CanopyRecordPanel { DeepLink = true, HeaderStatus = "status", Actions = CanopyRecordActions.Copy | CanopyRecordActions.Link };
         record.HeaderFacts.Add("type"); record.HeaderFacts.Add("group"); record.HeaderFacts.Add("next");
@@ -189,7 +189,7 @@ internal static class SchedulerConsoleExample {
             Noun = "runs", Density = CanopyGridDensity.Comfortable, PageSize = 200,
             Live = new CanopyGridLive { Flash = true, BatchMilliseconds = 200 },
             Query = new CanopyGridQuery("sc-history"),
-            FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Toolbar }.Add("outcome").Add("trigger").Add("group"),
+            FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Toolbar }.Facet("outcome").Facet("trigger").Facet("group"),
             Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { View = LogView(), Label = "Run log", Print = false } }
         };
         view.Query.Sort.Add(new CanopyGridSort("started", descending: true));
@@ -218,7 +218,7 @@ internal static class SchedulerConsoleExample {
 
         view.RowActions.Inline = 1;
         view.RowActions.Reveal = CanopyRowActionReveal.Hover;
-        view.RowActions.Add(new CanopyRowAction("again", "Run again", CanopyRowActionIcon.Retry) {
+        view.RowActions.Action(new CanopyRowAction("again", "Run again", CanopyActionIcons.Retry) {
             DisabledWhen = CanopyFormatCondition.Where("outcome", CanopyFormatOperator.Equal, "Running"), DisabledReason = "This run has not finished yet."
         });
 
@@ -267,7 +267,7 @@ internal static class SchedulerConsoleExample {
                 .Help("Times are in UTC. Every N minutes uses Minutes and ignores At.")));
         flow.Step("failure", "If a run fails", step => step
             .Number("retries", "Retries", f => f.Range(0, 10).Default(3).Half())
-            .Duration("backoff", "First backoff", f => f.Units(CanopyFlowDurationUnit.Seconds, CanopyFlowDurationUnit.Minutes).Default(TimeSpan.FromSeconds(30))
+            .Duration("backoff", "First backoff", f => f.Unit(CanopyFlowDurationUnit.Seconds).Unit(CanopyFlowDurationUnit.Minutes).Default(TimeSpan.FromSeconds(30))
                 .Range(TimeSpan.FromSeconds(5), TimeSpan.FromHours(1)).Half().Help("Each retry waits twice as long as the one before."))
             .Toggle("notify", "Notify the owner when retries run out", f => f.Default(true)));
         flow.Review();

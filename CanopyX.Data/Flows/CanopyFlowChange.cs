@@ -12,7 +12,7 @@ public sealed class CanopyFlowChange {
     /// <summary>Gets the field's id.</summary>
     public string FieldId { get; }
 
-    /// <summary>Gets the field's setting path (<see cref="CanopyFlowField.ConfigPath"/>), or null.</summary>
+    /// <summary>Gets the field's setting path (<see cref="CanopyFlowField.Path"/>), or null.</summary>
     public string? Path { get; }
 
     /// <summary>Gets the edited value, in its canonical form (text, a double, a boolean, a list, or null when empty).</summary>

@@ -11,7 +11,7 @@ public sealed class GridCalendarTests {
         Assert.Null(JsonNode.Parse(view.ToJson())!["calendar"]);
         view.Calendar = new CanopyCalendar("starts");
         Assert.Equal("{\"start\":\"starts\"}", Calendar(view));
-        view.FacetPanel = new CanopyFacetPanel().Add("host");
+        view.FacetPanel = new CanopyFacetPanel().Facet("host");
         view.Reporting = new CanopyGridReporting();
         var keys = JsonNode.Parse(view.ToJson())!.AsObject().Select(item => item.Key).ToList();
         Assert.Equal(keys.IndexOf("facets") + 1, keys.IndexOf("calendar"));
@@ -58,7 +58,7 @@ public sealed class GridCalendarTests {
             EventStyle = CanopyCalendarEventStyle.Strong, TimeZone = "Europe/Warsaw",
             Editing = new CanopyCalendarEditing { Resize = false, Overlap = false, WorkingHoursOnly = true, AllowedResources = "allowed", SnapMinutes = 15, Commit = CanopyCalendarCommit.Manual },
             Resources = new CanopyCalendarResources(tree) { Width = 320, Label = "Hosts" }, Zoom = CanopyCalendarZoom.Week,
-            Capacity = new CanopyCalendarCapacity { Label = "Concurrent changes" }.Add(3, Tone.Warning).Add(5, Tone.Danger),
+            Capacity = new CanopyCalendarCapacity { Label = "Concurrent changes" }.Threshold(3, Tone.Warning).Threshold(5, Tone.Danger),
             Limit = 5000, PhoneView = CanopyCalendarView.Day
         };
         foreach (var item in new[] { CanopyCalendarView.Month, CanopyCalendarView.Week, CanopyCalendarView.Day, CanopyCalendarView.Days, CanopyCalendarView.Agenda, CanopyCalendarView.Year, CanopyCalendarView.Timeline }) calendar.Views.Add(item);
@@ -157,8 +157,8 @@ public sealed class GridCalendarTests {
         Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Hour); calendar.Zooms.Add(CanopyCalendarZoom.Hour); });
         Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Month); calendar.Zoom = CanopyCalendarZoom.Week; });
         Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity());
-        Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity().Add(3, Tone.Warning).Add(3, Tone.Danger));
-        Refused((_, calendar) => { calendar.Capacity = new CanopyCalendarCapacity(); for (var at = 1; at <= 9; at++) calendar.Capacity.Add(at, Tone.Warning); });
+        Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity().Threshold(3, Tone.Warning).Threshold(3, Tone.Danger));
+        Refused((_, calendar) => { calendar.Capacity = new CanopyCalendarCapacity(); for (var at = 1; at <= 9; at++) calendar.Capacity.Threshold(at, Tone.Warning); });
         Refused((_, calendar) => calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 1, 2), new DateTime(2026, 1, 1), "Backwards")));
         Refused((_, calendar) => calendar.Ranges.Add(null!));
         Refused((_, calendar) => { for (var index = 0; index <= 1000; index++) calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 1, 1), new DateTime(2026, 1, 2), "Range")); });

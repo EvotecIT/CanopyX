@@ -114,7 +114,7 @@ internal sealed class CanopyFormatEvaluator {
     private CanopyFormatPaint? Resolve(CanopyFormatRule rule, CanopyGridRow row) {
         var style = rule.Style;
         var paint = new CanopyFormatPaint { Tone = style.Tone, Emphasis = style.Emphasis == CanopyFormatEmphasis.Fill ? (CanopyFormatEmphasis?)null : style.Emphasis,
-            Icon = style.IconToken, Badge = style.Badge, Cue = style.Cue, ClassName = style.ClassName, Css = style.Css.Count > 0 ? style.Css : null };
+            Icon = style.IconToken, Badge = style.Badge, Cue = style.Cue };
         if (!style.DrawsValue) return paint;
         if (!(Number(row, rule.Column!) is double value)) return null;
         _stats.TryGetValue(rule.Column!, out var range);

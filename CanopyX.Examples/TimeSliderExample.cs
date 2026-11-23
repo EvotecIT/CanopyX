@@ -23,8 +23,8 @@ internal static class TimeSliderExample {
 
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            matrix.SaveHtmlPage(Path.Combine(output, "time-matrix" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service health over time", Theme = theme, Height = "auto" });
-            propagation.SaveHtmlPage(Path.Combine(output, "time-propagation" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service rollout over time", Theme = theme, Height = "auto" });
+            matrix.Save(Path.Combine(output, "time-matrix" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service health over time", Theme = theme, Height = "auto" });
+            propagation.Save(Path.Combine(output, "time-propagation" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service rollout over time", Theme = theme, Height = "auto" });
         }
 
         WriteStatic(output, "time-matrix-static.html", "Service health snapshot", CanopyStaticHtml.RenderMatrix(matrix));

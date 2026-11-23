@@ -19,8 +19,8 @@ host computes the facts (hashes, flags, states) and carries out every action.
 
 ```csharp
 var list = new CanopyChangeList("share-changes", "Changes on the deployment share");
-list.Action("copy-unc", "Copy the network path", CanopyChangeActionIcon.Copy, copy: "unc")
-    .Action("acknowledge", "Acknowledge", CanopyChangeActionIcon.Check);
+list.Action("copy-unc", "Copy the network path", CanopyActionIcons.Copy, copy: "unc")
+    .Action("acknowledge", "Acknowledge", CanopyActionIcons.Check);
 var item = list.Add("payload", CanopyChangeKind.Added, "Scripts/Logon/agent.exe");
 item.After = new CanopyChangeVersion { Size = 1_248_256, Hash = sha256, Time = seen };
 item.Flag("unsigned", "Unsigned", "The file has no embedded signature.", Tone.Danger);
@@ -78,7 +78,7 @@ lines before, between and after the hunks fold the same way when the diff has it
 ```
 
 Each hunk names its first line on each side and lists its lines as a unified diff writes them (`" "`, `"-"`, `"+"`). In C#,
-`AddLines` builds hunks from numbered lines (a host's own comparison), and `Compare()` computes them from `BeforeText` and
+`Lines(...)` builds hunks from numbered lines (a host's own comparison), and `Compare()` computes them from `BeforeText` and
 `AfterText`. A diff that carries only the texts is compared in the browser when each has at most 5,000 lines
 (`ClientCompareLines`); longer texts say they are too long to compare there. Both sides use the same comparison: the common
 start and end are set aside, the middle is compared with Myers' algorithm, removed lines come before added ones within a change,

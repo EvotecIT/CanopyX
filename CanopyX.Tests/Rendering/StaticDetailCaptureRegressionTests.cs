@@ -202,8 +202,8 @@ public sealed class StaticDetailCaptureRegressionTests {
     }
 
     private static CanopyDetail Detail(string kind) => kind switch {
-        "table" => new CanopyTableDetail("Detail caption").AddColumns("Key", "Value").AddRow("Setting", "Detail value"),
-        "properties" => new CanopyPropertiesDetail().Add("Setting", "Detail value"),
+        "table" => new CanopyTableDetail("Detail caption").Column("Key", "Value").Row("Setting", "Detail value"),
+        "properties" => new CanopyPropertiesDetail().Item("Setting", "Detail value"),
         _ => new CanopyHtmlDetail("<b>Detail value</b>")
     };
 

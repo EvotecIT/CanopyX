@@ -26,7 +26,7 @@ view.Columns.Add(new CanopyColumn("category", "Category"));
 view.Columns.Add(new CanopyColumn("priority", "Priority") { Presenter = CanopyGridPresenter.State(tones) });
 view.Columns.Add(new CanopyColumn("opened", "Opened") { Kind = CanopyColumnKind.DateTime });
 view.Columns.Add(new CanopyColumn("age", "Age (days)") { Kind = CanopyColumnKind.Number });
-view.FacetPanel = new CanopyFacetPanel().Add("category").Add("priority").Add("opened").Add("age");
+view.FacetPanel = new CanopyFacetPanel().Facet("category").Facet("priority").Facet("opened").Facet("age");
 ```
 
 The same panel in a view document:

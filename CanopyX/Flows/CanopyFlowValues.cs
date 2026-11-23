@@ -197,7 +197,7 @@ internal static class CanopyFlowValues {
                 error = "must be a finite number within the safe integer magnitude.";
                 return null;
             case CanopyFlowFieldKind.Rating: {
-                var stars = field.RatingScale ?? 5;
+                var stars = field.Scale ?? 5;
                 if (!(value is string) && !(value is bool) && TryScalar(value, out var rating) && rating is double whole && whole >= 1 && whole <= stars && Math.Floor(whole) == whole) return whole;
                 error = "must be a whole number of stars from 1 to " + stars.ToString(CultureInfo.InvariantCulture) + ".";
                 return null;

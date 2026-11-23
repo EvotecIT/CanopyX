@@ -24,7 +24,7 @@ public static partial class CanopyHtmlExtensions {
     /// <remarks>A host source needs a configured query callback before the fragment mounts; a definition contains no transport or credentials.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The definition is invalid or tree filter IDs are specified.</exception>
-    public static string ToHtmlPage(this CanopyDataGridView view, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyDataGridView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(view, options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves a complete grid page as UTF-8, creating its directory when needed.</summary>
@@ -33,9 +33,9 @@ public static partial class CanopyHtmlExtensions {
     /// <param name="options">Page and asset options.</param>
     /// <remarks>External assets are written separately with <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming, CanopyRuntime)"/> and the data-grid runtime.</remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
-    public static void SaveHtmlPage(this CanopyDataGridView view, string path, CanopyHtmlOptions? options = null) {
+    public static void Save(this CanopyDataGridView view, string path, CanopyHtmlOptions? options = null) {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is required.", nameof(path));
-        var html = view.ToHtmlPage(options);
+        var html = view.ToHtml(options);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         File.WriteAllText(path, html, new UTF8Encoding(false));
     }
@@ -63,7 +63,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="InvalidOperationException">The grid has a host source or an invalid definition, a row carries a detail
     /// payload or record fields (which compact rows have no place for), or the options ask for <see cref="CanopyRowFormat.Objects"/>,
     /// which a bundle cannot write.</exception>
-    public static CanopyGridBundleResult SaveHtmlBundle(this CanopyDataGridView view, string directory, CanopyHtmlOptions? options = null) {
+    public static CanopyGridBundleResult SaveBundle(this CanopyDataGridView view, string directory, CanopyHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (string.IsNullOrEmpty(directory)) throw new ArgumentException("Directory is required.", nameof(directory));
         if (view.Source.Kind != CanopyGridSourceKind.Inline) throw new InvalidOperationException("A grid bundle carries the rows of an inline grid; a hosted grid gets its rows from its host.");

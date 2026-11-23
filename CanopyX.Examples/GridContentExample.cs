@@ -38,9 +38,9 @@ internal static class GridContentExample {
     }
 
     internal static void Write(string output) {
-        View().SaveHtmlPage(Path.Combine(output, "grid-content.html"), new CanopyHtmlOptions { Title = "CanopyX rich cells, footer text and group footers" });
+        View().Save(Path.Combine(output, "grid-content.html"), new CanopyHtmlOptions { Title = "CanopyX rich cells, footer text and group footers" });
         var folder = Path.Combine(output, "csp");
         Directory.CreateDirectory(folder);
-        View().SaveHtmlPage(Path.Combine(folder, "grid-content.html"), new CanopyHtmlOptions { Title = "CanopyX rich cells under a strict policy", Nonce = CspExamples.NoncePlaceholder });
+        View().Save(Path.Combine(folder, "grid-content.html"), new CanopyHtmlOptions { Title = "CanopyX rich cells under a strict policy", Nonce = CspExamples.NoncePlaceholder });
     }
 }

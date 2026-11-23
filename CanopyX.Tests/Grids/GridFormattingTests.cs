@@ -49,10 +49,9 @@ public sealed class GridFormattingTests {
         var bands = new CanopyFormatRule("bands", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, Tone.Success, "Fine"), new CanopyFormatBand(null, Tone.Named("critical")) { Mark = "!" })) {
             Column = "cpu", Target = CanopyFormatTarget.Columns, Columns = { "name", "cpu" } };
         view.FormatRules.Add(bands);
-        var css = CanopyFormatRule.ForCell("css", "seen", new CanopyFormatStyle { Emphasis = CanopyFormatEmphasis.Strong, Tone = Tone.Muted, Icon = CanopyFormatIcons.Clock, Badge = "old", Cue = "stale", ClassName = "stale" },
+        var css = CanopyFormatRule.ForCell("css", "seen", new CanopyFormatStyle { Emphasis = CanopyFormatEmphasis.Strong, Tone = Tone.Muted, Icon = CanopyFormatIcons.Clock, Badge = "old", Cue = "stale" },
             new CanopyFormatCondition(CanopyFormatJunction.All, CanopyFormatPredicate.CompareColumns("cpu", CanopyFormatOperator.GreaterThan, "cpu")) {
                 Predicates = { new CanopyFormatPredicate("seen", CanopyFormatOperator.OlderThanDays, 7) } });
-        css.Style.Css["font-style"] = "italic";
         view.FormatRules.Add(css);
         var json = view.ToJson();
         ProtocolSchema.AssertValid(json, "formatted grid");
@@ -76,7 +75,7 @@ public sealed class GridFormattingTests {
         Assert.False(rules[3].GetProperty("style").GetProperty("bands")[1].TryGetProperty("upperBound", out _));
         Assert.Equal("critical", rules[3].GetProperty("style").GetProperty("bands")[1].GetProperty("tone").GetString());
         Assert.Equal("cpu", rules[4].GetProperty("when").GetProperty("filters")[0].GetProperty("valueColumn").GetString());
-        Assert.Equal("italic", rules[4].GetProperty("style").GetProperty("css").GetProperty("font-style").GetString());
+        Assert.False(rules[4].GetProperty("style").TryGetProperty("css", out _));
         Assert.Equal("strong", rules[4].GetProperty("style").GetProperty("emphasis").GetString());
         Assert.True(document.RootElement.GetProperty("formatting").GetProperty("editor").GetBoolean());
     }
@@ -104,10 +103,7 @@ public sealed class GridFormattingTests {
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(9, Tone.Info), new CanopyFormatBand(5, Tone.Danger)))));
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Scale = new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(Tone.Info)) })));
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Bar = new CanopyFormatDataBar { Minimum = 5, Maximum = 5 } })));
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["background"] = "url(x)"; view.FormatRules.Add(rule); });
         Rejects(view => view.FormatRules.Add(new CanopyFormatRule("a", CanopyFormatStyle.Highlight(Tone.Info)) { Target = CanopyFormatTarget.Columns }));
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["color"] = "red\" onmouseover=\"x"; view.FormatRules.Add(rule); });
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["background"] = "image-set(x 1x)"; view.FormatRules.Add(rule); });
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("name", CanopyFormatOperator.Matches, "(?i)web"))));
         Assert.Throws<ArgumentException>(() => CanopyFormatPredicate.CompareColumns("name", CanopyFormatOperator.Like, "status"));
         Assert.Throws<ArgumentException>(() => new CanopyFormatRule("-bad", CanopyFormatStyle.Highlight(Tone.Info)));

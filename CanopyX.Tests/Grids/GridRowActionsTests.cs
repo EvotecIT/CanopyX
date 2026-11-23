@@ -28,9 +28,9 @@ public sealed class GridRowActionsTests {
         view.RowActions.Pinned = false;
         view.RowActions.LockedWhen = CanopyFormatCondition.Where("owner", CanopyFormatOperator.Equal, "System");
         view.RowActions.LockedLabel = "System job";
-        view.RowActions.Add(new CanopyRowAction("run", "Run now", CanopyRowActionIcon.Play) { Tone = CanopyRowActionTone.Primary, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.NotEqual, "Running") })
-            .Add(new CanopyRowAction("delete", "Delete", CanopyRowActionIcon.Delete) { Tone = CanopyRowActionTone.Danger, DisabledWhen = running, DisabledReason = "Pause it first.", Refresh = true })
-            .Add(new CanopyRowAction("note", "Add a note"));
+        view.RowActions.Action(new CanopyRowAction("run", "Run now", CanopyActionIcons.Play) { Tone = CanopyRowAction.PrimaryTone, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.NotEqual, "Running") })
+            .Action(new CanopyRowAction("delete", "Delete", CanopyActionIcons.Delete) { Tone = Tone.Danger, DisabledWhen = running, DisabledReason = "Pause it first.", Refresh = true })
+            .Action(new CanopyRowAction("note", "Add a note"));
         var json = view.ToJson();
         ProtocolSchema.AssertValid(json, "row actions");
         using var document = JsonDocument.Parse(json);
@@ -58,26 +58,26 @@ public sealed class GridRowActionsTests {
         var view = View();
         Assert.False(JsonDocument.Parse(view.ToJson()).RootElement.TryGetProperty("rowActions", out _));
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "row-actions");
-        Assert.DoesNotContain("application/x-canopyx-row-actions", view.ToHtmlPage(), StringComparison.Ordinal);
+        Assert.DoesNotContain("application/x-canopyx-row-actions", view.ToHtml(), StringComparison.Ordinal);
     }
 
     [Fact]
     public void ValidationRefusesDuplicatesUndeclaredColumnsAndTheReservedColumnId() {
         var duplicate = View();
-        duplicate.RowActions.Add(new CanopyRowAction("run", "Run")).Add(new CanopyRowAction("run", "Run again"));
+        duplicate.RowActions.Action(new CanopyRowAction("run", "Run")).Action(new CanopyRowAction("run", "Run again"));
         Assert.Throws<InvalidOperationException>(duplicate.Validate);
 
         var undeclared = View();
-        undeclared.RowActions.Add(new CanopyRowAction("run", "Run") { When = CanopyFormatCondition.Where("missing", CanopyFormatOperator.Equal, "x") });
+        undeclared.RowActions.Action(new CanopyRowAction("run", "Run") { When = CanopyFormatCondition.Where("missing", CanopyFormatOperator.Equal, "x") });
         Assert.ThrowsAny<Exception>(undeclared.Validate);
 
         var reserved = View();
         reserved.Columns.Add(new CanopyColumn(CanopyRowActions.ColumnId, "Mine"));
-        reserved.RowActions.Add(new CanopyRowAction("run", "Run"));
+        reserved.RowActions.Action(new CanopyRowAction("run", "Run"));
         Assert.Throws<InvalidOperationException>(reserved.Validate);
 
         var many = View();
-        for (var index = 0; index < 17; index++) many.RowActions.Add(new CanopyRowAction("a" + index, "Action " + index));
+        for (var index = 0; index < 17; index++) many.RowActions.Action(new CanopyRowAction("a" + index, "Action " + index));
         Assert.Throws<InvalidOperationException>(many.Validate);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => View().RowActions.Inline = 5);
@@ -88,7 +88,7 @@ public sealed class GridRowActionsTests {
     [Fact]
     public void StaticOutputLeavesTheActionsOut() {
         var view = View();
-        view.RowActions.Add(new CanopyRowAction("run", "Run this job now", CanopyRowActionIcon.Play));
+        view.RowActions.Action(new CanopyRowAction("run", "Run this job now", CanopyActionIcons.Play));
         var html = CanopyStaticHtml.RenderGrid(view);
         Assert.Contains("Nightly backup", html, StringComparison.Ordinal);
         Assert.DoesNotContain("Run this job now", html, StringComparison.Ordinal);
@@ -105,9 +105,9 @@ public sealed class GridRowActionsTests {
         var size = Gzip(part.Script) + Gzip(part.Style!);
         Assert.True(size <= 9216, "row-actions uses " + size + " bytes gzip and exceeds its optional-part budget.");
         var view = View();
-        view.RowActions.Add(new CanopyRowAction("run", "Run"));
+        view.RowActions.Action(new CanopyRowAction("run", "Run"));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), item => item.Name == "row-actions");
-        Assert.Contains("application/x-canopyx-row-actions", view.ToHtmlPage(), StringComparison.Ordinal);
+        Assert.Contains("application/x-canopyx-row-actions", view.ToHtml(), StringComparison.Ordinal);
     }
 
     private static long Gzip(string value) {

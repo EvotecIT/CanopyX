@@ -44,15 +44,6 @@ public sealed class CanopyRowActions {
         set => _lockedLabel = value == null ? null : Text(value, 500, nameof(value));
     }
 
-    /// <summary>Adds an action.</summary>
-    /// <param name="action">The action.</param>
-    /// <returns>This column, for chaining.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is null.</exception>
-    public CanopyRowActions Add(CanopyRowAction action) {
-        Actions.Add(action ?? throw new ArgumentNullException(nameof(action)));
-        return this;
-    }
-
     /// <summary>The id of the column the browser adds for the actions; no declared column can use it.</summary>
     public const string ColumnId = "cx-row-actions";
 

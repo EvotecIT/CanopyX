@@ -53,7 +53,7 @@ public sealed class CollectionDepthTests {
 
     [Fact]
     public void NestedTreeProperties_KeepTheSurroundingValidationWriterIntact() {
-        var properties = new CanopyPropertiesDetail().Add("Leaf", "content");
+        var properties = new CanopyPropertiesDetail().Item("Leaf", "content");
         var tree = new CanopyTreeDetail { Roots = { new CanopyNode("nested", "Nested") { Detail = properties } } };
         var page = new CanopyPage("parent");
         page.Items.Add(new CanopyNode("outer", "Outer") { Detail = tree });
@@ -106,8 +106,8 @@ public sealed class CollectionDepthTests {
 
     private static CanopyDetail Detail(CanopyCell value, string kind) {
         switch (kind) {
-            case "properties": return new CanopyPropertiesDetail().Add("Next", value);
-            case "table": return new CanopyTableDetail().AddColumns("Next").AddRow(value);
+            case "properties": return new CanopyPropertiesDetail().Item("Next", value);
+            case "table": return new CanopyTableDetail().Column("Next").Row(value);
             case "grid": return new CanopyGridRowsDetail { Rows = { new CanopyGridRow("nested") { Cells = { ["value"] = value } } } };
             case "tree": return new CanopyTreeDetail { Roots = { new CanopyNode("nested", "Nested") { Cells = { ["value"] = value } } } };
             default: throw new ArgumentException("Unknown detail kind.", nameof(kind));

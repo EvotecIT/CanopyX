@@ -13,7 +13,7 @@ public sealed class ChangeViewTests {
 
     internal static CanopyChangeList List() {
         var list = new CanopyChangeList("files", "File changes");
-        list.Action("copy", "Copy path", CanopyChangeActionIcon.Copy, copy: "unc").Action("ack", "Acknowledge", CanopyChangeActionIcon.Check);
+        list.Action("copy", "Copy path", CanopyActionIcons.Copy, copy: "unc").Action("ack", "Acknowledge", CanopyActionIcons.Check);
         var exe = list.Add("exe", CanopyChangeKind.Added, "Machine/Scripts/run.exe");
         exe.After = new CanopyChangeVersion { Size = 2048, Hash = "0123456789abcdef0123", Time = At };
         exe.Flag("unsigned", "Unsigned", "No embedded signature.", Tone.Danger).Fact("Signer", null, "Not signed", Tone.Danger);
@@ -80,11 +80,11 @@ public sealed class ChangeViewTests {
 
     internal static CanopyChangeList ListWithTools() {
         var list = List();
-        list.Actions.Add(new CanopyChangeAction("diff", "Open the diff") { Icon = CanopyChangeActionIcon.Diff, Reveal = CanopyChangeReveal.Diff });
-        list.Actions.Add(new CanopyChangeAction("why", "Mark as expected") { Icon = CanopyChangeActionIcon.Check, Reason = true });
+        list.Actions.Add(new CanopyChangeAction("diff", "Open the diff") { Icon = CanopyActionIcons.Diff, Reveal = CanopyChangeReveal.Diff });
+        list.Actions.Add(new CanopyChangeAction("why", "Mark as expected") { Icon = CanopyActionIcons.Check, Reason = true });
         list.Values["object"] = "#gpo/contoso/1";
-        list.Tool(new CanopyChangeAction("open", "Open the object") { Icon = CanopyChangeActionIcon.Open, Link = "object" })
-            .Tool(new CanopyChangeAction("ack-all", "Acknowledge all") { Icon = CanopyChangeActionIcon.Check, Reason = true });
+        list.Tool(new CanopyChangeAction("open", "Open the object") { Icon = CanopyActionIcons.Open, Link = "object" })
+            .Tool(new CanopyChangeAction("ack-all", "Acknowledge all") { Icon = CanopyActionIcons.Check, Reason = true });
         list.Exports = CanopyChangeExports.Csv | CanopyChangeExports.Json;
         return list;
     }
@@ -199,7 +199,7 @@ public sealed class ChangeViewTests {
 
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(List()));
         Assert.Equal(new[] { "changes" }, CanopyHtmlAssets.GetRequiredParts(Propagation()).Select(part => part.Name));
-        var page = List().ToHtmlPage(new CanopyHtmlOptions { Nonce = "n0nce", Height = "400px" });
+        var page = List().ToHtml(new CanopyHtmlOptions { Nonce = "n0nce", Height = "400px" });
         Assert.Contains("<title>File changes</title>", page);
         Assert.Contains("data-cx-height=\"400px\"", page);
         Assert.Contains("nonce=\"n0nce\"", page);

@@ -33,7 +33,7 @@ internal static class AnalystExample {
         }
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            File.WriteAllText(Path.Combine(output, "analysis-buckets" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = view.Label }));
+            File.WriteAllText(Path.Combine(output, "analysis-buckets" + suffix + ".html"), view.ToHtml(new CanopyHtmlOptions { Theme = theme, Title = view.Label }));
         }
         // A host can use the same accepted summary for a script-free document or email.
         var summary = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "sample" }, view.Rows.Count);
@@ -48,7 +48,7 @@ internal static class AnalystExample {
         view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.PercentGrandTotal);
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            File.WriteAllText(Path.Combine(output, "analysis-values" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Shares by month" }));
+            File.WriteAllText(Path.Combine(output, "analysis-values" + suffix + ".html"), view.ToHtml(new CanopyHtmlOptions { Theme = theme, Title = "Shares by month" }));
         }
         WriteStatic(output, "analysis-values-summary", settings => CanopyStaticHtml.RenderGridSummary(view, summary, settings));
         view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.Value);
@@ -62,7 +62,7 @@ internal static class AnalystExample {
         view.FacetPanel!.Open = false;
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            File.WriteAllText(Path.Combine(output, "analysis-pivot" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Regions by month" }));
+            File.WriteAllText(Path.Combine(output, "analysis-pivot" + suffix + ".html"), view.ToHtml(new CanopyHtmlOptions { Theme = theme, Title = "Regions by month" }));
         }
         var result = CanopyPivot.Compute(view, pivot, view.Rows);
         WriteStatic(output, "analysis-pivot-static", settings => CanopyStaticHtml.RenderGridPivot(view, result, settings));
@@ -83,7 +83,7 @@ internal static class AnalystExample {
             row.Cells["amount"] = item.Amount;
             view.Rows.Add(row);
         }
-        File.WriteAllText(Path.Combine(output, "analysis-charts.html"), view.ToHtmlPage(new CanopyHtmlOptions { Title = view.Label }));
+        File.WriteAllText(Path.Combine(output, "analysis-charts.html"), view.ToHtml(new CanopyHtmlOptions { Title = view.Label }));
     }
 
     internal static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {

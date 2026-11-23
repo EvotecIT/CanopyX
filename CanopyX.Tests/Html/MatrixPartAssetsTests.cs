@@ -49,7 +49,7 @@ public sealed class MatrixPartAssetsTests {
         matrix.State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Item("a", "A"); matrix.Columns.Item("x", "X");
         matrix.Set("a", "x", "ok");
-        var page = matrix.ToHtmlPage();
+        var page = matrix.ToHtml();
         var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "matrix" }, embedded);
         Assert.Contains("type=\"application/x-canopyx-matrix-style\"", page);

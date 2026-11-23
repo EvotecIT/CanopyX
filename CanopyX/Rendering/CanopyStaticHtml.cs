@@ -325,7 +325,7 @@ public static partial class CanopyStaticHtml {
     }
 
     private static string Align(CanopyColumn column) =>
-        (column.Alignment != null ? "text-align:" + column.Alignment + ";" : column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty)
+        (column.Alignment != null ? "text-align:" + CanopyColumn.AlignmentName(column.Alignment) + ";" : column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty)
         + (column.Kind == CanopyColumnKind.Number ? "font-variant-numeric:tabular-nums;" : string.Empty);
 
     private static bool IsSafeReportUrl(string? url) {

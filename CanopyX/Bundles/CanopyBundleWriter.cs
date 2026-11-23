@@ -20,7 +20,7 @@ namespace CanopyX.Bundles;
 /// from a file that holds a single node or search entry larger than the budget. Files are written into the data folder
 /// and existing files are not removed, so write each bundle into an empty folder. Pack files are written by a
 /// background thread while the tree is walked; a write returns once every file is written, and the manifest is the
-/// last. <c>CanopyX.Html</c> adds <c>SaveHtmlBundle</c>, which also writes the page and the runtime assets.
+/// last. <c>CanopyX.Html</c> adds <c>SaveBundle</c>, which also writes the page and the runtime assets.
 /// </remarks>
 public sealed class CanopyBundleWriter {
     /// <summary>Creates a writer.</summary>

@@ -38,10 +38,10 @@ public sealed class FlowHostContractTests {
                 .Column("level", "Level", CanopyFlowRecordColumnKind.Select, column => column.Option("high", "High").Option("low", "Low"))
                 .Column("limit", "Limit", CanopyFlowRecordColumnKind.Number, column => { column.Validation.Minimum = 1; column.Width = 120; })
                 .Count(null, 5).Path("relay.rules"))
-            .Section("engine", "Engine options", section => section.FromHost("region").Describe("What the engine needs."))
-            .Check("connect", "Test the connection", check => check.Fields("host", "password").RequirePass().Describe("Opens a connection.")));
+            .Section("engine", "Engine options", section => section.FromHost().DependsOn("region").Description("What the engine needs."))
+            .Check("connect", "Test the connection", check => check.Field("host").Field("password").RequirePass().Description("Opens a connection.")));
         flow.Pick("servers", "Which servers?", servers, picker => {
-            picker.Label("name");
+            picker.LabelColumn("name");
             picker.Height = 360;
             picker.Field.Count(1, 3).Required().Parameter("servers");
         });
@@ -49,7 +49,7 @@ public sealed class FlowHostContractTests {
             .Confirm("Type {text} to confirm", "RELAY")
             .Acknowledge("I understand that mail moves to this relay.", CanopyFlowCondition.Equal("host", "relay.example.com")));
         flow.Preset("office", "Office relay", preset => preset.Value("host", "office.example.com"));
-        flow.UseEndpoint("/api/flows/relay", CanopyFlowRoutes.Options | CanopyFlowRoutes.Fields | CanopyFlowRoutes.Check | CanopyFlowRoutes.Submit);
+        flow.Endpoint(new CanopyFlowEndpoint("/api/flows/relay", CanopyFlowRoutes.Options | CanopyFlowRoutes.Fields | CanopyFlowRoutes.Check | CanopyFlowRoutes.Submit));
         return flow;
     }
 
@@ -108,7 +108,7 @@ public sealed class FlowHostContractTests {
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(FlowSamples.MailServer()), part => part.Name.StartsWith("flow-", StringComparison.Ordinal));
         // A review page that shows the host's preview loads the preview part.
         var previewing = FlowSamples.MailServer();
-        previewing.Steps[^1].Preview();
+        previewing.Steps[^1].ShowsPreview();
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(previewing), part => part.Name == "flow-preview");
     }
 
@@ -117,7 +117,7 @@ public sealed class FlowHostContractTests {
         yield return Case(flow => Field(flow, "region").DependsOnIds.Add("password"), "depends on the secret field");
         yield return Case(flow => Field(flow, "host").DependsOnIds.Add("region"), "depends on itself");
         yield return Case(flow => flow.Steps[0].Checks[0].FieldIds.Add("missing"), "which the flow does not have");
-        yield return Case(flow => { for (var index = 0; index < 8; index++) flow.Steps[0].Checks.Add(new CanopyFlowCheck("extra" + index, "Extra").Fields("host")); }, "more than 8 checks");
+        yield return Case(flow => { for (var index = 0; index < 8; index++) flow.Steps[0].Checks.Add(new CanopyFlowCheck("extra" + index, "Extra").Field("host")); }, "more than 8 checks");
         yield return Case(flow => flow.Endpoint = new CanopyFlowEndpoint("//elsewhere.example.com", CanopyFlowRoutes.Submit), "own origin");
         yield return Case(flow => flow.Endpoint = new CanopyFlowEndpoint("/api", CanopyFlowRoutes.None), "at least one known route");
         yield return Case(flow => flow.Presets[0].Values["missing"] = "x", "missing");

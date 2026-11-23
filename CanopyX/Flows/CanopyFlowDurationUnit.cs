@@ -1,6 +1,6 @@
 namespace CanopyX;
 
-/// <summary>A unit a duration field offers (<see cref="CanopyFlowField.DurationUnits"/>).</summary>
+/// <summary>A unit a duration field offers (<see cref="CanopyFlowField.Units"/>).</summary>
 public enum CanopyFlowDurationUnit {
     /// <summary>Seconds.</summary>
     Seconds,

@@ -10,7 +10,6 @@ public static partial class CanopyStaticHtml {
     private static string FormatRowStyle(CanopyFormatOutcome? outcome, CanopyStaticStyles styles) {
         if (!(outcome?.Row is CanopyFormatPaint row)) return string.Empty;
         var style = new StringBuilder(row.Tone.WireName() != null ? styles.FormatRow(row.Tone) : string.Empty);
-        if (row.Css != null) foreach (var entry in row.Css) style.Append(entry.Key).Append(':').Append(entry.Value).Append(';');
         return style.ToString();
     }
 
@@ -22,7 +21,6 @@ public static partial class CanopyStaticHtml {
         if (paint.ScaleFrom is Tone from && paint.ScaleTo is Tone to) style.Append(styles.FormatScale(from, to, paint.ScaleWeight));
         if (paint.Tone.WireName() != null)
             style.Append(styles.FormatTone(paint.Tone, paint.Bar.HasValue || paint.ScaleFrom != null ? CanopyFormatEmphasis.Text : paint.Emphasis ?? CanopyFormatEmphasis.Fill));
-        if (paint.Css != null) foreach (var entry in paint.Css) style.Append(entry.Key).Append(':').Append(entry.Value).Append(';');
         return style.ToString();
     }
 
@@ -64,8 +62,6 @@ public static partial class CanopyStaticHtml {
     }
 
     /// <summary>The classes a cell's formatting adds (escape hatch); a row rule's classes go on the row.</summary>
-    private static string? FormatClasses(CanopyFormatPaint? paint) => paint?.ClassName;
-
     /// <summary>A legend row under the table: each enabled rule with a label, in its tone and with its icon; bands list each band.</summary>
     private static void AppendFormatLegend(StringBuilder html, CanopyDataGridView view, int columnCount, CanopyStaticStyles styles, CultureInfo culture) {
         if (view.Formatting?.Legend != true) return;

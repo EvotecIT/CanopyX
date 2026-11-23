@@ -21,7 +21,7 @@ var view = comparison.ToView("inventory", "Inventory changes", new[] {
     new CanopyColumn("name", "Item") { RowHeader = true, AlwaysVisible = true },
     new CanopyColumn("units", "Units") { Kind = CanopyColumnKind.Number }
 });
-view.SaveHtmlPage("inventory-changes.html");
+view.Save("inventory-changes.html");
 var emailTable = CanopyStaticHtml.RenderComparison(view);
 ```
 

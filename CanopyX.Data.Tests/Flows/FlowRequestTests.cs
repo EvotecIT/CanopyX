@@ -62,9 +62,9 @@ public sealed class FlowRequestTests {
         Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Options(region, new[] { new CanopyFlowOption("eu"), new CanopyFlowOption("eu") }));
         var section = engine.Steps[0].Sections[0];
         Assert.Equal("{\"fields\":[{\"id\":\"database\",\"type\":\"text\",\"label\":\"Database\"}]}", CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database") }));
-        Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database") { ConfigPath = "db.name" } }));
+        Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database") { Path = "db.name" } }));
         Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("password", CanopyFlowFieldKind.Secret, "Password") }));
-        Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database") { ParameterName = "Database" } }));
+        Assert.Throws<InvalidOperationException>(() => CanopyFlowResponses.Fields(engine, section, new[] { new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database") { Parameter = "Database" } }));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class FlowRequestTests {
     [Fact]
     public void Answers_WriteWhatTheBrowserReads() {
         Assert.Equal("{\"status\":\"saved\",\"message\":\"Done.\",\"result\":[{\"label\":\"Key\",\"value\":\"abc\",\"once\":true}],\"links\":[{\"label\":\"Open\",\"href\":\"/mail\"}]}",
-            CanopyFlowAnswer.Saved("Done.").AddResult("Key", "abc", once: true).AddLink("Open", "/mail").ToJson());
+            CanopyFlowAnswer.Saved("Done.").Result("Key", "abc", once: true).Link("Open", "/mail").ToJson());
         Assert.Equal("{\"status\":\"conflict\"}", CanopyFlowAnswer.Conflict().ToJson());
         Assert.Equal("{\"status\":\"error\",\"message\":\"No.\",\"fieldErrors\":{\"host\":\"Unknown host.\"},\"stepErrors\":{\"server\":\"Fix it.\"}}",
             CanopyFlowAnswer.Error("No.").FieldError("host", "Unknown host.").StepError("server", "Fix it.").ToJson());
@@ -95,7 +95,7 @@ public sealed class FlowRequestTests {
         Assert.Equal("{\"errors\":[\"No route.\"],\"warnings\":[\"Odd port.\"],\"fieldErrors\":{\"port\":\"Closed.\"}}",
             new CanopyFlowValidationResult().Error("No route.").Warning("Odd port.").FieldError("port", "Closed.").ToJson());
         Assert.Equal("{\"title\":\"Changes\",\"rows\":[{\"label\":\"Host\",\"value\":\"mail\",\"tone\":\"warning\"}],\"notes\":[\"Restarts the service.\"]}",
-            new CanopyFlowPreview("Changes").Row("Host", "mail", CanopyFlowTone.Warning).Note("Restarts the service.").ToJson());
+            new CanopyFlowPreview("Changes").Row("Host", "mail", Tone.Warning).Note("Restarts the service.").ToJson());
         Assert.Equal("{\"licence\":{\"state\":\"blocked\",\"summary\":\"Needs a key.\",\"blockers\":[\"Buy a licence.\"]}}",
             CanopyFlowStepStatus.ToJson(new Dictionary<string, CanopyFlowStepStatus> { ["licence"] = new CanopyFlowStepStatus(CanopyFlowTaskState.Blocked, "Needs a key.").Blocker("Buy a licence.") }));
         Assert.Throws<ArgumentException>(() => CanopyFlowAnswer.Error(" "));

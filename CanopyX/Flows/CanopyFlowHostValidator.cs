@@ -37,9 +37,9 @@ internal static class CanopyFlowHostValidator {
         var what = "Step " + step.Id;
         if ((step.Kind == CanopyFlowStepKind.Pick) != (step.Picker != null)) throw new InvalidOperationException(what + ": a pick step has a picker, and only a pick step has one.");
         step.Picker?.Validate(step.Id);
-        CanopyFlowValues.CheckShort(step.GroupLabel, what + " (group)");
+        CanopyFlowValues.CheckShort(step.Group, what + " (group)");
         var review = step.Kind == CanopyFlowStepKind.Review;
-        if (review && step.GroupLabel != null) throw new InvalidOperationException(what + ": the review step belongs to no group.");
+        if (review && step.Group != null) throw new InvalidOperationException(what + ": the review step belongs to no group.");
         if (!review && (step.Confirmation != null || step.Acknowledgement != null || step.ShowsPreview)) throw new InvalidOperationException(what + ": a confirmation, an acknowledgement and the preview apply to the review step.");
         if (step.Confirmation != null) {
             step.Confirmation.Validate();

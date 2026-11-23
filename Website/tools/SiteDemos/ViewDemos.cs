@@ -15,21 +15,21 @@ internal static class ViewDemos {
     internal static Dictionary<string, string> Write(string demos) {
         CanopyHtmlOptions Options(string title) => new CanopyHtmlOptions { Title = "CanopyX " + title, Theme = ThemeMode.Auto, Height = "100vh" };
         var calendar = CalendarExample.Create().View;
-        calendar.SaveHtmlPage(Path.Combine(demos, "calendar.html"), Options("operations calendar"));
+        calendar.Save(Path.Combine(demos, "calendar.html"), Options("operations calendar"));
         var timeline = CalendarTimelineExample.Create();
-        timeline.SaveHtmlPage(Path.Combine(demos, "timeline.html"), Options("resource timeline"));
+        timeline.Save(Path.Combine(demos, "timeline.html"), Options("resource timeline"));
         var matrix = MatrixExamples.Services();
-        matrix.SaveHtmlPage(Path.Combine(demos, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX services by server", Theme = ThemeMode.Auto });
+        matrix.Save(Path.Combine(demos, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX services by server", Theme = ThemeMode.Auto });
         var board = BoardExample.Create();
-        board.SaveHtmlPage(Path.Combine(demos, "board.html"), Options("migration board"));
+        board.Save(Path.Combine(demos, "board.html"), Options("migration board"));
         var plan = PlanExample.Create();
-        plan.SaveHtmlPage(Path.Combine(demos, "plan.html"), Options("migration plan"));
+        plan.Save(Path.Combine(demos, "plan.html"), Options("migration plan"));
         var path = PathExample.Create();
-        path.SaveHtmlPage(Path.Combine(demos, "path.html"), Options("approval routes"));
+        path.Save(Path.Combine(demos, "path.html"), Options("approval routes"));
         // The dataset comparison on its own, like the other views; its example page with the view proposal is in the gallery.
-        DataViewsExample.Comparison().SaveHtmlPage(Path.Combine(demos, "compare.html"), Options("inventory changes"));
+        DataViewsExample.Comparison().Save(Path.Combine(demos, "compare.html"), Options("inventory changes"));
         var stack = StackExample.Create();
-        stack.SaveHtmlPage(Path.Combine(demos, "stack.html"), Options("configuration layers"));
+        stack.Save(Path.Combine(demos, "stack.html"), Options("configuration layers"));
 
         // The flow example writes a light and a dark page; the site picks the one that matches its theme.
         FlowSetupTasksExample.Write(demos);

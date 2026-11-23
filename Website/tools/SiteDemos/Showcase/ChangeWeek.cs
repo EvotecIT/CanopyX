@@ -144,10 +144,10 @@ internal static class ChangeWeek {
         var folder = Path.Combine(demos, "oneview");
         Directory.CreateDirectory(folder);
         CanopyHtmlOptions Options(string title) => new() { Title = "CanopyX " + title, Theme = ThemeMode.Auto, Height = "100vh" };
-        Grid("one-grid", "Change records").View.SaveHtmlPage(Path.Combine(folder, "grid.html"), Options("change records"));
-        Board().SaveHtmlPage(Path.Combine(folder, "board.html"), Options("changes by status"));
-        Calendar("one-calendar", "Change calendar").View.SaveHtmlPage(Path.Combine(folder, "calendar.html"), Options("change calendar"));
-        Pivot().SaveHtmlPage(Path.Combine(folder, "pivot.html"), Options("hours by team and status"));
+        Grid("one-grid", "Change records").View.Save(Path.Combine(folder, "grid.html"), Options("change records"));
+        Board().Save(Path.Combine(folder, "board.html"), Options("changes by status"));
+        Calendar("one-calendar", "Change calendar").View.Save(Path.Combine(folder, "calendar.html"), Options("change calendar"));
+        Pivot().Save(Path.Combine(folder, "pivot.html"), Options("hours by team and status"));
 
         var report = Path.Combine(demos, "showcase");
         Directory.CreateDirectory(report);

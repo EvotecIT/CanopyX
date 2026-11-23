@@ -14,7 +14,7 @@ public sealed class GridFacetPanelTests {
     public void FacetPanel_WritesColumnsAsIdsOrObjectsAndOnlyChangedSettings() {
         var view = Grid();
         Assert.Null(JsonNode.Parse(view.ToJson())!["facets"]);
-        view.FacetPanel = new CanopyFacetPanel().Add("site").Add("load");
+        view.FacetPanel = new CanopyFacetPanel().Facet("site").Facet("load");
         Assert.Equal("{\"columns\":[\"site\",\"load\"]}", JsonNode.Parse(view.ToJson())!["facets"]!.ToJsonString());
         view.FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Top, Open = false, Collapsible = false, Width = 300, Label = "Refine" };
         view.FacetPanel.Facets.Add(new CanopyFacet("site") { Kind = CanopyFacetKind.List, Label = "Where", Limit = 5, Sort = CanopyFacetSort.Value, Collapsed = true });
@@ -32,11 +32,11 @@ public sealed class GridFacetPanelTests {
         var view = Grid();
         view.FacetPanel = new CanopyFacetPanel();
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.FacetPanel = new CanopyFacetPanel().Add("missing");
+        view.FacetPanel = new CanopyFacetPanel().Facet("missing");
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.FacetPanel = new CanopyFacetPanel().Add("site").Add("site");
+        view.FacetPanel = new CanopyFacetPanel().Facet("site").Facet("site");
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.FacetPanel = new CanopyFacetPanel().Add("site", CanopyFacetKind.Range);
+        view.FacetPanel = new CanopyFacetPanel().Facet("site", CanopyFacetKind.Range);
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyFacetPanel { Width = 100 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyFacet("load") { Bins = 1 });
@@ -45,7 +45,7 @@ public sealed class GridFacetPanelTests {
         // A hosted grid's facets must be declared facet columns, which its source answers.
         var hosted = new CanopyDataGridView("hosted", "Hosted") { Source = CanopyGridSource.HostedOffset() };
         hosted.Columns.Add(new CanopyColumn("site", "Site"));
-        hosted.FacetPanel = new CanopyFacetPanel().Add("site");
+        hosted.FacetPanel = new CanopyFacetPanel().Facet("site");
         Assert.Throws<InvalidOperationException>(() => hosted.ToJson());
         hosted.Reporting = new CanopyGridReporting();
         hosted.Reporting.FacetColumns.Add("site");
@@ -100,7 +100,7 @@ public sealed class GridFacetPanelTests {
         var plain = Grid();
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(plain), item => item.Name == "facets");
         var faceted = Grid();
-        faceted.FacetPanel = new CanopyFacetPanel().Add("site");
+        faceted.FacetPanel = new CanopyFacetPanel().Facet("site");
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(faceted), item => item.Name == "facets");
         Assert.Contains("<script type=\"application/x-canopyx-facets\" data-cx-version=\"" + part.Version + "\">", faceted.ToHtmlFragment());
     }

@@ -2,7 +2,7 @@ using System;
 
 namespace CanopyX.Data;
 
-/// <summary>A row of a saved answer's result panel (<see cref="CanopyFlowAnswer.Result"/>), such as a new key shown once.</summary>
+/// <summary>A row of a saved answer's result panel (<see cref="CanopyFlowAnswer.Results"/>), such as a new key shown once.</summary>
 public sealed class CanopyFlowResultRow {
     /// <summary>Creates a row.</summary>
     /// <param name="label">The label: visible text.</param>

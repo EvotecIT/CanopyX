@@ -41,7 +41,7 @@ internal static partial class ViewSnippets {
             row.Cells["owner"] = owner;
             tasks.Rows.Add(row);
         }
-        tasks.SaveHtmlPage("board.html");
+        tasks.Save("board.html");
         // view:end
     }
 
@@ -100,7 +100,7 @@ internal static partial class ViewSnippets {
         }
         plan.Plan.Dependencies.Add(new CanopyPlanDependency("prepare", "move"));
         plan.Plan.Dependencies.Add(new CanopyPlanDependency("move", "verify"));
-        plan.SaveHtmlPage("plan.html");
+        plan.Save("plan.html");
         // view:end
     }
 
@@ -133,7 +133,7 @@ internal static partial class ViewSnippets {
                 sales.Rows.Add(row);
             }
         }
-        sales.SaveHtmlPage("pivot.html");
+        sales.Save("pivot.html");
         // view:end
     }
 
@@ -157,7 +157,7 @@ internal static partial class ViewSnippets {
             new CanopyColumn("stage", "Stage"),
             new CanopyColumn("units", "Units") { Kind = CanopyColumnKind.Number }
         });
-        view.SaveHtmlPage("compare.html");
+        view.Save("compare.html");
 
         static CanopyGridRow Item(string id, string name, string stage, int units) {
             var row = new CanopyGridRow(id);
@@ -183,7 +183,7 @@ internal static partial class ViewSnippets {
             rollout.TimeSlider.Snapshots.Add(
                 new(start.AddMinutes(step), Health(step), label));
         }
-        rollout.SaveHtmlPage("time.html");
+        rollout.Save("time.html");
 
         static CanopyMatrix Health(int step) {
             var matrix = new CanopyMatrix("rollout", "Service health over time");
@@ -228,7 +228,7 @@ internal static partial class ViewSnippets {
         });
         route.Hops.Add(new CanopyPathHop("approve", "Approval recorded"));
         steps.Path.Chains.Add(route);
-        steps.SaveHtmlPage("path.html");
+        steps.Save("path.html");
         // view:end
     }
 
@@ -261,7 +261,7 @@ internal static partial class ViewSnippets {
             "user", "user", "The value this session uses.") {
             Winner = true
         });
-        layers.SaveHtmlPage("stack.html");
+        layers.Save("stack.html");
         // view:end
     }
 }

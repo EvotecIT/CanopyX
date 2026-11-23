@@ -7,7 +7,7 @@ using CanopyX.Tests.Bundles;
 namespace CanopyX.Tests.Html;
 
 /// <summary>
-/// SaveHtmlBundle is the one call a host makes for large trees: it must leave a folder that works when copied to a file
+/// SaveBundle is the one call a host makes for large trees: it must leave a folder that works when copied to a file
 /// share, with the page pointing at its sidecar data instead of carrying the tree inline.
 /// </summary>
 public sealed class BundlePageTests {
@@ -18,7 +18,7 @@ public sealed class BundlePageTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-long-folder-" + Guid.NewGuid().ToString("N"));
         try {
             var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
-            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory,
+            Assert.Throws<ArgumentException>(() => view.SaveBundle(directory,
                 new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = component + "/" }));
             Assert.False(Directory.Exists(directory));
         } finally {
@@ -40,7 +40,7 @@ public sealed class BundlePageTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-reserved-" + Guid.NewGuid().ToString("N"));
         var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
         try {
-            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath }));
+            Assert.Throws<ArgumentException>(() => view.SaveBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath }));
             Assert.False(Directory.Exists(directory));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
@@ -61,7 +61,7 @@ public sealed class BundlePageTests {
         var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
         var originalSource = view.Source;
         try {
-            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory,
+            Assert.Throws<ArgumentException>(() => view.SaveBundle(directory,
                 new CanopyHtmlOptions { AssetMode = mode, AssetBaseUrl = assetPath }, new CanopyBundleOptions { DataPath = dataPath }));
             Assert.Same(originalSource, view.Source);
             Assert.False(Directory.Exists(directory));
@@ -81,7 +81,7 @@ public sealed class BundlePageTests {
         try {
             var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath };
-            view.SaveHtmlBundle(directory, options);
+            view.SaveBundle(directory, options);
             Assert.True(File.Exists(Path.Combine(directory, folder, CanopyHtmlAssets.HashedScriptFileName)));
             Assert.Contains("src=\"" + options.AssetBaseUrl + CanopyHtmlAssets.HashedScriptFileName + "\"", File.ReadAllText(Path.Combine(directory, "index.html")));
         } finally {
@@ -90,12 +90,12 @@ public sealed class BundlePageTests {
     }
 
     [Fact]
-    public void SaveHtmlBundle_WritesPageAssetsAndSidecarData() {
+    public void SaveBundle_WritesPageAssetsAndSidecarData() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-page-" + Guid.NewGuid().ToString("N"));
         try {
             var view = TestTrees.FileShares(shares: 2, foldersPerShare: 3, filesPerFolder: 10, bigFolder: 10);
 
-            var result = view.SaveHtmlBundle(directory);
+            var result = view.SaveBundle(directory);
 
             var page = File.ReadAllText(Path.Combine(directory, "index.html"));
             var config = JsonNode.Parse(Regex.Match(page, "class=\"cx-config\">(.*?)</script>", RegexOptions.Singleline).Groups[1].Value)!;

@@ -20,6 +20,4 @@ public sealed class CanopyTabsOptions {
     public bool Justified { get; set; }
     /// <summary>Gets or sets the browser storage key that remembers the selected tab across visits. Null remembers nothing.</summary>
     public string? RememberKey { get; set; }
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

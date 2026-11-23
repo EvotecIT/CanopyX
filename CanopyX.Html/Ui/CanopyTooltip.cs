@@ -41,7 +41,6 @@ public sealed class CanopyTooltip {
         UiHtml.Attribute(html, "id", Id);
         UiHtml.Attribute(html, "data-cx-trigger", TriggerId);
         UiHtml.Attribute(html, "data-placement", UiHtml.Token(Options.Placement));
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         return html.Append('>').Append(UiHtml.Encode(Text)).Append("</div>").ToString();
     }
 

@@ -26,11 +26,11 @@ internal static partial class ReportGridLayoutExample {
             ["notes"] = i % 2 == 0 ? "A short observation." : "This observation includes the reason for the review and the evidence that supports the next step. Its complete text stays available in the record drawer."
         } });
         var suffix = theme == ThemeMode.Dark ? "-dark" : "";
-        view.SaveHtmlPage(Path.Combine(output, "report-grid-value-policies" + suffix + ".html"),
+        view.Save(Path.Combine(output, "report-grid-value-policies" + suffix + ".html"),
             new CanopyHtmlOptions { Theme = theme, Height = "720px", Title = "Column labels, ordered categories and numeric text tones" });
         view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Cards };
         // Full-page examples normally fill the viewport. This embedded-report example gives its host a 2400px cap instead.
-        var cards = view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Ten review cards within a 2400 pixel height cap" })
+        var cards = view.ToHtml(new CanopyHtmlOptions { Theme = theme, Title = "Ten review cards within a 2400 pixel height cap" })
             .Replace("</head>", "<style>body.cx-page>.cx-main>.cx-host{height:2400px;max-height:2400px}</style></head>");
         File.WriteAllText(Path.Combine(output, "report-grid-ten-cards" + suffix + ".html"), cards);
         var record = new CanopyDataGridView("record-fields", "Record-only presentations") { Record = new CanopyRecordPanel(), Selection = CanopySelectionMode.None };
@@ -40,6 +40,6 @@ internal static partial class ReportGridLayoutExample {
         record.Rows.Add(new CanopyGridRow("one") { Cells = { ["name"] = "Record one" }, Fields = {
             ["identifier"] = "record-only-identifier", ["observation"] = "A record-only observation with complete supporting evidence and a wrapped two-line preview."
         } });
-        record.SaveHtmlPage(Path.Combine(output, "report-grid-record-fields" + suffix + ".html"), new CanopyHtmlOptions { Theme = theme });
+        record.Save(Path.Combine(output, "report-grid-record-fields" + suffix + ".html"), new CanopyHtmlOptions { Theme = theme });
     }
 }

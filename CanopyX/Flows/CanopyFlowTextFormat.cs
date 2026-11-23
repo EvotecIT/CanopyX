@@ -1,6 +1,6 @@
 namespace CanopyX;
 
-/// <summary>The shape a text field's answer must have (<see cref="CanopyFlowField.TextFormat"/>). The browser and the server check it alike.</summary>
+/// <summary>The shape a text field's answer must have (<see cref="CanopyFlowField.Format"/>). The browser and the server check it alike.</summary>
 public enum CanopyFlowTextFormat {
     /// <summary>Any text.</summary>
     None,

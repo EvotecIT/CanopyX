@@ -27,7 +27,7 @@ public sealed class CanopyFlowPreset {
     /// <summary>Gets or sets a line about the preset. Plain text of at most 1,000 characters.</summary>
     public string? Description { get; set; }
 
-    /// <summary>Gets the preset's answers by field id, as <see cref="CanopyFlowField.DefaultValue"/> takes them. Never a secret field.</summary>
+    /// <summary>Gets the preset's answers by field id, as <see cref="CanopyFlowField.Default"/> takes them. Never a secret field.</summary>
     public IDictionary<string, object?> Values { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     /// <summary>Sets one answer (<see cref="Values"/>).</summary>

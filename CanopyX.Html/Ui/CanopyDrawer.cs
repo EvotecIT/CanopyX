@@ -31,7 +31,7 @@ public sealed class CanopyDrawer {
 
     /// <summary>Renders the closed drawer; the host runtime owns opening, dismissal and focus management.</summary>
     public string ToHtmlFragment() {
-        var html = UiOverlayHtml.Start("dialog", "drawer", Id, TriggerId, Description, Options.Variant);
+        var html = UiOverlayHtml.Start("dialog", "drawer", Id, TriggerId, Description);
         UiHtml.Attribute(html, "data-size", UiOverlayHtml.Size(Options.Size));
         UiHtml.Attribute(html, "data-side", UiHtml.Token(Options.Side));
         UiHtml.Attribute(html, "data-modal", UiHtml.Bool(Options.Modal));

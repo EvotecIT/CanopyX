@@ -32,7 +32,6 @@ public sealed class GridRowDataTests {
     public void GetChunk_WritesArraysInColumnOrder_InIdentityOrder_WithoutTrailingEmptyCells() {
         var view = Grid();
         view.Rows[0].Tone = Tone.Warning;
-        view.Rows[0].ClassName = "flagged";
         view.Rows[1].Cells["size"] = new CanopyCell { Text = "unknown", Tone = Tone.Muted };
 
         var data = new CanopyGridRowData(view);
@@ -45,7 +44,7 @@ public sealed class GridRowDataTests {
         // r0001 has no notes: the trailing empty cell is left out. Its size is a cell object with text and a tone.
         Assert.Equal("[\"r0001\",\"Item 1\",{\"text\":\"unknown\",\"tone\":\"muted\"}]", rows[1].GetRawText());
         // The row with a tone and a class names them next to its id.
-        Assert.Equal("{\"id\":\"r0002\",\"tone\":\"warning\",\"className\":\"flagged\"}", rows[2][0].GetRawText());
+        Assert.Equal("{\"id\":\"r0002\",\"tone\":\"warning\"}", rows[2][0].GetRawText());
     }
 
     [Fact]

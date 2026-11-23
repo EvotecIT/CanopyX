@@ -50,7 +50,7 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
 
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var page = Create().ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX row actions", Theme = theme });
+            var page = Create().ToHtml(new CanopyHtmlOptions { Title = "CanopyX row actions", Theme = theme });
             File.WriteAllText(Path.Combine(output, "row-actions" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), Inject(page), new UTF8Encoding(false));
         }
         // The static table leaves the actions out: they need the browser and the host.
@@ -83,17 +83,17 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
         grid.RowActions.LockedWhen = CanopyFormatCondition.Where("owner", CanopyFormatOperator.Equal, "System");
         grid.RowActions.LockedLabel = "System job: read-only";
         grid.RowActions
-            .Add(new CanopyRowAction("run", "Run now", CanopyRowActionIcon.Play) {
-                Tone = CanopyRowActionTone.Primary,
+            .Action(new CanopyRowAction("run", "Run now", CanopyActionIcons.Play) {
+                Tone = CanopyRowAction.PrimaryTone,
                 When = CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Succeeded", "Failed", "Disabled"),
                 DisabledWhen = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Disabled"),
                 DisabledReason = "Enable the job before running it."
             })
-            .Add(new CanopyRowAction("pause", "Pause", CanopyRowActionIcon.Pause) { When = running })
-            .Add(new CanopyRowAction("resume", "Resume", CanopyRowActionIcon.Play) { Tone = CanopyRowActionTone.Primary, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Paused") })
-            .Add(new CanopyRowAction("edit", "Edit", CanopyRowActionIcon.Edit))
-            .Add(new CanopyRowAction("delete", "Delete", CanopyRowActionIcon.Delete) {
-                Tone = CanopyRowActionTone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it."
+            .Action(new CanopyRowAction("pause", "Pause", CanopyActionIcons.Pause) { When = running })
+            .Action(new CanopyRowAction("resume", "Resume", CanopyActionIcons.Play) { Tone = CanopyRowAction.PrimaryTone, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Paused") })
+            .Action(new CanopyRowAction("edit", "Edit", CanopyActionIcons.Edit))
+            .Action(new CanopyRowAction("delete", "Delete", CanopyActionIcons.Delete) {
+                Tone = Tone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it."
             });
 
         var start = new DateTime(2026, 11, 10, 22, 0, 0, DateTimeKind.Utc);

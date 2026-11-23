@@ -190,9 +190,9 @@ function showRecord(next, trigger) {
 - **Records.** With `records`, the drawer header shows Previous and Next buttons beside the close button, and Up and Down move between records when focus is outside a field. `position: { current, total }` adds the "2 of 14" label (the `tabsPosition` label) and marks the buttons disabled at the ends. The buttons use the `drawerPrevious` and `drawerNext` labels.
 - **Address.** `history: { url }` pushes the address on opening, so a link or reload can show the same record and Back closes the overlay; Forward opens it again. A record switch replaces that entry, and closing the overlay goes back. `push: false` replaces the current address and restores it on closing. Given as a factory option, `history` also opens the overlay when the page is loaded on that address; with `base`, the landing entry becomes `base` and the overlay's address is pushed above it, so Back stays on the page. Firefox adds no entry for a push made before the reader interacts with the page, so there Back from a landing leaves the page as it would without the overlay. The overlay marks its own entries with `cxOverlay` in `history.state` and keeps the rest of the state the host put there.
 
-An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-cx-part`, `data-state` and `data-cx-variant` hooks.
+An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-cx-part` and `data-state` hooks.
 
-Custom part and variant selectors use `data-cx-part` and `data-cx-variant`. When updating an existing host, change its `data-hfx-part` and `data-hfx-variant` selectors together with the runtime assets; the shared `--hfx-*` theme roles keep their names.
+Custom part selectors use `data-cx-part`. The C# builders take no styling input besides the theme: no variant names, classes or colours.
 
 ## Embedding in an existing site
 
@@ -266,4 +266,4 @@ A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css
 
 In .NET, `CanopyHtmlAssets.WriteTo("assets", CanopyAssetNaming.Plain, CanopyRuntime.Ui)` writes the entry point and its parts, and `GetParts(CanopyRuntime.Ui)` lists the parts to embed in a self-contained page. In npm, `@evotecit/canopyx/ui` is its ES module, and `/ui.js` and `/ui.css` are the classic files.
 
-Load one entry point per page. A page that also shows a grid or tree loads that view's entry point, which carries the same factories.
+Load one entry point per page. A page that also shows a grid or tree loads that view's entry point, and a page with flows loads the flow entry point (`canopyx-flow-entry.js`); both carry the same factories, so a page with menus, selects or toasts beside a form needs nothing else.

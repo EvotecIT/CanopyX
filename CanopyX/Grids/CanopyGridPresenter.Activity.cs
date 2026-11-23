@@ -10,7 +10,7 @@ public sealed partial class CanopyGridPresenter {
     public bool Pill { get; private set; }
 
     /// <summary>Gets the decorative glyphs a state presenter shows instead of its dot, by exact raw text value.</summary>
-    public IReadOnlyDictionary<string, string> Icons { get; private set; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+    public IReadOnlyDictionary<string, string> Marks { get; private set; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
 
     /// <summary>Gets whether a bar history keeps one slot per period: a faint baseline for a period without a run and a taller
     /// bar for a run in the danger tone.</summary>
@@ -64,19 +64,19 @@ public sealed partial class CanopyGridPresenter {
 
     /// <summary>Returns a copy of this state presenter that shows a decorative glyph instead of the dot for the given raw values,
     /// for example a lock for "Read-only". The text still carries the meaning.</summary>
-    /// <param name="icons">At most 512 raw values (each at most 4,096 characters) mapped to glyphs of 1 to 32 nonblank code units.</param>
+    /// <param name="marks">At most 512 raw values (each at most 4,096 characters) mapped to glyphs of 1 to 32 nonblank code units.</param>
     /// <returns>A new immutable descriptor.</returns>
     /// <exception cref="InvalidOperationException">The presenter is not a state presenter.</exception>
     /// <exception cref="ArgumentException">The mapping is missing, too large, or holds a blank or long glyph.</exception>
-    public CanopyGridPresenter WithIcons(IDictionary<string, string> icons) {
-        if (Kind != CanopyGridPresenterKind.State) throw new InvalidOperationException("Icons apply to state presenters.");
-        if (icons == null || icons.Count > 512) throw new ArgumentException("Icons map at most 512 values.", nameof(icons));
+    public CanopyGridPresenter WithMarks(IDictionary<string, string> marks) {
+        if (Kind != CanopyGridPresenterKind.State) throw new InvalidOperationException("Marks apply to state presenters.");
+        if (marks == null || marks.Count > 512) throw new ArgumentException("Marks map at most 512 values.", nameof(marks));
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var pair in icons) {
-            if (pair.Key.Length > 4096 || string.IsNullOrWhiteSpace(pair.Value) || pair.Value.Length > 32) throw new ArgumentException("A glyph needs 1 to 32 nonblank code units.", nameof(icons));
+        foreach (var pair in marks) {
+            if (pair.Key.Length > 4096 || string.IsNullOrWhiteSpace(pair.Value) || pair.Value.Length > 32) throw new ArgumentException("A glyph needs 1 to 32 nonblank code units.", nameof(marks));
             map.Add(pair.Key, pair.Value);
         }
-        var copy = (CanopyGridPresenter)MemberwiseClone(); copy.Icons = new ReadOnlyDictionary<string, string>(map); return copy;
+        var copy = (CanopyGridPresenter)MemberwiseClone(); copy.Marks = new ReadOnlyDictionary<string, string>(map); return copy;
     }
 
     /// <summary>Returns a copy of this bar history that keeps one slot per recent period, for a run history: a period without a
@@ -90,7 +90,7 @@ public sealed partial class CanopyGridPresenter {
 
     private void WriteActivityJson(CanopyJsonWriter writer) {
         if (Pill) writer.Property("style", "pill");
-        if (Icons.Count > 0) { writer.Name("icons").BeginObject(); foreach (var pair in Icons) writer.Property(pair.Key, pair.Value); writer.EndObject(); }
+        if (Marks.Count > 0) { writer.Name("icons").BeginObject(); foreach (var pair in Marks) writer.Property(pair.Key, pair.Value); writer.EndObject(); }
         if (Slots) writer.Property("slots", true);
         if (Kind != CanopyGridPresenterKind.Log) return;
         if (Lines != 10) writer.Property("lines", Lines);

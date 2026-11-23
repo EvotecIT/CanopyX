@@ -53,7 +53,7 @@ public enum CanopyFlowFieldKind {
     /// <summary>The answer of a pick step (<see cref="CanopyFlowPicker"/>): the chosen records as <c>{ id, label }</c>. Created by <see cref="CanopyFlow.Pick(string, string, CanopyDataGridView, System.Action{CanopyFlowPicker})"/>.</summary>
     Pick,
 
-    /// <summary>Stars: a whole number from 1 to the field's <see cref="CanopyFlowField.RatingScale"/> (5 unless set).</summary>
+    /// <summary>Stars: a whole number from 1 to the field's <see cref="CanopyFlowField.Scale"/> (5 unless set).</summary>
     Rating,
 
     /// <summary>A drawn or typed signature: <c>{ "svg": "&lt;svg …", "png": "data:image/png;base64,…" }</c>.</summary>

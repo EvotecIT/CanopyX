@@ -50,7 +50,7 @@ public sealed class CanopyFacetPanel {
     /// <param name="column">The column id.</param>
     /// <param name="kind">The facet kind; <see cref="CanopyFacetKind.Auto"/> picks a value list for text and a range for numbers and dates.</param>
     /// <returns>This panel.</returns>
-    public CanopyFacetPanel Add(string column, CanopyFacetKind kind = CanopyFacetKind.Auto) {
+    public CanopyFacetPanel Facet(string column, CanopyFacetKind kind = CanopyFacetKind.Auto) {
         Facets.Add(new CanopyFacet(column) { Kind = kind });
         return this;
     }

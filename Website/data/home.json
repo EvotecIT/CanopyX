@@ -42,12 +42,12 @@
     {
       "title": "One HTML file",
       "body": "Data and runtime in a single page. Attach it to a ticket, archive it with a run, or open it from disk.",
-      "code": "view.SaveHtmlPage(\"report.html\");"
+      "code": "view.Save(\"report.html\");"
     },
     {
       "title": "A folder on a file share",
       "body": "Branches, rows and search shards load from files beside the page, so 100,000 nodes open with no server.",
-      "code": "view.SaveHtmlBundle(\"report\");"
+      "code": "view.SaveBundle(\"report\");"
     },
     {
       "title": "Your own server",

@@ -29,33 +29,13 @@ public sealed class CanopyFlowCheck {
     public string? Description { get; set; }
 
     /// <summary>Gets the ids of the fields the check tests (1 to 64); changing one marks its result stale. Secret fields among them reach the hook through its <c>secret(id)</c> reader.</summary>
+    [PowerForge.Fluent.Child("Field")]
     public IList<string> FieldIds { get; } = new List<string>();
 
     /// <summary>Gets or sets whether the check gates its step.</summary>
+    [PowerForge.Fluent.FluentPreset("RequirePass", CanopyFlowCheckRequirement.Pass)]
+    [PowerForge.Fluent.FluentPreset("RequireRun", CanopyFlowCheckRequirement.Run)]
     public CanopyFlowCheckRequirement Requirement { get; set; }
-
-    /// <summary>Adds the fields the check tests (<see cref="FieldIds"/>).</summary>
-    /// <param name="ids">Field ids.</param>
-    /// <returns>The check.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="ids"/> is null.</exception>
-    public CanopyFlowCheck Fields(params string[] ids) {
-        if (ids == null) throw new ArgumentNullException(nameof(ids));
-        foreach (var id in ids) FieldIds.Add(id);
-        return this;
-    }
-
-    /// <summary>Blocks Next until the check passes on the current answers (<see cref="CanopyFlowCheckRequirement.Pass"/>).</summary>
-    /// <returns>The check.</returns>
-    public CanopyFlowCheck RequirePass() { Requirement = CanopyFlowCheckRequirement.Pass; return this; }
-
-    /// <summary>Requires the check to have run on the current answers without failing (<see cref="CanopyFlowCheckRequirement.Run"/>).</summary>
-    /// <returns>The check.</returns>
-    public CanopyFlowCheck RequireRun() { Requirement = CanopyFlowCheckRequirement.Run; return this; }
-
-    /// <summary>Sets the line under the button (<see cref="Description"/>).</summary>
-    /// <param name="text">Plain text.</param>
-    /// <returns>The check.</returns>
-    public CanopyFlowCheck Describe(string text) { Description = text; return this; }
 
     internal void Validate(string step) {
         var what = "Check " + Id + " of step " + step;

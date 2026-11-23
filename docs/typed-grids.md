@@ -40,7 +40,7 @@ a layer over it, and every typed grid is also an ordinary grid.
 `CanopyDataGridView.From` derives a column from every public property and writes the records as rows:
 
 ```csharp
-CanopyDataGridView.From(servers, x => x.HostName).SaveHtmlPage("servers.html");
+CanopyDataGridView.From(servers, x => x.HostName).Save("servers.html");
 
 public sealed class Server {
     [CanopyKey] public string HostName { get; set; } = "";
@@ -72,7 +72,7 @@ PowerShell does not infer the record type, so name it, and type the array to mat
 [System.Collections.IDictionary[]]$rows = Get-Service | Select-Object Name, Status, StartType | ForEach-Object {
     $row = [ordered]@{}; foreach ($property in $_.PSObject.Properties) { $row[$property.Name] = $property.Value }; $row }
 $grid = [CanopyX.CanopyDataGridView]::From[System.Collections.IDictionary]($rows, 'Name')
-[CanopyX.Html.CanopyHtmlExtensions]::SaveHtmlPage($grid.View, 'services.html')
+[CanopyX.Html.CanopyHtmlExtensions]::Save($grid.View, 'services.html')
 ```
 
 A `DataTable` needs nothing more: `[CanopyX.CanopyDataGridView]::From($table, 'Id')`.
@@ -91,7 +91,7 @@ grid.Column(x => x.Health, configure: column => column.Presenter = CanopyGridPre
 grid.Column(x => x.DiskBytes, "Disk", cell: bytes => new CanopyCell(bytes) { Text = bytes / 1_000_000_000 + " GB" });
 grid.Field(x => x.Notes);                             // a record panel value, not a column
 grid.View.FacetPanel = new CanopyFacetPanel().Add(grid.ColumnId(x => x.Health));
-grid.AddRows(servers).View.SaveHtmlPage("servers.html");
+grid.AddRows(servers).View.Save("servers.html");
 ```
 
 | Member | What it does |

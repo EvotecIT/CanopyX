@@ -88,7 +88,7 @@ internal static class EnhanceExamples {
         }
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : "";
-            File.WriteAllText(Path.Combine(output, "paged-grid" + suffix + ".html"), grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX pager settings", Theme = theme }));
+            File.WriteAllText(Path.Combine(output, "paged-grid" + suffix + ".html"), grid.ToHtml(new CanopyHtmlOptions { Title = "CanopyX pager settings", Theme = theme }));
         }
     }
 

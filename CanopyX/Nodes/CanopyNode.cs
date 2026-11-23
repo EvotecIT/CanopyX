@@ -117,9 +117,6 @@ public sealed class CanopyNode {
     /// <summary>Gets or sets the detail content. A node with a detail is shown as a detail row and has no children.</summary>
     public CanopyDetail? Detail { get; set; }
 
-    /// <summary>Gets or sets extra CSS class names added to the row, for host styling.</summary>
-    public string? ClassName { get; set; }
-
     /// <summary>
     /// Gets whether <see cref="Children"/> holds at least one node. The collections of a node are created when they
     /// are first read, so a host that walks a large tree asks this before it reads <see cref="Children"/>, and a
@@ -360,6 +357,5 @@ public sealed class CanopyNode {
             Detail.WriteJson(writer);
         }
 
-        writer.OptionalProperty("className", ClassName);
     }
 }

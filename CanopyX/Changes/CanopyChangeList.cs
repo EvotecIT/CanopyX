@@ -86,7 +86,7 @@ public sealed partial class CanopyChangeList {
     /// <param name="icon">Its icon.</param>
     /// <param name="copy">What a copy action copies (<c>path</c>, <c>previousPath</c> or a value key); null for a host action.</param>
     /// <returns>The list.</returns>
-    public CanopyChangeList Action(string id, string label, CanopyChangeActionIcon icon = CanopyChangeActionIcon.None, string? copy = null) {
+    public CanopyChangeList Action(string id, string label, Icon icon = default, string? copy = null) {
         Actions.Add(new CanopyChangeAction(id, label) { Icon = icon, Copy = copy });
         return this;
     }

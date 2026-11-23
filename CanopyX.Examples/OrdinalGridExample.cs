@@ -15,7 +15,7 @@ internal static class OrdinalGridExample {
         grid.Column(row => row.Attempts, configure: column => column.Sortable = true);
         var time = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
         grid.AddRows(new[] { new Attempt(time, "Retry scheduled", 1), new Attempt(time, "Retry scheduled", 1), new Attempt(time.AddMinutes(5), "Delivered", 2) });
-        foreach (var dark in new[] { false, true }) grid.View.SaveHtmlPage(Path.Combine(output, dark ? "ordinal-grid-dark.html" : "ordinal-grid.html"),
+        foreach (var dark in new[] { false, true }) grid.View.Save(Path.Combine(output, dark ? "ordinal-grid-dark.html" : "ordinal-grid.html"),
             new CanopyHtmlOptions { Title = "Snapshot event log", Theme = dark ? ThemeMode.Dark : ThemeMode.Light });
     }
 }

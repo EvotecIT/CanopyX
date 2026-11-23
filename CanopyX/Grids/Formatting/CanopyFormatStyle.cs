@@ -6,7 +6,7 @@ namespace CanopyX;
 
 /// <summary>
 /// How a formatting rule paints: a theme tone with an emphasis, an icon, a badge and a text cue, or one of a data bar, a
-/// colour scale and threshold bands. <see cref="ClassName"/> and <see cref="Css"/> are the escape hatch for what tones do not cover.
+/// colour scale and threshold bands. Colours come from tones and the theme only.
 /// </summary>
 /// <remarks>
 /// Formatting is never colour alone: a style that only colours gets its tone's icon (<see cref="CanopyFormatIcons.Automatic"/>)
@@ -41,12 +41,6 @@ public sealed class CanopyFormatStyle {
 
     /// <summary>Gets the threshold bands for the rule's column, 1 to 16, or none.</summary>
     public IList<CanopyFormatBand> Bands { get; } = new List<CanopyFormatBand>();
-
-    /// <summary>Gets or sets extra CSS classes (escape hatch), at most 1,024 characters without control characters.</summary>
-    public string? ClassName { get; set; }
-
-    /// <summary>Gets plain CSS declarations by property (escape hatch): up to 16, without url(), expressions, imports or braces.</summary>
-    public IDictionary<string, string> Css { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>Returns a highlight in a tone.</summary>
     /// <param name="tone">The tone.</param>
@@ -89,12 +83,6 @@ public sealed class CanopyFormatStyle {
         CanopyFormatIcons.Validate(Icon, Mark);
         try { ValidateText(Badge, 64, nameof(Badge)); ValidateText(Cue, 64, nameof(Cue)); }
         catch (ArgumentException error) { throw new InvalidOperationException(error.Message, error); }
-        if (ClassName != null) CanopyGridHighlightRule.ValidateClassName(ClassName);
-        if (Css.Count > 16) throw new InvalidOperationException("A formatting style has at most 16 CSS declarations.");
-        foreach (var entry in Css) {
-            if (!IsCssName(entry.Key) || entry.Value == null || entry.Value.Length > 200 || UnsafeCss(entry.Value))
-                throw new InvalidOperationException("Formatting CSS takes plain declarations without url(), image sources, expressions, imports, quotes, braces or semicolons.");
-        }
         var visuals = (Bar != null ? 1 : 0) + (Scale != null ? 1 : 0) + (Bands.Count > 0 ? 1 : 0);
         if (visuals > 1) throw new InvalidOperationException("A rule draws one of a data bar, a colour scale or threshold bands.");
         if (visuals == 1 && (rowTarget || !hasColumn)) throw new InvalidOperationException("Bars, scales and bands read the rule's column and paint cells.");
@@ -106,22 +94,9 @@ public sealed class CanopyFormatStyle {
             if (!band.UpperBound.HasValue && i != Bands.Count - 1 || i > 0 && band.UpperBound.HasValue && Bands[i - 1].UpperBound >= band.UpperBound)
                 throw new InvalidOperationException("Threshold bands rise, and only the last may be open.");
         }
-        if (Tone.WireName() == null && (IconToken == null || IconToken == "none") && Badge == null && Cue == null && ClassName == null && Css.Count == 0 && visuals == 0)
+        if (Tone.WireName() == null && (IconToken == null || IconToken == "none") && Badge == null && Cue == null && visuals == 0)
             throw new InvalidOperationException("A formatting rule needs a style.");
     }
-
-    private static bool IsCssName(string name) {
-        if (string.IsNullOrEmpty(name) || name.Length > 66) return false;
-        var start = name.StartsWith("--", StringComparison.Ordinal) ? 2 : name[0] == '-' ? 1 : 0;
-        if (start >= name.Length || name[start] < 'a' || name[start] > 'z') return false;
-        for (var i = start; i < name.Length; i++) { var ch = name[i]; if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '-')) return false; }
-        return true;
-    }
-
-    private static readonly System.Text.RegularExpressions.Regex UnsafeValue = new System.Text.RegularExpressions.Regex(@"url\s*\(|image-set|image\(|src\s*\(|expression|javascript:|@import|[;{}<>\\""'&]",
-        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-
-    private static bool UnsafeCss(string value) => UnsafeValue.IsMatch(value);
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().OptionalProperty("tone", Tone.WireName());
@@ -133,12 +108,6 @@ public sealed class CanopyFormatStyle {
             writer.Name("bands").BeginArray();
             foreach (var band in Bands) band.WriteJson(writer);
             writer.EndArray();
-        }
-        writer.OptionalProperty("className", ClassName);
-        if (Css.Count > 0) {
-            writer.Name("css").BeginObject();
-            foreach (var entry in Css) writer.Property(entry.Key, entry.Value);
-            writer.EndObject();
         }
         writer.EndObject();
     }

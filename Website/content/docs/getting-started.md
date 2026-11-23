@@ -27,7 +27,7 @@ A `CanopyTreeView` holds columns and nodes. The first column shows each node's l
 
 {{< cnx-example id="tree" caption="The page this code writes, running here. Expand Archive, sort by Size or Owner, or search for budget." >}}
 
-For a larger tree, write a bundle that loads branches on demand with `files.SaveHtmlBundle("file-report")`. [Delivery modes](/docs/delivery/) shows the files each choice writes.
+For a larger tree, write a bundle that loads branches on demand with `files.SaveBundle("file-report")`. [Delivery modes](/docs/delivery/) shows the files each choice writes.
 
 > **Keep the bundle together.** The generated page, assets and data files belong side by side. The bundle can then be opened directly from disk or a file share.
 

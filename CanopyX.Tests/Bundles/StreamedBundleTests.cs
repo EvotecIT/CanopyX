@@ -182,11 +182,11 @@ public sealed class StreamedBundleTests {
     }
 
     [Fact]
-    public void SaveHtmlBundle_Streamed_WritesThePageAndPointsTheViewAtTheData() {
+    public void SaveBundle_Streamed_WritesThePageAndPointsTheViewAtTheData() {
         var directory = NewDirectory();
         try {
             var view = View();
-            var result = view.SaveHtmlBundle(directory, ChildrenOf(null), node => ChildrenOf(node.Id));
+            var result = view.SaveBundle(directory, ChildrenOf(null), node => ChildrenOf(node.Id));
 
             Assert.Equal(CanopySourceKind.Sidecar, view.Source.Kind);
             Assert.Same(result.Source, view.Source);
@@ -225,7 +225,7 @@ public sealed class StreamedBundleTests {
             }
         } else if (!parent.EndsWith("/a", StringComparison.Ordinal)) {
             yield return new CanopyNode(parent + "/a", "File of " + parent) { Kind = "file" };
-            yield return new CanopyNode(parent + "/detail", "Detail") { Detail = new CanopyPropertiesDetail().Add("Owner", "Team " + parent) };
+            yield return new CanopyNode(parent + "/detail", "Detail") { Detail = new CanopyPropertiesDetail().Item("Owner", "Team " + parent) };
         }
     }
 

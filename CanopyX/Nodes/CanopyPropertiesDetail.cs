@@ -15,7 +15,7 @@ public sealed class CanopyPropertiesDetail : CanopyDetail {
     /// <param name="name">The property name.</param>
     /// <param name="value">The property value.</param>
     /// <returns>This detail, for chaining.</returns>
-    public CanopyPropertiesDetail Add(string name, CanopyCell value) {
+    public CanopyPropertiesDetail Item(string name, CanopyCell value) {
         Items.Add(new CanopyProperty(name, value));
         return this;
     }

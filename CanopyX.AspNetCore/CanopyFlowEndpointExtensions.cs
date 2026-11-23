@@ -28,12 +28,12 @@ namespace CanopyX.AspNetCore;
 /// 500 body and are logged, never echoed. The group requires authorization (the default policy, or
 /// <see cref="CanopyFlowEndpointOptions.AuthorizationPolicy"/>) unless <see cref="CanopyFlowEndpointOptions.AllowAnonymous"/> is set;
 /// apply rate limiting, CORS and antiforgery to the returned group as well, and point the flow at it with
-/// <c>flow.UseEndpoint(url, handlers.Routes)</c>.
+/// <c>flow.Endpoint(new CanopyFlowEndpoint(url, handlers.Routes))</c>.
 /// </remarks>
 public static class CanopyFlowEndpointExtensions {
     /// <summary>Maps a flow's routes.</summary>
     /// <param name="endpoints">The route builder.</param>
-    /// <param name="pattern">The route prefix, for example <c>/api/flows/mail</c>; the flow's <see cref="CanopyFlow.UseEndpoint"/> names the same path.</param>
+    /// <param name="pattern">The route prefix, for example <c>/api/flows/mail</c>; the flow's <see cref="CanopyFlow.Endpoint"/> names the same path.</param>
     /// <param name="flow">Builds the flow for a request.</param>
     /// <param name="handlers">The host's answers; each handler that is set maps its route.</param>
     /// <param name="configure">Adjusts authorization, limits and the submit route's checks.</param>

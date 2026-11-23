@@ -35,9 +35,7 @@ public static partial class CanopyStaticHtml {
         var printedCells = new List<string>(columns.Length);
         var rowRule = CanopyGridHighlights.Find(view, row, null);
         var rowTone = rowRule != null && rowRule.Tone != Tone.None ? rowRule.Tone : row.Tone;
-        var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName, outcome?.Row?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
         html.Append("<tr");
-        if (rowClasses.Length != 0) html.Append(" class=\"").Append(Encode(rowClasses)).Append('"');
         var rowFormat = FormatRowStyle(outcome, styles);
         if (rowTone != Tone.None || rowFormat.Length != 0) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append(Encode(rowFormat)).Append('"');
         html.Append('>');
@@ -50,8 +48,6 @@ public static partial class CanopyStaticHtml {
             html.Append("<td style=\"").Append((inner ? styles.InnerCell : styles.Cell)).Append(Align(column)).Append(styles.ToneColor(tone)).Append(Encode(FormatCellStyle(paint, outcome?.Row, first, styles)));
             if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
             html.Append('"');
-            var classes = string.Join(" ", new[] { column.ClassName, rule?.ClassName, FormatClasses(paint) }.Where(value => value != null));
-            if (classes.Length != 0) html.Append(" class=\"").Append(Encode(classes)).Append('"');
             var title = FormatTitle(column.NumericTone(cell)?.Label ?? cell?.Title, paint, outcome?.Row, first);
             if (title != null) html.Append(" title=\"").Append(Encode(title)).Append('"');
             var text = new StringBuilder();
@@ -71,7 +67,7 @@ public static partial class CanopyStaticHtml {
                 html.Append("<a href=\"").Append(Encode(url!)).Append('"');
                 if (presenter!.NewWindow) html.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
                 var inheritsColor = styles.ToneColor(tone).Length != 0 || styles.ToneColor(rowTone).Length != 0
-                    || paint?.Tone.WireName() != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
+                    || paint?.Tone.WireName() != null;
                 html.Append(" style=\"").Append(inheritsColor ? "color:inherit;" : styles.Link).Append("\">");
             }
             if (template != null || !AppendComparisonCell(html, text, view, row, column, cell) && !AppendPresenterBlock(html, column, cell, displayed, text))

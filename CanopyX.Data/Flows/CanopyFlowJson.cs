@@ -21,12 +21,4 @@ internal static class CanopyFlowJson {
         foreach (var text in texts) if (text != null && CanopyFlowValues.HasVisibleText(text)) list.Add(text);
         if (list.Count > 0) writer.StringArray(name, list);
     }
-
-    internal static string Tone(CanopyFlowTone tone) => tone switch {
-        CanopyFlowTone.Info => "info",
-        CanopyFlowTone.Success => "success",
-        CanopyFlowTone.Warning => "warning",
-        CanopyFlowTone.Danger => "danger",
-        _ => string.Empty
-    };
 }

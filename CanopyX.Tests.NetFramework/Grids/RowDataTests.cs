@@ -30,10 +30,10 @@ public sealed class RowDataTests {
     }
 
     [Fact]
-    public void SaveHtmlBundle_WritesThePageAndTheRowFiles() {
+    public void SaveBundle_WritesThePageAndTheRowFiles() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-net472-bundle-" + Guid.NewGuid().ToString("N"));
         try {
-            var result = Grid().SaveHtmlBundle(directory);
+            var result = Grid().SaveBundle(directory);
             Assert.Equal(1, result.FileCount);
             Assert.True(File.Exists(Path.Combine(directory, "index.html")));
             Assert.True(File.Exists(Path.Combine(result.DataDirectory, "rows", "0.js")));

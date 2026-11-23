@@ -30,7 +30,7 @@ internal static class ChangeViewsExample {
             File.WriteAllText(Path.Combine(output, "changes" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), page, new UTF8Encoding(false));
         }
 
-        Large(20000).SaveHtmlPage(Path.Combine(output, "changes-diff-large.html"), new CanopyHtmlOptions { Title = "A diff of 20,000 lines", Height = "86vh" });
+        Large(20000).Save(Path.Combine(output, "changes-diff-large.html"), new CanopyHtmlOptions { Title = "A diff of 20,000 lines", Height = "86vh" });
         foreach (var (name, theme, background) in new[] { ("changes-static.html", new CanopyStaticTheme(), "#ffffff"), ("changes-static-dark.html", CanopyStaticTheme.Dark(), "#16181c") }) {
             var options = new CanopyStaticHtmlOptions { Theme = theme, MaxRows = 400 };
             var html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Change views static fallback</title></head><body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px;background:" + background + "\">" +
@@ -85,14 +85,14 @@ internal static class ChangeViewsExample {
     /// <summary>The change set on the share: two dropped files, two edits, a rename, a removal and an owner change.</summary>
     internal static CanopyChangeList List() {
         var list = new CanopyChangeList("share-changes", "Changes on the deployment share") { ExpandFlagged = false };
-        list.Action("copy-unc", "Copy the network path", CanopyChangeActionIcon.Copy, copy: "unc")
-            .Action("compare", "Compare across servers", CanopyChangeActionIcon.Compare)
-            .Action("acknowledge", "Acknowledge", CanopyChangeActionIcon.Check);
-        list.Actions.Add(new CanopyChangeAction("open-diff", "Open the diff") { Icon = CanopyChangeActionIcon.Diff, Reveal = CanopyChangeReveal.Diff });
+        list.Action("copy-unc", "Copy the network path", CanopyActionIcons.Copy, copy: "unc")
+            .Action("compare", "Compare across servers", CanopyActionIcons.Compare)
+            .Action("acknowledge", "Acknowledge", CanopyActionIcons.Check);
+        list.Actions.Add(new CanopyChangeAction("open-diff", "Open the diff") { Icon = CanopyActionIcons.Diff, Reveal = CanopyChangeReveal.Diff });
         list.Actions[2].Reason = true;
         list.Values["share"] = "#share/deploy";
-        list.Tool(new CanopyChangeAction("open-share", "Open the share") { Icon = CanopyChangeActionIcon.Open, Link = "share" })
-            .Tool(new CanopyChangeAction("expected", "Mark as expected") { Icon = CanopyChangeActionIcon.Check, Reason = true });
+        list.Tool(new CanopyChangeAction("open-share", "Open the share") { Icon = CanopyActionIcons.Open, Link = "share" })
+            .Tool(new CanopyChangeAction("expected", "Mark as expected") { Icon = CanopyActionIcons.Check, Reason = true });
         list.Exports = CanopyChangeExports.Csv | CanopyChangeExports.Json;
         string Unc(string path) => "\\\\fs01.example.net\\deploy\\" + path.Replace('/', '\\');
         CanopyChangeItem Add(string id, CanopyChangeKind kind, string path) { var item = list.Add(id, kind, path); item.Values["unc"] = Unc(path); return item; }

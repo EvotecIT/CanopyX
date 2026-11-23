@@ -22,7 +22,7 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The page markup.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="diff"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The diff is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
-    public static string ToHtmlPage(this CanopyTextDiff diff, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyTextDiff diff, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.ChangePage((diff ?? throw new ArgumentNullException(nameof(diff))).ToJson(), diff.Id, diff.Label, options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves a complete diff page as UTF-8, creating its directory when needed.</summary>
@@ -32,7 +32,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="diff"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The diff is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyTextDiff diff, string path, CanopyHtmlOptions? options = null) => Save(diff.ToHtmlPage(options), path);
+    public static void Save(this CanopyTextDiff diff, string path, CanopyHtmlOptions? options = null) => Save(diff.ToHtml(options), path);
 
     /// <summary>Writes the change list document in a host element without including the entry point.</summary>
     /// <param name="list">The list.</param>
@@ -50,7 +50,7 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The page markup.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="list"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The list is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
-    public static string ToHtmlPage(this CanopyChangeList list, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyChangeList list, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.ChangePage((list ?? throw new ArgumentNullException(nameof(list))).ToJson(), list.Id, list.Label, options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves a complete change list page as UTF-8, creating its directory when needed.</summary>
@@ -60,7 +60,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="list"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The list is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyChangeList list, string path, CanopyHtmlOptions? options = null) => Save(list.ToHtmlPage(options), path);
+    public static void Save(this CanopyChangeList list, string path, CanopyHtmlOptions? options = null) => Save(list.ToHtml(options), path);
 
     /// <summary>Writes the propagation document in a host element without including the entry point.</summary>
     /// <param name="view">The propagation view.</param>
@@ -78,7 +78,7 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The page markup.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
-    public static string ToHtmlPage(this CanopyPropagation view, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyPropagation view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.ChangePage((view ?? throw new ArgumentNullException(nameof(view))).ToJson(), view.Id, view.Label, options ?? new CanopyHtmlOptions(), CanopyHtmlAssets.GetRequiredParts(view));
 
     /// <summary>Saves a complete propagation page as UTF-8, creating its directory when needed.</summary>
@@ -88,7 +88,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The view is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyPropagation view, string path, CanopyHtmlOptions? options = null) => Save(view.ToHtmlPage(options), path);
+    public static void Save(this CanopyPropagation view, string path, CanopyHtmlOptions? options = null) => Save(view.ToHtml(options), path);
 
     private static void Save(string html, string path) {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is required.", nameof(path));

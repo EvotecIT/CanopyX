@@ -8,7 +8,7 @@ namespace CanopyX.Examples;
 internal static class BoardExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            Create().SaveHtmlPage(Path.Combine(output, "board" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().Save(Path.Combine(output, "board" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Migration and remediation board", Theme = theme, Height = "820px" });
         }
         var html = Create().ToBoardStaticHtml(options: new CanopyStaticHtmlOptions { Caption = "Migration and remediation board" });
@@ -32,7 +32,7 @@ internal static class BoardExample {
         view.Reporting.FacetColumns.Add("status");
         view.Reporting.FacetColumns.Add("team");
         view.Reporting.FacetColumns.Add("priority");
-        view.FacetPanel = new CanopyFacetPanel().Add("status").Add("team");
+        view.FacetPanel = new CanopyFacetPanel().Facet("status").Facet("team");
         view.Board.Lanes.Add(new CanopyBoardLane("backlog", "Backlog"));
         view.Board.Lanes.Add(new CanopyBoardLane("ready", "Ready"));
         view.Board.Lanes.Add(new CanopyBoardLane("active", "In progress") { WipLimit = 4 });

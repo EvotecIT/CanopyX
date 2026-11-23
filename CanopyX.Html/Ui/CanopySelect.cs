@@ -48,7 +48,6 @@ public sealed class CanopySelect {
         html.Append('>').Append(UiHtml.Encode(Label)).Append("</label><div");
         UiHtml.Attribute(html, "id", Id + "-select");
         html.Append(" class=\"cx-select\" data-cx-select");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         if (!Options.Search) UiHtml.Attribute(html, "data-search", "false");
         if (Options.Tags) UiHtml.Attribute(html, "data-tags", "true");
         UiHtml.Attribute(html, "data-source", Options.Source);

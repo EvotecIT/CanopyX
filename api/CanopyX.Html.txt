@@ -90,10 +90,19 @@ CanopyX.Html.CanopyHtmlDocument.System.Collections.Generic.IReadOnlyCollection<S
 CanopyX.Html.CanopyHtmlDocument.System.String EmbedOnce(CanopyX.Html.CanopyHtmlPart part)
 CanopyX.Html.CanopyHtmlDocument.System.String EmbedOnce(CanopyX.Html.CanopyHtmlPart part, System.String? nonce)
 CanopyX.Html.CanopyHtmlExtensions : static class
-CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
-CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode> roots, System.Func<CanopyX.CanopyNode, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode>?> children, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
-CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyGridBundleResult SaveHtmlBundle(CanopyX.CanopyDataGridView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveBundle(CanopyX.CanopyTreeView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveBundle(CanopyX.CanopyTreeView view, System.String directory, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode> roots, System.Func<CanopyX.CanopyNode, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode>?> children, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyGridBundleResult SaveBundle(CanopyX.CanopyDataGridView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToBoardStaticHtml(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPage? page = null, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyChangeList list, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyFlow flow, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyMatrix matrix, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyPropagation view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyTextDiff diff, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtml<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyChangeList list, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
@@ -104,24 +113,15 @@ CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.Ca
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTextDiff diff, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyChangeList list, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyFlow flow, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyMatrix matrix, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyPropagation view, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTextDiff diff, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyCalendar calendar, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyChangeList list, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyDataGridView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyFlow flow, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyMatrix matrix, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyPropagation view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTextDiff diff, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTreeView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
-CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage<T>(CanopyX.CanopyDataGridView<T> grid, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyCalendar calendar, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyChangeList list, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyDataGridView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyFlow flow, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyMatrix matrix, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyPropagation view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyTextDiff diff, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save(CanopyX.CanopyTreeView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void Save<T>(CanopyX.CanopyDataGridView<T> grid, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlOptions : sealed class
 CanopyX.Html.CanopyHtmlOptions..ctor()
 CanopyX.Html.CanopyHtmlOptions.CanopyX.CanopyRowDataOptions? RowData { get; set; }
@@ -162,6 +162,7 @@ CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Nonce
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Part(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, System.String item)
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Parts(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, System.Collections.Generic.IEnumerable<System.String> items)
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions RowData(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, CanopyX.CanopyRowDataOptions? value)
+CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions RowData(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, System.Action<CanopyX.CanopyRowDataOptions> configure)
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Runtime(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, CanopyX.Html.CanopyRuntime value)
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Theme(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, CanopyX.ThemeMode value)
 CanopyX.Html.CanopyHtmlOptionsFluent.static CanopyX.Html.CanopyHtmlOptions Title(CanopyX.Html.CanopyHtmlOptions canopyHtmlOptions, System.String? value)
@@ -243,7 +244,6 @@ CanopyX.Html.Ui.CanopyAccordionOptions.System.Int32 HeadingLevel { get; set; }
 CanopyX.Html.Ui.CanopyAccordionOptions.System.Nullable<System.Int32> SearchDebounce { get; set; }
 CanopyX.Html.Ui.CanopyAccordionOptions.System.String? RememberKey { get; set; }
 CanopyX.Html.Ui.CanopyAccordionOptions.System.String? SearchPlaceholder { get; set; }
-CanopyX.Html.Ui.CanopyAccordionOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent : static class
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions Animate(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions CopyTitle(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, System.Boolean value = True)
@@ -258,7 +258,6 @@ CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccord
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions SearchDebounce(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, System.Nullable<System.Int32> value)
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions SearchPlaceholder(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, System.String? value)
 CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions Style(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, CanopyX.Html.Ui.CanopyAccordionStyle value)
-CanopyX.Html.Ui.CanopyAccordionOptionsFluent.static CanopyX.Html.Ui.CanopyAccordionOptions Variant(CanopyX.Html.Ui.CanopyAccordionOptions canopyAccordionOptions, System.String? value)
 CanopyX.Html.Ui.CanopyAccordionStyle : enum System.Int32
 CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Default = 0
 CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Flush = 1
@@ -297,7 +296,6 @@ CanopyX.Html.Ui.CanopyCarouselOptions.System.Boolean Loop { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 PerView { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 SelectedIndex { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Nullable<System.Int32> AutoplayInterval { get; set; }
-CanopyX.Html.Ui.CanopyCarouselOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent : static class
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions AutoplayInterval(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, System.Nullable<System.Int32> value)
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions Captions(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, CanopyX.Html.Ui.CanopyCarouselCaptionPosition value)
@@ -307,7 +305,6 @@ CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouse
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions PerView(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, System.Int32 value)
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions SelectedIndex(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, System.Int32 value)
 CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions Transition(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, CanopyX.Html.Ui.CanopyCarouselTransition value)
-CanopyX.Html.Ui.CanopyCarouselOptionsFluent.static CanopyX.Html.Ui.CanopyCarouselOptions Variant(CanopyX.Html.Ui.CanopyCarouselOptions canopyCarouselOptions, System.String? value)
 CanopyX.Html.Ui.CanopyCarouselSlide : sealed class
 CanopyX.Html.Ui.CanopyCarouselSlide..ctor(System.String contentHtml)
 CanopyX.Html.Ui.CanopyCarouselSlide.System.String ContentHtml { get; }
@@ -364,14 +361,12 @@ CanopyX.Html.Ui.CanopyDialogOptions.System.Boolean Alert { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptions.System.Nullable<System.Boolean> Dismissible { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptions.System.String CloseLabel { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptions.System.String? TriggerId { get; set; }
-CanopyX.Html.Ui.CanopyDialogOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptionsFluent : static class
 CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions Alert(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions CloseLabel(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, System.String value)
 CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions Dismissible(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, System.Nullable<System.Boolean> value)
 CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions Size(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, CanopyX.Html.Ui.CanopyOverlaySize value)
 CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions TriggerId(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, System.String? value)
-CanopyX.Html.Ui.CanopyDialogOptionsFluent.static CanopyX.Html.Ui.CanopyDialogOptions Variant(CanopyX.Html.Ui.CanopyDialogOptions canopyDialogOptions, System.String? value)
 CanopyX.Html.Ui.CanopyDialogSubmitMethod : enum System.Int32
 CanopyX.Html.Ui.CanopyDialogSubmitMethod.const CanopyX.Html.Ui.CanopyDialogSubmitMethod Get = 1
 CanopyX.Html.Ui.CanopyDialogSubmitMethod.const CanopyX.Html.Ui.CanopyDialogSubmitMethod Post = 0
@@ -399,7 +394,6 @@ CanopyX.Html.Ui.CanopyDrawerOptions.System.Boolean Dismissible { get; set; }
 CanopyX.Html.Ui.CanopyDrawerOptions.System.Boolean Modal { get; set; }
 CanopyX.Html.Ui.CanopyDrawerOptions.System.String CloseLabel { get; set; }
 CanopyX.Html.Ui.CanopyDrawerOptions.System.String? TriggerId { get; set; }
-CanopyX.Html.Ui.CanopyDrawerOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent : static class
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions CloseLabel(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, System.String value)
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions Dismissible(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, System.Boolean value = True)
@@ -407,7 +401,6 @@ CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOpt
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions Side(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, CanopyX.Html.Ui.CanopyDrawerSide value)
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions Size(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, CanopyX.Html.Ui.CanopyOverlaySize value)
 CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions TriggerId(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, System.String? value)
-CanopyX.Html.Ui.CanopyDrawerOptionsFluent.static CanopyX.Html.Ui.CanopyDrawerOptions Variant(CanopyX.Html.Ui.CanopyDrawerOptions canopyDrawerOptions, System.String? value)
 CanopyX.Html.Ui.CanopyDrawerSide : enum System.Int32
 CanopyX.Html.Ui.CanopyDrawerSide.const CanopyX.Html.Ui.CanopyDrawerSide Bottom = 2
 CanopyX.Html.Ui.CanopyDrawerSide.const CanopyX.Html.Ui.CanopyDrawerSide End = 0
@@ -453,11 +446,9 @@ CanopyX.Html.Ui.CanopyGalleryOptions : sealed class
 CanopyX.Html.Ui.CanopyGalleryOptions..ctor()
 CanopyX.Html.Ui.CanopyGalleryOptions.System.Boolean Loop { get; set; }
 CanopyX.Html.Ui.CanopyGalleryOptions.System.Boolean ShowCaptions { get; set; }
-CanopyX.Html.Ui.CanopyGalleryOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyGalleryOptionsFluent : static class
 CanopyX.Html.Ui.CanopyGalleryOptionsFluent.static CanopyX.Html.Ui.CanopyGalleryOptions Loop(CanopyX.Html.Ui.CanopyGalleryOptions canopyGalleryOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyGalleryOptionsFluent.static CanopyX.Html.Ui.CanopyGalleryOptions ShowCaptions(CanopyX.Html.Ui.CanopyGalleryOptions canopyGalleryOptions, System.Boolean value = True)
-CanopyX.Html.Ui.CanopyGalleryOptionsFluent.static CanopyX.Html.Ui.CanopyGalleryOptions Variant(CanopyX.Html.Ui.CanopyGalleryOptions canopyGalleryOptions, System.String? value)
 CanopyX.Html.Ui.CanopyMaskedInput : sealed class
 CanopyX.Html.Ui.CanopyMaskedInput..ctor(System.String id, System.String name, System.String label, System.String mask)
 CanopyX.Html.Ui.CanopyMaskedInput.System.Boolean Required { get; set; }
@@ -517,11 +508,9 @@ CanopyX.Html.Ui.CanopyMenuOptions : sealed class
 CanopyX.Html.Ui.CanopyMenuOptions..ctor()
 CanopyX.Html.Ui.CanopyMenuOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
 CanopyX.Html.Ui.CanopyMenuOptions.System.String? TriggerId { get; set; }
-CanopyX.Html.Ui.CanopyMenuOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyMenuOptionsFluent : static class
 CanopyX.Html.Ui.CanopyMenuOptionsFluent.static CanopyX.Html.Ui.CanopyMenuOptions Placement(CanopyX.Html.Ui.CanopyMenuOptions canopyMenuOptions, CanopyX.Html.Ui.CanopyOverlayPlacement value)
 CanopyX.Html.Ui.CanopyMenuOptionsFluent.static CanopyX.Html.Ui.CanopyMenuOptions TriggerId(CanopyX.Html.Ui.CanopyMenuOptions canopyMenuOptions, System.String? value)
-CanopyX.Html.Ui.CanopyMenuOptionsFluent.static CanopyX.Html.Ui.CanopyMenuOptions Variant(CanopyX.Html.Ui.CanopyMenuOptions canopyMenuOptions, System.String? value)
 CanopyX.Html.Ui.CanopyOverlayPlacement : enum System.Int32
 CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement Bottom = 3
 CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement BottomEnd = 1
@@ -553,11 +542,9 @@ CanopyX.Html.Ui.CanopyPopoverOptions : sealed class
 CanopyX.Html.Ui.CanopyPopoverOptions..ctor()
 CanopyX.Html.Ui.CanopyPopoverOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
 CanopyX.Html.Ui.CanopyPopoverOptions.System.String? TriggerId { get; set; }
-CanopyX.Html.Ui.CanopyPopoverOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyPopoverOptionsFluent : static class
 CanopyX.Html.Ui.CanopyPopoverOptionsFluent.static CanopyX.Html.Ui.CanopyPopoverOptions Placement(CanopyX.Html.Ui.CanopyPopoverOptions canopyPopoverOptions, CanopyX.Html.Ui.CanopyOverlayPlacement value)
 CanopyX.Html.Ui.CanopyPopoverOptionsFluent.static CanopyX.Html.Ui.CanopyPopoverOptions TriggerId(CanopyX.Html.Ui.CanopyPopoverOptions canopyPopoverOptions, System.String? value)
-CanopyX.Html.Ui.CanopyPopoverOptionsFluent.static CanopyX.Html.Ui.CanopyPopoverOptions Variant(CanopyX.Html.Ui.CanopyPopoverOptions canopyPopoverOptions, System.String? value)
 CanopyX.Html.Ui.CanopyRating : sealed class
 CanopyX.Html.Ui.CanopyRating..ctor(System.String id, System.String name, System.String label, CanopyX.Html.Ui.CanopyRatingOptions? options = null)
 CanopyX.Html.Ui.CanopyRating.CanopyX.Html.Ui.CanopyRatingOptions Options { get; }
@@ -576,15 +563,14 @@ CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Disabled { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Required { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Int32 Max { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Nullable<System.Int32> Value { get; set; }
-CanopyX.Html.Ui.CanopyRatingOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptionsFluent : static class
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Clearable(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Disabled(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Labels(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, CanopyX.CanopyLabels? value)
+CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Labels(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Action<CanopyX.CanopyLabels> configure)
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Max(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Int32 value)
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Required(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Value(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.Nullable<System.Int32> value)
-CanopyX.Html.Ui.CanopyRatingOptionsFluent.static CanopyX.Html.Ui.CanopyRatingOptions Variant(CanopyX.Html.Ui.CanopyRatingOptions canopyRatingOptions, System.String? value)
 CanopyX.Html.Ui.CanopySelect : sealed class
 CanopyX.Html.Ui.CanopySelect..ctor(System.String id, System.String name, System.String label, CanopyX.Html.Ui.CanopySelectOptions? options = null)
 CanopyX.Html.Ui.CanopySelect.CanopyX.Html.Ui.CanopySelectOptions Options { get; }
@@ -631,7 +617,6 @@ CanopyX.Html.Ui.CanopySelectOptions.System.Nullable<System.Int32> Max { get; set
 CanopyX.Html.Ui.CanopySelectOptions.System.Nullable<System.Int32> MinLength { get; set; }
 CanopyX.Html.Ui.CanopySelectOptions.System.String? Placeholder { get; set; }
 CanopyX.Html.Ui.CanopySelectOptions.System.String? Source { get; set; }
-CanopyX.Html.Ui.CanopySelectOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopySelectOptionsFluent : static class
 CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Disabled(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Max(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.Nullable<System.Int32> value)
@@ -642,7 +627,6 @@ CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOpt
 CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Search(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Source(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.String? value)
 CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Tags(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.Boolean value = True)
-CanopyX.Html.Ui.CanopySelectOptionsFluent.static CanopyX.Html.Ui.CanopySelectOptions Variant(CanopyX.Html.Ui.CanopySelectOptions canopySelectOptions, System.String? value)
 CanopyX.Html.Ui.CanopySignature : sealed class
 CanopyX.Html.Ui.CanopySignature..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopySignatureOptions? options = null)
 CanopyX.Html.Ui.CanopySignature.CanopyX.Html.Ui.CanopySignatureOptions Options { get; }
@@ -656,15 +640,11 @@ CanopyX.Html.Ui.CanopySignatureOptions..ctor()
 CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean Colours { get; set; }
 CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean ReadOnly { get; set; }
 CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean SubmitPng { get; set; }
-CanopyX.Html.Ui.CanopySignatureOptions.System.String? Background { get; set; }
 CanopyX.Html.Ui.CanopySignatureOptions.System.String? DownloadName { get; set; }
-CanopyX.Html.Ui.CanopySignatureOptions.System.String? Ink { get; set; }
 CanopyX.Html.Ui.CanopySignatureOptions.System.String? Name { get; set; }
 CanopyX.Html.Ui.CanopySignatureOptionsFluent : static class
-CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions Background(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.String? value)
 CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions Colours(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions DownloadName(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.String? value)
-CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions Ink(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.String? value)
 CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions Name(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.String? value)
 CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions ReadOnly(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.Boolean value = True)
 CanopyX.Html.Ui.CanopySignatureOptionsFluent.static CanopyX.Html.Ui.CanopySignatureOptions SubmitPng(CanopyX.Html.Ui.CanopySignatureOptions canopySignatureOptions, System.Boolean value = True)
@@ -720,7 +700,6 @@ CanopyX.Html.Ui.CanopyStepperOptions.System.String NextLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? SaveDraftLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? SkipLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? ToolbarHtml { get; set; }
-CanopyX.Html.Ui.CanopyStepperOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptionsFluent : static class
 CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions BackLabel(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, System.String value)
 CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions FinishLabel(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, System.String value)
@@ -734,7 +713,6 @@ CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperO
 CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions SkipLabel(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, System.String? value)
 CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions ToolbarHtml(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, System.String? value)
 CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions ToolbarPosition(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, CanopyX.Html.Ui.CanopyStepperToolbarPosition value)
-CanopyX.Html.Ui.CanopyStepperOptionsFluent.static CanopyX.Html.Ui.CanopyStepperOptions Variant(CanopyX.Html.Ui.CanopyStepperOptions canopyStepperOptions, System.String? value)
 CanopyX.Html.Ui.CanopyStepperToolbarPosition : enum System.Int32
 CanopyX.Html.Ui.CanopyStepperToolbarPosition.const CanopyX.Html.Ui.CanopyStepperToolbarPosition Both = 2
 CanopyX.Html.Ui.CanopyStepperToolbarPosition.const CanopyX.Html.Ui.CanopyStepperToolbarPosition Bottom = 0
@@ -789,7 +767,6 @@ CanopyX.Html.Ui.CanopyTabsOptions.System.Boolean PrintAll { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Int32 SelectedIndex { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Nullable<System.Boolean> CollapseToPicker { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.String? RememberKey { get; set; }
-CanopyX.Html.Ui.CanopyTabsOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptionsFluent : static class
 CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions Activation(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, CanopyX.Html.Ui.CanopyTabActivation value)
 CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions AutoProgress(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, CanopyX.Html.Ui.CanopyTabsAutoProgress? value)
@@ -801,7 +778,6 @@ CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions
 CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions RememberKey(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, System.String? value)
 CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions SelectedIndex(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, System.Int32 value)
 CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions Style(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, CanopyX.Html.Ui.CanopyTabsStyle value)
-CanopyX.Html.Ui.CanopyTabsOptionsFluent.static CanopyX.Html.Ui.CanopyTabsOptions Variant(CanopyX.Html.Ui.CanopyTabsOptions canopyTabsOptions, System.String? value)
 CanopyX.Html.Ui.CanopyTabsOverflow : enum System.Int32
 CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Menu = 1
 CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Scroll = 0
@@ -846,13 +822,11 @@ CanopyX.Html.Ui.CanopyToastsOptions.CanopyX.Html.Ui.CanopyToastPosition Position
 CanopyX.Html.Ui.CanopyToastsOptions.System.Int32 Max { get; set; }
 CanopyX.Html.Ui.CanopyToastsOptions.System.Int32 Timeout { get; set; }
 CanopyX.Html.Ui.CanopyToastsOptions.System.String? Label { get; set; }
-CanopyX.Html.Ui.CanopyToastsOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyToastsOptionsFluent : static class
 CanopyX.Html.Ui.CanopyToastsOptionsFluent.static CanopyX.Html.Ui.CanopyToastsOptions Label(CanopyX.Html.Ui.CanopyToastsOptions canopyToastsOptions, System.String? value)
 CanopyX.Html.Ui.CanopyToastsOptionsFluent.static CanopyX.Html.Ui.CanopyToastsOptions Max(CanopyX.Html.Ui.CanopyToastsOptions canopyToastsOptions, System.Int32 value)
 CanopyX.Html.Ui.CanopyToastsOptionsFluent.static CanopyX.Html.Ui.CanopyToastsOptions Position(CanopyX.Html.Ui.CanopyToastsOptions canopyToastsOptions, CanopyX.Html.Ui.CanopyToastPosition value)
 CanopyX.Html.Ui.CanopyToastsOptionsFluent.static CanopyX.Html.Ui.CanopyToastsOptions Timeout(CanopyX.Html.Ui.CanopyToastsOptions canopyToastsOptions, System.Int32 value)
-CanopyX.Html.Ui.CanopyToastsOptionsFluent.static CanopyX.Html.Ui.CanopyToastsOptions Variant(CanopyX.Html.Ui.CanopyToastsOptions canopyToastsOptions, System.String? value)
 CanopyX.Html.Ui.CanopyTooltip : sealed class
 CanopyX.Html.Ui.CanopyTooltip..ctor(System.String id, System.String text, CanopyX.Html.Ui.CanopyTooltipOptions? options = null)
 CanopyX.Html.Ui.CanopyTooltip.CanopyX.Html.Ui.CanopyTooltipOptions Options { get; }
@@ -867,11 +841,9 @@ CanopyX.Html.Ui.CanopyTooltipOptions : sealed class
 CanopyX.Html.Ui.CanopyTooltipOptions..ctor()
 CanopyX.Html.Ui.CanopyTooltipOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
 CanopyX.Html.Ui.CanopyTooltipOptions.System.String? TriggerId { get; set; }
-CanopyX.Html.Ui.CanopyTooltipOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyTooltipOptionsFluent : static class
 CanopyX.Html.Ui.CanopyTooltipOptionsFluent.static CanopyX.Html.Ui.CanopyTooltipOptions Placement(CanopyX.Html.Ui.CanopyTooltipOptions canopyTooltipOptions, CanopyX.Html.Ui.CanopyOverlayPlacement value)
 CanopyX.Html.Ui.CanopyTooltipOptionsFluent.static CanopyX.Html.Ui.CanopyTooltipOptions TriggerId(CanopyX.Html.Ui.CanopyTooltipOptions canopyTooltipOptions, System.String? value)
-CanopyX.Html.Ui.CanopyTooltipOptionsFluent.static CanopyX.Html.Ui.CanopyTooltipOptions Variant(CanopyX.Html.Ui.CanopyTooltipOptions canopyTooltipOptions, System.String? value)
 CanopyX.Html.Ui.CanopyUiMode : enum System.Int32
 CanopyX.Html.Ui.CanopyUiMode.const CanopyX.Html.Ui.CanopyUiMode Interactive = 0
 CanopyX.Html.Ui.CanopyUiMode.const CanopyX.Html.Ui.CanopyUiMode Report = 1

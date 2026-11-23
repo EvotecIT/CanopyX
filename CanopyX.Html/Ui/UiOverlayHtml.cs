@@ -32,14 +32,13 @@ internal static class UiOverlayHtml {
     }
 
     internal static StringBuilder Start(string tag, string kind, string id, string triggerId, string? description,
-        string? variant, bool alert = false) {
+        bool alert = false) {
         Validate(id, triggerId, description != null);
         var html = new StringBuilder("<" + tag);
         UiHtml.Attribute(html, "id", id);
         UiHtml.Attribute(html, "class", "cx-" + kind);
         UiHtml.Attribute(html, "data-cx-" + kind, string.Empty);
         UiHtml.Attribute(html, "data-cx-part", kind);
-        UiHtml.Attribute(html, "data-cx-variant", variant);
         UiHtml.Attribute(html, "data-state", "closed");
         UiHtml.Attribute(html, "data-cx-trigger", triggerId);
         UiHtml.Attribute(html, "role", alert ? "alertdialog" : "dialog");

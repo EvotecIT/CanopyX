@@ -14,15 +14,15 @@ internal static class FlowSetupTasksExample {
         };
         flow.Step("database", "Connect the database", step => step
             .Group("Connect")
-            .Describe("Where the service keeps its reports and history.")
+            .Description("Where the service keeps its reports and history.")
             .Choice("engine", "Database engine", f => f.Option("sql", "SQL Server").Option("pg", "PostgreSQL").Required().Default("sql").Path("database.engine"))
             .Text("server", "Server", f => f.Required().Help("A host name, with a port when it is not the default.").Path("database.server"))
             .Text("name", "Database name", f => f.Required().Default("reports").Half().Path("database.name"))
-            .Section("engine-options", "Engine options", section => section.FromHost("engine").Describe("The settings this engine needs."))
-            .Check("database-test", "Test the connection", check => check.Fields("engine", "server", "name").RequirePass()));
+            .Section("engine-options", "Engine options", section => section.FromHost().DependsOn("engine").Description("The settings this engine needs."))
+            .Check("database-test", "Test the connection", check => check.Field("engine").Field("server").Field("name").RequirePass()));
         flow.Step("mail", "Choose who gets notified", step => step
             .Group("Connect")
-            .List("admins", "Administrators", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 10).Placeholder("For example: name@example.com").Path("notify.admins"))
+            .List("admins", "Administrators", f => f.Required().ItemRule(CanopyFlowItemRule.Email).Count(1, 10).Placeholder("For example: name@example.com").Path("notify.admins"))
             .Toggle("digest", "Send a daily digest", f => f.Default(true).Path("notify.digest")));
         flow.Step("schedules", "Plan the report schedules", step => step
             .Group("Content")
@@ -37,7 +37,7 @@ internal static class FlowSetupTasksExample {
             .Text("company", "Company name", f => f.Path("branding.company"))
             .Choice("accent", "Accent colour", f => f.Option("teal", "Teal").Option("blue", "Blue").Option("violet", "Violet").Default("teal").Path("branding.accent")));
         flow.Info("licence", "Activate the licence", "The licence arrives by email after the order is approved. This task completes on its own.");
-        flow.Steps[flow.Steps.Count - 1].GroupLabel = "Access";
+        flow.Steps[flow.Steps.Count - 1].Group = "Access";
         flow.Review(review => review.Declaration("Starting the service runs the first schedules today."));
         return flow;
     }

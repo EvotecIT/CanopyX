@@ -268,7 +268,7 @@ grid cell carries only "4 names") and, when asked, `row`.
 var view = CertificateInventoryExample.View(CanopyRecordSource.Sidecar("records/", 1250));
 foreach (var row in rowsWithCellsOnly) view.Rows.Add(row);
 CanopyRecordSidecar.Write(outputFolder, view, ReadRecordDetails());   // streamed, at most 16 pack files open
-view.SaveHtmlPage(Path.Combine(outputFolder, "certificates.html"));
+view.Save(Path.Combine(outputFolder, "certificates.html"));
 ```
 
 Record-pack folders are unescaped local paths relative to the page and end with `/`. Spaces inside the path and Unicode

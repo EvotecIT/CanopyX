@@ -50,10 +50,6 @@ public sealed class CanopyFlowRecordColumn {
         set => _width = value < 60 || value > 480 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A column is 60 to 480 pixels wide.") : value;
     }
 
-    /// <summary>Makes an empty cell an error.</summary>
-    /// <returns>The column.</returns>
-    public CanopyFlowRecordColumn Required() { IsRequired = true; return this; }
-
     /// <summary>Adds an option of a select column.</summary>
     /// <param name="value">The value: text, a number or true or false.</param>
     /// <param name="label">The text the reader sees, or null to show the value.</param>

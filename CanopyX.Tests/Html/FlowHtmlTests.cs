@@ -59,7 +59,7 @@ public sealed class FlowHtmlTests {
 
     [Fact]
     public void Page_UsesTheFlowEntryPointAndNoGridCode() {
-        var page = FlowSamples.MailServer().ToHtmlPage(new CanopyHtmlOptions { Nonce = "n0nce" });
+        var page = FlowSamples.MailServer().ToHtml(new CanopyHtmlOptions { Nonce = "n0nce" });
         Assert.Contains("<title>Connect a mail server</title>", page);
         Assert.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.Flow), page);
         Assert.Contains(CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow), page);
@@ -74,7 +74,7 @@ public sealed class FlowHtmlTests {
     [Fact]
     public void Page_WithExternalAssets_ReferencesTheFlowEntryFiles() {
         var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "assets/", Title = "Setup" };
-        var page = FlowSamples.MailServer().ToHtmlPage(options);
+        var page = FlowSamples.MailServer().ToHtml(options);
         Assert.Contains("<script src=\"assets/" + CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.Flow) + "\" defer></script>", page);
         Assert.Contains("<link rel=\"stylesheet\" href=\"assets/" + CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.Flow) + "\">", page);
         Assert.Contains("<title>Setup</title>", page);
@@ -105,7 +105,7 @@ public sealed class FlowHtmlTests {
         Assert.Contains("Flow runtime", error.Message);
         var external = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
         external.Parts.Add("filter-editor");
-        Assert.Throws<InvalidOperationException>(() => flow.ToHtmlPage(external));
+        Assert.Throws<InvalidOperationException>(() => flow.ToHtml(external));
         var hidden = new CanopyHtmlOptions();
         hidden.HiddenFilterIds.Add("x");
         Assert.Throws<InvalidOperationException>(() => flow.ToHtmlFragment(hidden));
@@ -115,7 +115,7 @@ public sealed class FlowHtmlTests {
     public void InvalidFlow_IsNotWritten() {
         var flow = new CanopyFlow("flow", "A flow");
         Assert.Throws<InvalidOperationException>(() => flow.ToHtmlFragment());
-        Assert.Throws<ArgumentNullException>(() => ((CanopyFlow)null!).ToHtmlPage());
-        Assert.Throws<ArgumentException>(() => FlowSamples.MailServer().SaveHtmlPage(""));
+        Assert.Throws<ArgumentNullException>(() => ((CanopyFlow)null!).ToHtml());
+        Assert.Throws<ArgumentException>(() => FlowSamples.MailServer().Save(""));
     }
 }

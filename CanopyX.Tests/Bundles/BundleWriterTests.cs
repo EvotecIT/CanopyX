@@ -42,7 +42,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         try {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyBundleWriter().Write(view, directory));
             Assert.False(Directory.Exists(directory));
-            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveHtmlBundle(directory));
+            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveBundle(directory));
             Assert.False(Directory.Exists(directory));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
@@ -58,7 +58,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         try {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyBundleWriter().Write(view, directory));
             Assert.False(Directory.Exists(directory));
-            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveHtmlBundle(directory));
+            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveBundle(directory));
             Assert.False(Directory.Exists(directory));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
@@ -76,7 +76,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-complete-ref-" + Guid.NewGuid().ToString("N"));
         try {
-            var result = view.SaveHtmlBundle(directory);
+            var result = view.SaveBundle(directory);
             var files = new SidecarFiles(result.DataDirectory, view.Id);
             var root = files.Document("r/0")["items"]![0]!;
             var childRef = root["ref"]!.GetValue<string>();

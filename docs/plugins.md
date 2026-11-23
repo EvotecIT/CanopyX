@@ -160,7 +160,7 @@ A part script registers itself whether it runs before or after the runtime: it p
 
 ### Serving parts
 
-C# hosts need nothing new. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveHtmlBundle` does the same, and fragments written with inline assets carry the payloads of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
+C# hosts need nothing new. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the payloads of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
 
 - `CanopyHtmlAssets.Parts`, `GetPart(name)` and `GetParts(runtime)` list them as `CanopyHtmlPart` objects with `Script`, `Style`, `Version`, the plain and content-hashed file names and `Markup`.
 - `CanopyHtmlAssets.GetRequiredParts(view)` names the parts a tree or flat grid loads, for a host that assembles single-file pages itself; `CanopyHtmlDocument.EmbedOnce(part)` returns a part's markup the first time a document asks for it.

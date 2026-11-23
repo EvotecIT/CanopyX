@@ -12,7 +12,7 @@ foreach (var note in result.Notes) logger.LogInformation("{Note}", note);   // "
 
 var calendar = new CanopyCalendar(result.ToCalendarEvents(source: "holidays")) { TimeZone = result.TimeZone };
 calendar.Sources.Add(new CanopyCalendarSource("holidays", "Public holidays") { Tone = Tone.Info });
-calendar.SaveHtmlPage("holidays.html");
+calendar.Save("holidays.html");
 ```
 
 `Parse(string text)` returns a `CanopyICalendarResult`:
