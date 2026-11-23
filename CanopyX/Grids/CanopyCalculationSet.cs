@@ -61,7 +61,7 @@ public sealed class CanopyCalculationSet {
             var value = EnforceKind(program.Calculation.Evaluate(Resolve), program.Kind);
             results.Add(program.Id, value);
             copy.Cells[program.Id] = value.IsError
-                ? new CanopyCell { Text = value.Error == "divide-by-zero" ? "#DIV/0" : "#ERROR", Tone = CanopyTone.Danger, Title = program.Title + " (" + program.Calculation.Expression + "): " + (labels ?? new CanopyLabels()).GridCalculationError.Replace("{error}", value.Error == "divide-by-zero" ? (labels ?? new CanopyLabels()).GridCalculationDivideZero : value.Error!) }
+                ? new CanopyCell { Text = value.Error == "divide-by-zero" ? "#DIV/0" : "#ERROR", Tone = Tone.Danger, Title = program.Title + " (" + program.Calculation.Expression + "): " + (labels ?? new CanopyLabels()).GridCalculationError.Replace("{error}", value.Error == "divide-by-zero" ? (labels ?? new CanopyLabels()).GridCalculationDivideZero : value.Error!) }
                 : Cell(value.Value);
         }
         return copy;

@@ -15,6 +15,7 @@ namespace CanopyX;
 /// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/2</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyTreeView {
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
@@ -140,7 +141,7 @@ public sealed partial class CanopyTreeView {
     /// Gets the icons nodes can refer to by key, as trusted SVG markup declared once per view. Icons are drawn with
     /// the text colour, so use <c>currentColor</c> in the SVG.
     /// </summary>
-    public IDictionary<string, string> Icons { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+    public IDictionary<Icon, string> Icons { get; } = new Dictionary<Icon, string>();
 
     /// <summary>
     /// Gets or sets the key under which the runtime remembers the view state for the browser session.
@@ -295,7 +296,7 @@ public sealed partial class CanopyTreeView {
         if (Icons.Count > 0) {
             writer.Name("icons").BeginObject();
             foreach (var icon in Icons) {
-                writer.Property(icon.Key, icon.Value);
+                writer.Property(icon.Key.Key, icon.Value);
             }
 
             writer.EndObject();

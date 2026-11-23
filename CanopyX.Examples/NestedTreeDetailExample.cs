@@ -9,8 +9,8 @@ internal static class NestedTreeDetailExample {
             var view = Create(local);
             var name = "nested-tree-detail" + (local ? "-local" : "");
             File.WriteAllText(Path.Combine(output, name + ".json"), view.ToJson());
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-                view.SaveHtmlPage(Path.Combine(output, name + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+                view.SaveHtmlPage(Path.Combine(output, name + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = view.Label, Language = "pl", Theme = theme });
         }
     }

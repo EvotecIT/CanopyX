@@ -12,9 +12,9 @@ internal static class ContentGridExample {
         view.Columns.Add(new CanopyColumn("notes", "Notes") { Wrap = true });
         view.AutoRowHeight = true;
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Needs review"),
-            CanopyTone.Warning, "needs-review"));
+            Tone.Warning, "needs-review"));
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Complete"),
-            CanopyTone.Success, target: CanopyGridHighlightTarget.Cell));
+            Tone.Success, target: CanopyGridHighlightTarget.Cell));
         view.GetColumn("name").Sizing = CanopyColumnSizing.Content(120, 300);
         view.GetColumn("notes").Sizing = CanopyColumnSizing.Flex(1, 200, 500);
         for (var i = 0; i < 300; i++) {
@@ -23,7 +23,7 @@ internal static class ContentGridExample {
             row.Cells["reference"] = "REPORT-REFERENCE-" + (10000 + i); row.Cells["notes"] = "A loaded sample sets a useful starting width. Saved widths keep the reader's choice.";
             view.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-            InventoryGridExample.WritePage(view, output, "content-grid" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html", theme);
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+            InventoryGridExample.WritePage(view, output, "content-grid" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html", theme);
     }
 }

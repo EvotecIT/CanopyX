@@ -77,7 +77,7 @@ internal static class CanopyTreeViewValidator {
 
         foreach (var icon in view.Icons) {
             var markup = icon.Value?.TrimStart();
-            if (string.IsNullOrEmpty(icon.Key) || markup == null || markup.Length <= 4 || !markup.StartsWith("<svg", StringComparison.OrdinalIgnoreCase)
+            if (icon.Key.IsEmpty || markup == null || markup.Length <= 4 || !markup.StartsWith("<svg", StringComparison.OrdinalIgnoreCase)
                 || " \t\r\n\f/>".IndexOf(markup[4]) < 0) {
                 throw new InvalidOperationException("Icon '" + icon.Key + "' of view '" + view.Id + "' must be SVG markup that starts with <svg.");
             }
@@ -118,7 +118,7 @@ internal static class CanopyTreeViewValidator {
 
     /// <summary>Checks that a node uses only icons and columns the view declares.</summary>
     internal static void ValidateNodeAgainstView(CanopyTreeView view, HashSet<string> columns, CanopyNode node) {
-        if (node.Icon != null && !view.Icons.ContainsKey(node.Icon)) {
+        if (!node.Icon.IsEmpty && !view.Icons.ContainsKey(node.Icon)) {
             throw new InvalidOperationException("Node '" + node.Id + "' uses icon '" + node.Icon + "', which view '" + view.Id + "' does not declare.");
         }
 

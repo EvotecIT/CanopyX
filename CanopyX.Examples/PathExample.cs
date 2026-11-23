@@ -7,8 +7,8 @@ namespace CanopyX.Examples;
 /// <summary>Explicit approval routes over ordinary records, including a host-marked return and boundary crossing.</summary>
 internal static class PathExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            Create().SaveHtmlPage(System.IO.Path.Combine(output, "path" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            Create().SaveHtmlPage(System.IO.Path.Combine(output, "path" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Approval routes", Theme = theme, Height = "820px" });
         }
         var html = CanopyStaticHtml.RenderGrid(Create(), options: new CanopyStaticHtmlOptions { Caption = "Approval routes" });
@@ -31,7 +31,7 @@ internal static class PathExample {
         view.Rows.Add(Record("retired", "Review the superseded approval step", "Review group", "This step is retained for reading and marked disabled by the host."));
         var primary = new CanopyPathChain("standard", "Standard approval");
         primary.Hops.Add(new CanopyPathHop("request", "Request prepared"));
-        primary.Hops.Add(new CanopyPathHop("review", "Review required") { Badges = { new CanopyBadge("Two reviewers", CanopyTone.Info) } });
+        primary.Hops.Add(new CanopyPathHop("review", "Review required") { Badges = { new CanopyBadge("Two reviewers", Tone.Info) } });
         primary.Hops.Add(new CanopyPathHop("external", "Team handover") { Flags = { CanopyPathFlag.Foreign } });
         primary.Hops.Add(new CanopyPathHop("approve", "Approval recorded"));
         view.Path.Chains.Add(primary);

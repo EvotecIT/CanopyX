@@ -23,7 +23,7 @@ list.Action("copy-unc", "Copy the network path", CanopyChangeActionIcon.Copy, co
     .Action("acknowledge", "Acknowledge", CanopyChangeActionIcon.Check);
 var item = list.Add("payload", CanopyChangeKind.Added, "Scripts/Logon/agent.exe");
 item.After = new CanopyChangeVersion { Size = 1_248_256, Hash = sha256, Time = seen };
-item.Flag("unsigned", "Unsigned", "The file has no embedded signature.", CanopyTone.Danger);
+item.Flag("unsigned", "Unsigned", "The file has no embedded signature.", Tone.Danger);
 item.Values["unc"] = @"\\fs01\deploy\Scripts\Logon\agent.exe";
 
 var script = list.Add("logon", CanopyChangeKind.Modified, "Scripts/Logon/map-drives.ps1");

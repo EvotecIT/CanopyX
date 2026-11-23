@@ -55,7 +55,7 @@ public sealed partial class CanopyCalendar {
         if (list.Exists(item => item.AllDay)) _allDay = Optional(grid, ColumnAllDay, "All day", true);
         if (list.Exists(item => item.Description != null)) _description = Optional(grid, ColumnDescription, "Description", false);
         if (list.Exists(item => item.Location != null)) _location = Optional(grid, ColumnLocation, "Location", true);
-        if (list.Exists(item => item.Tone.Name != null)) _tone = Optional(grid, ColumnTone, "Tone", true);
+        if (list.Exists(item => item.Tone.WireName() != null)) _tone = Optional(grid, ColumnTone, "Tone", true);
         if (list.Exists(item => item.Resource != null)) _resource = Optional(grid, ColumnResource, "Resource", true);
         if (list.Exists(item => item.ResourceIds.Count > 0)) ResourceIds = Optional(grid, ColumnResourceIds, "Resources", true);
         if (list.Exists(item => item.Recurrence != null)) _recurrence = Optional(grid, ColumnRecurrence, "Repeats", true);
@@ -87,7 +87,7 @@ public sealed partial class CanopyCalendar {
             if (item.BackgroundColor != null) row.Cells[ColumnBackgroundColor] = item.BackgroundColor;
             if (item.TextColor != null) row.Cells[ColumnTextColor] = item.TextColor;
             if (item.Url != null) row.Cells[ColumnUrl] = item.Url;
-            if (item.Tone.Name != null) row.Cells[ColumnTone] = item.Tone.Name;
+            if (item.Tone.WireName() != null) row.Cells[ColumnTone] = item.Tone.WireName();
             if (item.Resource != null) row.Cells[ColumnResource] = item.Resource;
             if (item.ResourceIds.Count > 0) {
                 var writer = new CanopyJsonWriter();

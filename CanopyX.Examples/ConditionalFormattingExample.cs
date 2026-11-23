@@ -40,25 +40,25 @@ internal static class ConditionalFormattingExample {
             view.Rows.Add(row);
         }
 
-        view.FormatRules.Add(new CanopyFormatRule("down", CanopyFormatStyle.Highlight(CanopyTone.Danger)) {
+        view.FormatRules.Add(new CanopyFormatRule("down", CanopyFormatStyle.Highlight(Tone.Danger)) {
             Label = "Server down", Description = "Server is down", Target = CanopyFormatTarget.Row,
             When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Down")
         });
-        view.FormatRules.Add(CanopyFormatRule.ForCell("degraded", "status", CanopyFormatStyle.Highlight(CanopyTone.Warning),
+        view.FormatRules.Add(CanopyFormatRule.ForCell("degraded", "status", CanopyFormatStyle.Highlight(Tone.Warning),
             CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Degraded", "Maintenance")));
         view.FormatRules[1].Label = "Degraded or in maintenance";
-        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu-load", "cpu", CanopyFormatStyle.DataBar(CanopyTone.Info, 0, 100)));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu-load", "cpu", CanopyFormatStyle.DataBar(Tone.Info, 0, 100)));
         view.FormatRules[2].Label = "CPU load";
-        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu-hot", "cpu", new CanopyFormatStyle { Tone = CanopyTone.Danger, Emphasis = CanopyFormatEmphasis.Text, Icon = CanopyFormatIcons.Up },
+        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu-hot", "cpu", new CanopyFormatStyle { Tone = Tone.Danger, Emphasis = CanopyFormatEmphasis.Text, Icon = CanopyFormatIcons.Up },
             CanopyFormatCondition.Where("cpu", CanopyFormatOperator.GreaterThan, 90)));
         view.FormatRules[3].Label = "CPU above 90%";
-        view.FormatRules.Add(CanopyFormatRule.ForCell("latency", "latency", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(CanopyTone.Success, CanopyTone.Warning, CanopyTone.Danger))));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("latency", "latency", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(Tone.Success, Tone.Warning, Tone.Danger))));
         view.FormatRules[4].Label = "Latency";
-        var disk = CanopyFormatRule.ForCell("disk-low", "disk", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(10, CanopyTone.Danger, "Critical"), new CanopyFormatBand(null, CanopyTone.Warning, "Low")),
+        var disk = CanopyFormatRule.ForCell("disk-low", "disk", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(10, Tone.Danger, "Critical"), new CanopyFormatBand(null, Tone.Warning, "Low")),
             CanopyFormatCondition.Where("disk", CanopyFormatOperator.LessThanOrEqual, 20));
         disk.Label = "Disk space";
         view.FormatRules.Add(disk);
-        view.FormatRules.Add(CanopyFormatRule.ForCell("stale", "checked", new CanopyFormatStyle { Tone = CanopyTone.Muted, Emphasis = CanopyFormatEmphasis.Text, Icon = CanopyFormatIcons.Clock, Cue = "stale" },
+        view.FormatRules.Add(CanopyFormatRule.ForCell("stale", "checked", new CanopyFormatStyle { Tone = Tone.Muted, Emphasis = CanopyFormatEmphasis.Text, Icon = CanopyFormatIcons.Clock, Cue = "stale" },
             CanopyFormatCondition.Where("checked", CanopyFormatOperator.LessThan, now.AddDays(-14))));
         view.FormatRules[6].Label = "No check-in for 14 days";
         return view;
@@ -66,8 +66,8 @@ internal static class ConditionalFormattingExample {
 
     internal static void Write(string output) {
         var view = View();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-            view.SaveHtmlPage(Path.Combine(output, "conditional-formatting" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+            view.SaveHtmlPage(Path.Combine(output, "conditional-formatting" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "CanopyX conditional formatting", Theme = theme });
         // The same rules in the script-free table that email, print and Word receive.
         var fallback = CanopyStaticHtml.RenderGrid(view, (CanopyGridPage?)null, new CanopyStaticHtmlOptions { MaxRows = 24 });

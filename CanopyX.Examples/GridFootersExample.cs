@@ -33,8 +33,8 @@ internal static class GridFootersExample {
             footer.Aggregates.Add(new CanopyGridAggregate("costSum", "cost", CanopyGridAggregateOperation.Sum, "Sum"));
             view.Footers.Add(footer);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            view.SaveHtmlPage(Path.Combine(output, theme == CanopyTheme.Dark ? "grid-footers-dark.html" : "grid-footers.html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            view.SaveHtmlPage(Path.Combine(output, theme == ThemeMode.Dark ? "grid-footers-dark.html" : "grid-footers.html"),
                 new CanopyHtmlOptions { Title = "CanopyX resource costs and totals", Theme = theme });
         }
         var page = new CanopyGridPage(view.Id, "example", 0, view.Rows.Count, view.Rows.Count);

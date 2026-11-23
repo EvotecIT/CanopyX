@@ -23,7 +23,7 @@ tree.Roots.Add(site);
 grid.View.Calendar = new CanopyCalendar("starts") {
     End = "ends", Title = "title", Status = "kind", Resource = "host", View = CanopyCalendarView.Timeline, Zoom = CanopyCalendarZoom.Day,
     Resources = new CanopyCalendarResources(tree) { Label = "Hosts", Width = 360 },
-    Capacity = new CanopyCalendarCapacity().Add(4, CanopyTone.Warning).Add(7, CanopyTone.Danger)
+    Capacity = new CanopyCalendarCapacity().Add(4, Tone.Warning).Add(7, Tone.Danger)
 };
 grid.View.Calendar.Resources!.Aggregates["events"] = CanopyCalendarAggregate.Count;
 grid.View.Calendar.Resources!.Aggregates["busy"] = CanopyCalendarAggregate.Busy;

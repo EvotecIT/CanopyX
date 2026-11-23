@@ -31,9 +31,9 @@ internal static class ReportingGridExample {
         view.Query.Sort.Add(new CanopyGridSort("name"));
         foreach (var presentation in new[] { CanopyGridPresentation.Paged, CanopyGridPresentation.Continuous }) {
             view.Presentation = presentation;
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
                 var name = "reporting-grid" + (presentation == CanopyGridPresentation.Continuous ? "-continuous" : "") +
-                    (theme == CanopyTheme.Dark ? "-dark" : "") + ".html";
+                    (theme == ThemeMode.Dark ? "-dark" : "") + ".html";
                 view.SaveHtmlPage(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX ordered reporting grid", Theme = theme });
             }
         }

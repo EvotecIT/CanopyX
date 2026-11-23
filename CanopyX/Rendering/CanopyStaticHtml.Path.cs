@@ -54,8 +54,8 @@ public static partial class CanopyStaticHtml {
                 foreach (var flag in hop.Flags) {
                     var label = flag == CanopyPathFlag.Cycle ? view.Labels.PathCycle
                         : flag == CanopyPathFlag.Foreign ? view.Labels.PathForeign : view.Labels.PathDisabled;
-                    var tone = flag == CanopyPathFlag.Cycle ? CanopyTone.Warning
-                        : flag == CanopyPathFlag.Foreign ? CanopyTone.Info : CanopyTone.Muted;
+                    var tone = flag == CanopyPathFlag.Cycle ? Tone.Warning
+                        : flag == CanopyPathFlag.Foreign ? Tone.Info : Tone.Muted;
                     AppendBadges(html, new[] { new CanopyBadge(label, tone) }, styles, text);
                 }
                 AppendBadges(html, hop.Badges, styles, text);

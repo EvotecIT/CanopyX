@@ -5,8 +5,8 @@ internal static class TimeSliderFixtures {
 
     internal static CanopyMatrix MakeMatrix(string label = "Service health", string id = "health", int rows = 2) {
         var view = new CanopyMatrix(id, label);
-        view.State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check)
-            .State("late", "Delayed", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true);
+        view.State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check)
+            .State("late", "Delayed", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true);
         view.Columns.Item("east", "East");
         for (var i = 0; i < rows; i++) {
             view.Rows.Item("service-" + i, label + " service " + i);

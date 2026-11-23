@@ -17,6 +17,7 @@ namespace CanopyX;
 /// </para>
 /// <para>CanopyX never writes: clicking a cell raises <c>canopyx:matrixCell</c> for the host.</para>
 /// </remarks>
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyMatrix {
     /// <summary>The <see cref="CanopyMatrixAxis.SortBy"/> value that sorts an axis by its labels.</summary>
     public const string SortByLabel = "#label";
@@ -116,7 +117,7 @@ public sealed partial class CanopyMatrix {
     /// <param name="symbol">The symbol.</param>
     /// <param name="attention">Whether cells in this state need attention.</param>
     /// <returns>The matrix.</returns>
-    public CanopyMatrix State(string id, string label, CanopyTone tone, CanopyMatrixSymbol symbol, bool attention = false) {
+    public CanopyMatrix State(string id, string label, Tone tone, CanopyMatrixSymbol symbol, bool attention = false) {
         States.Add(new CanopyMatrixState(id, label, tone, symbol) { Attention = attention });
         return this;
     }

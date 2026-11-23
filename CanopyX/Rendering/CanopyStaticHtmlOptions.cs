@@ -86,13 +86,13 @@ public sealed class CanopyStaticHtmlOptions {
     public bool UseThemeVariables { get; set; }
 
     /// <summary>
-    /// Gets the text colours of the host's own tones (see <see cref="CanopyTone.Named"/>), each as a hex colour such
+    /// Gets the text colours of the host's own tones (see <see cref="Tone.Named"/>), each as a hex colour such
     /// as <c>#b3261e</c>, to go with <see cref="Theme"/>. A host tone without an entry keeps the normal text colour,
     /// unless <see cref="UseThemeVariables"/> is on and the page defines it. The colours of the tones CanopyX ships
     /// belong to the theme. Rendering rejects a colour that is not <c>#</c> followed by three or six hex digits,
     /// because the value goes into an inline style.
     /// </summary>
-    public IDictionary<CanopyTone, string> ToneColors { get; } = new Dictionary<CanopyTone, string>();
+    public IDictionary<Tone, string> ToneColors { get; } = new Dictionary<Tone, string>();
 
     /// <summary>Gets or sets an address added to the overflow note. Relative URLs and HTTP, HTTPS, or mailto links are allowed; other schemes are omitted.</summary>
     public string? FullReportUrl { get; set; }

@@ -19,7 +19,7 @@ highlightRules: [
 ]
 ```
 
-In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Failed"), CanopyTone.Danger)` to `view.HighlightRules`. The default target is the row; `CanopyGridHighlightTarget.Cell` decorates the condition column's cell. The first match wins separately for the row and each cell. Rules use typed raw values and the existing filter semantics; display text is independent. Row tones use the existing theme palette, and script-free fallback tables retain the rules and classes. The content-sized example demonstrates these rules.
+In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Failed"), Tone.Danger)` to `view.HighlightRules`. The default target is the row; `CanopyGridHighlightTarget.Cell` decorates the condition column's cell. The first match wins separately for the row and each cell. Rules use typed raw values and the existing filter semantics; display text is independent. Row tones use the existing theme palette, and script-free fallback tables retain the rules and classes. The content-sized example demonstrates these rules.
 
 ### Shipped languages
 
@@ -96,6 +96,24 @@ row.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
 inventory.Rows.Add(row);
 inventory.SaveHtmlPage("inventory.html");
 ```
+
+Every model also has fluent methods, generated at build time from its properties, so the same view reads as a chain. They
+set the property and return the same object, so chains, object initializers and property access all edit one definition:
+
+```csharp
+var inventory = new CanopyDataGridView("inventory", "Inventory")
+    .Density(CanopyGridDensity.Compact)
+    .Column(new CanopyColumn("name", "Name").Sortable())
+    .Column(new CanopyColumn("size", "Size").Kind(CanopyColumnKind.Number).Sortable())
+    .Layout(layout => layout.Mode(CanopyLayoutMode.Auto));
+```
+
+A collection property gets a method per item (`Column(...)`) and one for several (`Columns(...)`); its items are built first,
+with their constructor arguments, as the columns above are. A settings object gets a method that configures it
+(`Layout(l => ...)`). CanopyX shares the `ThemeMode`, `Tone` and `Icon`
+types with ChartForgeX, ConsoleMonster and HtmlForgeX, so hosts pass them between the engines unchanged: `Tone.Danger` or
+`Tone.Named("severity-high")`, `ThemeMode.Dark`, and `Icon.Named("folder")` for a catalog key. Characters of a style's own
+(an emoji, `!`) are a `Mark`, not an icon.
 
 For typed records there are two routes, both returning a `CanopyDataGridView<T>` ([typed grids](typed-grids.md)):
 
@@ -462,7 +480,7 @@ projects.Cells["owner"] = "Engineering";
 
 var plans = new CanopyNode("projects/plans", "plans");
 plans.Cells["size"] = 1_048_576;
-plans.Badges.Add(new CanopyBadge("stale", CanopyTone.Warning));
+plans.Badges.Add(new CanopyBadge("stale", Tone.Warning));
 projects.Children.Add(plans);
 
 view.Roots.Add(projects);

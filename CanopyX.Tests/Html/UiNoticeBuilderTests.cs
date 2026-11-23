@@ -7,8 +7,8 @@ public sealed class UiNoticeBuilderTests {
     [Fact]
     public void Toasts_WriteARegionTheRuntimeReadsAndAListWithoutIt() {
         var region = new CanopyToasts("notices", new CanopyToastsOptions { Position = CanopyToastPosition.TopCenter, Max = 2, Timeout = 8000, Label = "Report notices" });
-        region.Items.Add(new CanopyToast("Collected <42> servers") { Id = "collected", Title = "Done", Tone = CanopyTone.Success, Timeout = 0 });
-        region.Items.Add(new CanopyToast("Two hosts did not answer") { Tone = CanopyTone.Named("high") });
+        region.Items.Add(new CanopyToast("Collected <42> servers") { Id = "collected", Title = "Done", Tone = Tone.Success, Timeout = 0 });
+        region.Items.Add(new CanopyToast("Two hosts did not answer") { Tone = Tone.Named("high") });
 
         var html = region.ToHtmlFragment();
 

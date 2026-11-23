@@ -10,7 +10,7 @@ public sealed class GridStackTests {
         view.Stack = new CanopyStack { TitleColumn = "title" };
         view.Stack.Layers.Add(new CanopyStackLayer("first", "r", "Starting value") { Label = "Baseline", Enforced = true });
         view.Stack.Layers.Add(new CanopyStackLayer("second", "r", "Host selected this result") {
-            Winner = true, Badges = { new CanopyBadge("Reviewed", CanopyTone.Info) { Title = "Host review" } }
+            Winner = true, Badges = { new CanopyBadge("Reviewed", Tone.Info) { Title = "Host review" } }
         });
         view.Stack.Layers.Add(new CanopyStackLayer("third", "r", "Outside the selected scope") { Filtered = true });
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""

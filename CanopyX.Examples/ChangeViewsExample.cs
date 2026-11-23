@@ -18,7 +18,7 @@ internal static class ChangeViewsExample {
     internal static void Write(string output) {
         var template = Resource("changes.html");
         var exampleStyle = Resource("examples.css");
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options() => new CanopyHtmlOptions { Theme = theme, Document = document };
             var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
@@ -27,7 +27,7 @@ internal static class ChangeViewsExample {
                 .Replace("{{list}}", List().ToHtmlFragment(Options()))
                 .Replace("{{propagation}}", Propagation().ToHtmlFragment(Options()))
                 .Replace("{{diff}}", ScriptDiff().ToHtmlFragment(Options()));
-            File.WriteAllText(Path.Combine(output, "changes" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"), page, new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(output, "changes" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), page, new UTF8Encoding(false));
         }
 
         Large(20000).SaveHtmlPage(Path.Combine(output, "changes-diff-large.html"), new CanopyHtmlOptions { Title = "A diff of 20,000 lines", Height = "86vh" });
@@ -100,10 +100,10 @@ internal static class ChangeViewsExample {
         var payload = Add("payload", CanopyChangeKind.Added, "Scripts/Logon/agent.exe");
         payload.Secondary = "Not managed by any setting";
         payload.After = new CanopyChangeVersion { Size = 1_248_256, Hash = "9f2c41d07be35a18c6e0d4f9a2b7c3e15d8f60a4b9c2e7d1f3a5b8c0d2e4f6a8", Time = Changed };
-        payload.Flag("unsigned", "Unsigned", "The file has no embedded signature.", CanopyTone.Danger)
+        payload.Flag("unsigned", "Unsigned", "The file has no embedded signature.", Tone.Danger)
             .Flag("unreferenced", "Not referenced", "No setting runs or links to this file.")
             .Flag("executable", "Executable", "Programs dropped on the share run on every computer that maps it.");
-        payload.Fact("Owner", null, "EXAMPLE\\svc-build").Fact("Signer", null, "Not signed", CanopyTone.Danger).Fact("File version", null, "4.2.0.17");
+        payload.Fact("Owner", null, "EXAMPLE\\svc-build").Fact("Signer", null, "Not signed", Tone.Danger).Fact("File version", null, "4.2.0.17");
 
         var install = Add("install", CanopyChangeKind.Added, "Scripts/Startup/install.ps1");
         install.After = new CanopyChangeVersion { Size = 412, Hash = "1b7e9a3c5d2f8e0a4c6b9d1e3f5a7c9b2d4e6f8a0c1b3d5e7f9a2c4e6b8d0f1a", Time = Changed.AddSeconds(4) };
@@ -114,7 +114,7 @@ internal static class ChangeViewsExample {
         var logon = Add("logon", CanopyChangeKind.Modified, "Scripts/Logon/map-drives.ps1");
         logon.Before = new CanopyChangeVersion { Size = 1_031, Hash = "4d6f8a0c2e4b6d8f1a3c5e7b9d0f2a4c6e8b1d3f5a7c9e0b2d4f6a8c1e3b5d7f", Time = Changed.AddDays(-12) };
         logon.After = new CanopyChangeVersion { Size = 1_268, Hash = "c3e5a7b9d1f3a5c7e9b0d2f4a6c8e1b3d5f7a9c0e2b4d6f8a1c3e5b7d9f0a2c4", Time = Changed.AddSeconds(-30) };
-        logon.Flag("downloads", "Downloads a file", "The script now downloads and runs a program.", CanopyTone.Warning);
+        logon.Flag("downloads", "Downloads a file", "The script now downloads and runs a program.", Tone.Warning);
         logon.Fact("Owner", "EXAMPLE\\Domain Admins", "EXAMPLE\\Domain Admins");
         logon.Diff = ScriptDiff();
 
@@ -138,7 +138,7 @@ internal static class ChangeViewsExample {
         owner.KindLabel = "Owner changed";
         owner.Before = new CanopyChangeVersion { Size = 8_120, Hash = "f0a2c4e6b8d1f3a5c7e9b0d2f4a6c8e1b3d5f7a9c2e4b6d8f0a1c3e5b7d9f2a4" };
         owner.After = new CanopyChangeVersion { Size = 8_120, Hash = "f0a2c4e6b8d1f3a5c7e9b0d2f4a6c8e1b3d5f7a9c2e4b6d8f0a1c3e5b7d9f2a4", Time = Changed.AddSeconds(25) };
-        owner.Fact("Owner", "EXAMPLE\\Domain Admins", "EXAMPLE\\jdoe", CanopyTone.Warning);
+        owner.Fact("Owner", "EXAMPLE\\Domain Admins", "EXAMPLE\\jdoe", Tone.Warning);
         owner.Diff = new CanopyTextDiff("policy-diff", "policy.xml") { Content = CanopyDiffContent.Identical, Message = "Only the owner changed; the content is the same on both sides." };
         return list;
     }

@@ -103,8 +103,8 @@ public sealed class StreamedViewJsonTests {
         view.Columns.Add(new CanopyColumn("when", "When") { Kind = CanopyColumnKind.DateTime });
         switch (name) {
             case "hostile":
-                view.Icons["i"] = "<svg viewBox=\"0 0 1 1\"><path d=\"M0 0\"/></svg>";
-                view.Roots.Add(new CanopyNode("</script>", "<!-- & \"q\" \\ \u2028\u2029 \t\r\n\b\f `${x}` $ {") { Icon = "i", ClassName = "a&b" });
+                view.Icons[Icon.Named("i")] = "<svg viewBox=\"0 0 1 1\"><path d=\"M0 0\"/></svg>";
+                view.Roots.Add(new CanopyNode("</script>", "<!-- & \"q\" \\ \u2028\u2029 \t\r\n\b\f `${x}` $ {") { Icon = Icon.Named("i"), ClassName = "a&b" });
                 view.Roots.Add(new CanopyNode("lone", "broken \uD800 and \uDC00 end \uD83D"));
                 break;
             case "unicode":
@@ -126,7 +126,7 @@ public sealed class StreamedViewJsonTests {
                 table.ColumnWidths.Add(3);
                 table.ColumnWidths.Add(1);
                 table.ColumnWidths.Add(1);
-                table.AddRow("Password length", 8, new CanopyCell("14") { Tone = CanopyTone.Success, Title = "raised" });
+                table.AddRow("Password length", 8, new CanopyCell("14") { Tone = Tone.Success, Title = "raised" });
                 table.AddRow("Lockout & reset", null!, DateTime.SpecifyKind(new DateTime(2026, 10, 7, 4, 53, 31), DateTimeKind.Utc));
                 parent.Children.Add(new CanopyNode("p/t", "Table") { Detail = table });
                 parent.Children.Add(new CanopyNode("p/h", "Html") { Detail = new CanopyHtmlDetail("<p>trusted & \"raw\"</p>") { Height = 3 } });
@@ -142,7 +142,7 @@ public sealed class StreamedViewJsonTests {
                         var child = new CanopyNode(root.Id + "/" + c, new string((char)('a' + c % 26), random.Next(1, 400)) + " 😀 <&> \u2028");
                         child.Cells["size"] = random.Next();
                         child.Cells["when"] = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(random.Next());
-                        if (c % 7 == 0) child.Badges.Add(new CanopyBadge("new", CanopyTone.Info));
+                        if (c % 7 == 0) child.Badges.Add(new CanopyBadge("new", Tone.Info));
                         if (c % 11 == 0) child.Data["k"] = "v" + c;
                         if (c % 13 == 0) {
                             var detail = new CanopyTableDetail().AddColumns("A", "B");

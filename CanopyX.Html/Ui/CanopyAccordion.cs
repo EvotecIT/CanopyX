@@ -7,6 +7,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a dependency-free declarative accordion whose sections stay readable before runtime readiness.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyAccordion {
     // The ARIA accordion pattern advises against region landmarks when many panels can be open together.
     private const int MaxRegions = 6;
@@ -77,9 +78,9 @@ public sealed class CanopyAccordion {
         UiHtml.Attribute(html, "aria-expanded", UiHtml.Bool(item.Open));
         if (item.Disabled) UiHtml.Attribute(html, "aria-disabled", "true");
         html.Append('>');
-        if (item.Icon != null) {
+        if (!item.Icon.IsEmpty) {
             html.Append("<span class=\"cx-accordion-icon\" aria-hidden=\"true\"");
-            UiHtml.Attribute(html, "data-icon", item.Icon);
+            UiHtml.Attribute(html, "data-icon", item.Icon.Key);
             html.Append("></span>");
         }
         UiHtml.Span(html, "cx-accordion-label", item.Label);

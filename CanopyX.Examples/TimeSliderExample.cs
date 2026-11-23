@@ -21,8 +21,8 @@ internal static class TimeSliderExample {
             propagation.TimeSlider.Snapshots.Add(new(Start.AddMinutes(i), Propagation(i), label));
         }
 
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             matrix.SaveHtmlPage(Path.Combine(output, "time-matrix" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service health over time", Theme = theme, Height = "auto" });
             propagation.SaveHtmlPage(Path.Combine(output, "time-propagation" + suffix + ".html"), new CanopyHtmlOptions { Title = "Service rollout over time", Theme = theme, Height = "auto" });
         }
@@ -33,8 +33,8 @@ internal static class TimeSliderExample {
 
     private static CanopyMatrix Matrix(int frame) {
         var view = new CanopyMatrix("time-services", "Service health over time");
-        view.State("waiting", "Waiting", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true)
-            .State("ready", "Ready", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        view.State("waiting", "Waiting", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true)
+            .State("ready", "Ready", Tone.Success, CanopyMatrixSymbol.Check);
         view.Rows.Title = "Service";
         view.Columns.Title = "Region";
         view.Columns.Item("east", "East").Item("west", "West");

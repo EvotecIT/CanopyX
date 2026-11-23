@@ -19,9 +19,9 @@ internal static class WrappedGridExample {
         foreach (var mode in new[] { "continuous", "paged", "grouped" }) {
             view.Presentation = mode == "paged" ? CanopyGridPresentation.Paged : CanopyGridPresentation.Continuous;
             view.Reporting = mode == "grouped" ? new CanopyGridReporting { Grouping = new CanopyGridGrouping("category") } : null;
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
                 InventoryGridExample.WritePage(view, output, "wrapped-grid" + (mode == "continuous" ? "" : "-" + mode) +
-                    (theme == CanopyTheme.Dark ? "-dark" : "") + ".html", theme);
+                    (theme == ThemeMode.Dark ? "-dark" : "") + ".html", theme);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 
 namespace CanopyX;
 
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets the lifetime of row identities. Ordinals identify records only within this dataset snapshot.</summary>
     /// <remarks>Ordinal rows keep their source positions when sorted or filtered. Saved selections and keyed live updates require stable keys.</remarks>

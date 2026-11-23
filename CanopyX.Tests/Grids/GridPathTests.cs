@@ -10,7 +10,7 @@ public sealed class GridPathTests {
         view.Path = new CanopyPath { TitleColumn = "title" };
         var chain = new CanopyPathChain("route", "Approval <route>");
         chain.Hops.Add(new CanopyPathHop("b", "First review") {
-            Flags = { CanopyPathFlag.Foreign }, Badges = { new CanopyBadge("Reviewers", CanopyTone.Info) { Title = "Two reviewers" } }
+            Flags = { CanopyPathFlag.Foreign }, Badges = { new CanopyBadge("Reviewers", Tone.Info) { Title = "Two reviewers" } }
         });
         chain.Hops.Add(new CanopyPathHop("a"));
         chain.Hops.Add(new CanopyPathHop("b", "Return") { Flags = { CanopyPathFlag.Cycle, CanopyPathFlag.Disabled } });

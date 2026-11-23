@@ -24,8 +24,8 @@ internal static class CalculatedColumnExample {
             var row = new CanopyGridRow(index + 1); row.Cells["item"] = names[index]; row.Cells["quantity"] = index;
             row.Cells["price"] = 19.95 + index * 12.5; view.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             File.WriteAllText(Path.Combine(output, "analysis-calculations" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = view.Label }));
         }
         AnalystExample.WriteStatic(output, "analysis-calculations-static", options => CanopyStaticHtml.RenderGrid(view, options: options));

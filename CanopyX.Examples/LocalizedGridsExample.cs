@@ -20,7 +20,7 @@ internal static class LocalizedGridsExample {
             view.Columns.Add(new CanopyColumn("name", columns[language][0]) { Sortable = true });
             view.Columns.Add(new CanopyColumn("status", columns[language][1]) { Sortable = true });
             view.Columns.Add(new CanopyColumn("notes", columns[language][2]) { Wrap = true });
-            view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, review[language]), CanopyTone.Warning));
+            view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, review[language]), Tone.Warning));
             for (var i = 0; i < 120; i++) {
                 var row = new CanopyGridRow("record-" + i);
                 row.Cells["name"] = columns[language][0] + " " + (i + 1);
@@ -28,8 +28,8 @@ internal static class LocalizedGridsExample {
                 row.Cells["notes"] = packs[language].GridResizeHelp;
                 view.Rows.Add(row);
             }
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-                view.SaveHtmlPage(Path.Combine(output, "localized-grid-" + languages[language] + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+                view.SaveHtmlPage(Path.Combine(output, "localized-grid-" + languages[language] + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = titles[language], Language = languages[language], Theme = theme });
         }
         WriteTree(output);

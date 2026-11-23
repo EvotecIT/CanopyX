@@ -14,7 +14,7 @@ namespace CanopyX.Data;
 /// </remarks>
 public sealed class CanopyRecordTimelineMap<TChild> {
     private LambdaExpression? _key, _time, _summary, _actor, _kind;
-    private Func<string?, CanopyTone>? _tone;
+    private Func<string?, Tone>? _tone;
     private bool _oldestFirst;
     private int _limit = 50;
 
@@ -61,7 +61,7 @@ public sealed class CanopyRecordTimelineMap<TChild> {
     /// <param name="kind">The kind expression.</param>
     /// <param name="tone">Chooses the tone of the event's marker from its kind; null uses no tone.</param>
     /// <returns>This map.</returns>
-    public CanopyRecordTimelineMap<TChild> Kind(Expression<Func<TChild, string?>> kind, Func<string?, CanopyTone>? tone = null) {
+    public CanopyRecordTimelineMap<TChild> Kind(Expression<Func<TChild, string?>> kind, Func<string?, Tone>? tone = null) {
         _kind = kind ?? throw new ArgumentNullException(nameof(kind));
         _tone = tone;
         return this;

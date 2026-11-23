@@ -160,7 +160,7 @@ public sealed class StaticFormattingCompletionRegressionTests {
         for (var index = 0; index < 3; index++) view.Rows.Add(new CanopyGridRow("row-" + index) { Cells = { ["value"] = index * 50 } });
         var page = new CanopyGridPage(view.Id, "accepted", 0, 3, 1); page.Rows.Add(view.Rows[1]);
         if (hosted) { view.Rows.Clear(); view.Source = CanopyGridSource.HostedOffset(); }
-        view.FormatRules.Add(CanopyFormatRule.ForCell("bar", "value", CanopyFormatStyle.DataBar(CanopyTone.Info)));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("bar", "value", CanopyFormatStyle.DataBar(Tone.Info)));
 
         var result = CanopyStaticHtml.RenderGridWithResult(view, page);
 

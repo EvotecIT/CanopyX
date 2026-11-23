@@ -16,8 +16,8 @@ internal static class ScheduledJobsExample {
     internal static void Write(string output) {
         var now = DateTime.UtcNow;
         now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-            Create(now).SaveHtmlPage(Path.Combine(output, "scheduled-jobs" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+            Create(now).SaveHtmlPage(Path.Combine(output, "scheduled-jobs" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Scheduled jobs", Theme = theme });
     }
 
@@ -26,8 +26,8 @@ internal static class ScheduledJobsExample {
         view.Columns.Add(new CanopyColumn("name", "Job") { Sortable = true, RowHeader = true, Sizing = CanopyColumnSizing.Preferred(200) });
         view.Columns.Add(new CanopyColumn("state", "State") {
             Sortable = true,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> {
-                ["Active"] = CanopyTone.Success, ["Error"] = CanopyTone.Danger, ["Paused"] = CanopyTone.Warning, ["Read-only"] = CanopyTone.Neutral
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> {
+                ["Active"] = Tone.Success, ["Error"] = Tone.Danger, ["Paused"] = Tone.Warning, ["Read-only"] = Tone.Neutral
             }).WithPill().WithIcons(new Dictionary<string, string> { ["Read-only"] = "🔒" })
         });
         view.Columns.Add(new CanopyColumn("schedule", "Schedule") { Hidden = true });
@@ -52,7 +52,7 @@ internal static class ScheduledJobsExample {
                 var period = now.AddDays(-day).ToString("MMM d", CultureInfo.InvariantCulture);
                 if ((day + i) % 6 == 5) { periods.Add(new CanopyCellPeriod(period)); continue; }
                 var failed = States[i] == "Error" && day % 4 == 0 || (day * 7 + i) % 17 == 0;
-                periods.Add(new CanopyCellPeriod(period, 8 + (day * 13 + i * 7) % 40, failed ? "Failed" : "Succeeded", failed ? CanopyTone.Danger : CanopyTone.Success));
+                periods.Add(new CanopyCellPeriod(period, 8 + (day * 13 + i * 7) % 40, failed ? "Failed" : "Succeeded", failed ? Tone.Danger : Tone.Success));
             }
             var runs = new CanopyCell(periods.Count(point => point.State == "Succeeded").ToString(CultureInfo.InvariantCulture) + " of " +
                 periods.Count(point => point.State != null).ToString(CultureInfo.InvariantCulture) + " runs succeeded");

@@ -13,7 +13,7 @@ internal static class CalendarEventLooksExample {
         var events = new[] {
             new CanopyCalendarEvent("Network change window", At(14, 9), At(14, 12)) { Id = "network", Color = "#0f766e", BackgroundColor = "#ccfbf1", TextColor = "#134e4a", Description = "Core switches, one rack at a time." },
             new CanopyCalendarEvent("Database patching", At(15, 13), At(15, 15)) { Id = "database", BackgroundColor = "#fde68a", TextColor = "#422006", Url = "changes/database-patching.html" },
-            new CanopyCalendarEvent("Ticket 4821: certificate renewal", At(16, 10), At(16, 11)) { Id = "ticket", Tone = CanopyTone.Warning, Url = "https://tickets.example.test/4821" },
+            new CanopyCalendarEvent("Ticket 4821: certificate renewal", At(16, 10), At(16, 11)) { Id = "ticket", Tone = Tone.Warning, Url = "https://tickets.example.test/4821" },
             new CanopyCalendarEvent("Quarterly release", new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc)) { Id = "release", AllDay = true, Color = "rebeccapurple", Url = "https://releases.example.test/2026-q4" }
         };
         return new CanopyCalendar("event-looks", "Changes and tickets", events) { Date = new DateTime(2026, 10, 16), OpenUrlInNewWindow = true };

@@ -10,9 +10,9 @@ namespace CanopyX.Tests.Matrix;
 public sealed class MatrixStaticTests {
     private static CanopyMatrix Grouped(string? groupCount = null) {
         var matrix = new CanopyMatrix("grouped", "Grouped matrix");
-        matrix.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-            .State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check)
-            .State("off", "Paused", CanopyTone.Muted, CanopyMatrixSymbol.Pause);
+        matrix.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+            .State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check)
+            .State("off", "Paused", Tone.Muted, CanopyMatrixSymbol.Pause);
         matrix.Rows.Title = "Server";
         matrix.Rows.Attribute("site", "Site");
         matrix.Rows.GroupBy = "site";
@@ -105,7 +105,7 @@ public sealed class MatrixStaticTests {
         }
 
         var square = new CanopyMatrix("sq", "Square") { Square = true };
-        square.State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        square.State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         square.Rows.Item("a", "A");
         square.Columns.GroupCount = "{count}";
         Assert.Throws<InvalidOperationException>(() => square.Validate());
@@ -118,7 +118,7 @@ public sealed class MatrixStaticTests {
         Assert.Single(Regex.Matches(html, "scope=\"rowgroup\""));
         Assert.Contains("Showing 3 of 5 rows.", html);
         var square = new CanopyMatrix("sq", "Square") { Square = true, RowTotals = false };
-        square.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true);
+        square.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true);
         square.Rows.Attribute("site", "Site");
         square.Rows.GroupBy = "site";
         foreach (var (id, site) in new[] { ("a", "Oslo"), ("b", "Lyon"), ("c", "Oslo") }) square.Rows.Item(id, id.ToUpperInvariant(), item => item.Value("site", site));
@@ -133,7 +133,7 @@ public sealed class MatrixStaticTests {
     [Fact]
     public void RenderMatrix_GroupsNumbersByValueAsTheBrowserReadsThem() {
         var matrix = new CanopyMatrix("n", "Numbers");
-        matrix.State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Attribute("tier", "Tier", CanopyColumnKind.Number);
         matrix.Rows.GroupBy = "tier";
         matrix.Rows.Item("a", "A", item => item.Value("tier", 10m)).Item("b", "B", item => item.Value("tier", 10.0m)).Item("c", "C", item => item.Value("tier", 1234L));

@@ -49,9 +49,9 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
 """;
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var page = Create().ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX row actions", Theme = theme });
-            File.WriteAllText(Path.Combine(output, "row-actions" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"), Inject(page), new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(output, "row-actions" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), Inject(page), new UTF8Encoding(false));
         }
         // The static table leaves the actions out: they need the browser and the host.
         File.WriteAllText(Path.Combine(output, "row-actions-static.html"),
@@ -70,8 +70,8 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
         grid.Columns.Add(new CanopyColumn("name", "Job") { Sortable = true, RowHeader = true, Sizing = CanopyColumnSizing.Flex(1, 160, 420, preferredWidth: 220) });
         grid.Columns.Add(new CanopyColumn("status", "Status") {
             Sortable = true,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> {
-                ["Running"] = CanopyTone.Info, ["Paused"] = CanopyTone.Warning, ["Failed"] = CanopyTone.Danger, ["Succeeded"] = CanopyTone.Success, ["Disabled"] = CanopyTone.Neutral
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> {
+                ["Running"] = Tone.Info, ["Paused"] = Tone.Warning, ["Failed"] = Tone.Danger, ["Succeeded"] = Tone.Success, ["Disabled"] = Tone.Neutral
             })
         });
         grid.Columns.Add(new CanopyColumn("schedule", "Schedule") { ResponsivePriority = 3 });

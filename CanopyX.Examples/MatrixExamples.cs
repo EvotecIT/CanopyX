@@ -14,8 +14,8 @@ internal static class MatrixExamples {
 
     internal static void Write(string output) {
         // The pages set no height: each matrix fills the window, and a matrix whose rows fit is only as tall as they are (AutoHeight).
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             Replication().SaveHtmlPage(Path.Combine(output, "matrix-replication" + suffix + ".html"), new CanopyHtmlOptions { Title = "Inbound replication", Theme = theme });
             Services().SaveHtmlPage(Path.Combine(output, "matrix-services" + suffix + ".html"), new CanopyHtmlOptions { Title = "Services by server", Theme = theme });
             Consistency().SaveHtmlPage(Path.Combine(output, "matrix-consistency" + suffix + ".html"), new CanopyHtmlOptions { Title = "Policy consistency", Theme = theme });
@@ -38,8 +38,8 @@ internal static class MatrixExamples {
     /// <summary>A plain N by N matrix with random states, about 8% needing attention and 10% without data, for the benchmarks.</summary>
     internal static CanopyMatrix Bench(int size) {
         var matrix = new CanopyMatrix("bench-" + size.ToString(CultureInfo.InvariantCulture), "Matrix " + size.ToString(CultureInfo.InvariantCulture));
-        matrix.State("failing", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("warning", "Warning", CanopyTone.Warning, CanopyMatrixSymbol.Warning, attention: true)
-            .State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("failing", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("warning", "Warning", Tone.Warning, CanopyMatrixSymbol.Warning, attention: true)
+            .State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         for (var i = 0; i < size; i++) {
             matrix.Rows.Item("r" + i.ToString(CultureInfo.InvariantCulture), "Entity " + (i + 1).ToString("000", CultureInfo.InvariantCulture));
             matrix.Columns.Item("c" + i.ToString(CultureInfo.InvariantCulture), "Target " + (i + 1).ToString("000", CultureInfo.InvariantCulture));
@@ -60,9 +60,9 @@ internal static class MatrixExamples {
     /// <summary>Inbound replication: destination by source domain controller, links within a site and between site bridgeheads.</summary>
     internal static CanopyMatrix Replication(int count = 150) {
         var matrix = new CanopyMatrix("replication", "Inbound replication") { Square = true, CellWidth = 30 };
-        matrix.State("failing", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-            .State("delayed", "Delayed", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true)
-            .State("healthy", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("failing", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+            .State("delayed", "Delayed", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true)
+            .State("healthy", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Title = "Destination";
         matrix.Columns.Title = "Source";
         matrix.Rows.Noun = "domain controllers";
@@ -104,11 +104,11 @@ internal static class MatrixExamples {
     /// <summary>Services by server: a probe state per pair, servers grouped by site, a card per server on phones.</summary>
     internal static CanopyMatrix Services(int servers = 60) {
         var matrix = new CanopyMatrix("services", "Services by server") { Phone = CanopyMatrixPhoneLayout.Cards, CellWidth = 44 };
-        matrix.State("critical", "Critical", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-            .State("warning", "Warning", CanopyTone.Warning, CanopyMatrixSymbol.Warning, attention: true)
-            .State("paused", "In maintenance", CanopyTone.Info, CanopyMatrixSymbol.Pause)
-            .State("ok", "Running", CanopyTone.Success, CanopyMatrixSymbol.Check)
-            .State("absent", "Not installed", CanopyTone.Muted, CanopyMatrixSymbol.Dash);
+        matrix.State("critical", "Critical", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+            .State("warning", "Warning", Tone.Warning, CanopyMatrixSymbol.Warning, attention: true)
+            .State("paused", "In maintenance", Tone.Info, CanopyMatrixSymbol.Pause)
+            .State("ok", "Running", Tone.Success, CanopyMatrixSymbol.Check)
+            .State("absent", "Not installed", Tone.Muted, CanopyMatrixSymbol.Dash);
         matrix.Rows.Title = "Server";
         matrix.Rows.Noun = "servers";
         matrix.Rows.GroupCount = "[one]{count} server[other]{count} servers";
@@ -144,9 +144,9 @@ internal static class MatrixExamples {
     /// <summary>Policy consistency: 400 policies by 40 domain controllers, opening on the policies and controllers that differ.</summary>
     internal static CanopyMatrix Consistency(int policies = 400, int controllers = 40) {
         var matrix = new CanopyMatrix("consistency", "Policy consistency") { AttentionOnly = true, CellWidth = 28, Density = CanopyGridDensity.Compact };
-        matrix.State("differs", "Differs", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-            .State("missing", "Missing", CanopyTone.Warning, CanopyMatrixSymbol.Warning, attention: true)
-            .State("same", "In sync", CanopyTone.Success, CanopyMatrixSymbol.Dot);
+        matrix.State("differs", "Differs", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+            .State("missing", "Missing", Tone.Warning, CanopyMatrixSymbol.Warning, attention: true)
+            .State("same", "In sync", Tone.Success, CanopyMatrixSymbol.Dot);
         matrix.Rows.Title = "Policy";
         matrix.Rows.Noun = "policies";
         matrix.Rows.Attribute("area", "Area", facet: true).Attribute("changed", "Last changed", CanopyColumnKind.DateTime);

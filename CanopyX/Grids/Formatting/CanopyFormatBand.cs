@@ -12,9 +12,9 @@ public sealed class CanopyFormatBand {
     /// <param name="upperBound">The inclusive upper bound, or null for the open last band.</param>
     /// <param name="tone">The band's tone.</param>
     /// <param name="label">An optional label: the band's name in the legend and its description for screen readers.</param>
-    public CanopyFormatBand(double? upperBound, CanopyTone tone, string? label = null) {
+    public CanopyFormatBand(double? upperBound, Tone tone, string? label = null) {
         if (upperBound.HasValue && !CanopyGridPresenter.Safe(upperBound.Value)) throw new ArgumentOutOfRangeException(nameof(upperBound));
-        if (tone.Name == null) throw new ArgumentException("A band needs a tone.", nameof(tone));
+        if (tone.WireName() == null) throw new ArgumentException("A band needs a tone.", nameof(tone));
         CanopyFormatStyle.ValidateText(label, 64, nameof(label));
         UpperBound = upperBound; Tone = tone; Label = label;
     }
@@ -23,17 +23,22 @@ public sealed class CanopyFormatBand {
     public double? UpperBound { get; }
 
     /// <summary>Gets the band's tone.</summary>
-    public CanopyTone Tone { get; }
+    public Tone Tone { get; }
 
     /// <summary>Gets the band's label, or null.</summary>
     public string? Label { get; }
 
-    /// <summary>Gets or sets the band's icon (a <see cref="CanopyFormatIcons"/> name or up to four characters), or null for the style's.</summary>
-    public string? Icon { get; set; }
+    /// <summary>Gets or sets the band's icon, one of <see cref="CanopyFormatIcons"/>; <see cref="CanopyX.Icon.None"/> with no <see cref="Mark"/> takes the style's.</summary>
+    public Icon Icon { get; set; }
+
+    /// <summary>Gets or sets up to four characters the band draws in place of an <see cref="Icon"/>, or null. A mark cannot spell a formatting icon's name.</summary>
+    public string? Mark { get; set; }
+
+    internal string? IconToken => CanopyFormatIcons.Token(Icon, Mark);
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
         if (UpperBound.HasValue) writer.Name("upperBound").Number(UpperBound.Value);
-        writer.Property("tone", Tone.Name).OptionalProperty("label", Label).OptionalProperty("icon", Icon).EndObject();
+        writer.Property("tone", Tone.WireName()).OptionalProperty("label", Label).OptionalProperty("icon", IconToken).EndObject();
     }
 }

@@ -15,6 +15,7 @@ internal static class CanopyMatrixValidator {
             if (!states.Add(state.Id)) throw new InvalidOperationException("The state '" + state.Id + "' is declared twice.");
             Text(state.Label, "The label of state '" + state.Id + "'", 200, false);
             if (!Enum.IsDefined(typeof(CanopyMatrixSymbol), state.Symbol)) throw new InvalidOperationException("The state '" + state.Id + "' needs one of the symbols.");
+            try { state.Tone.WireName(); } catch (InvalidOperationException error) { throw new InvalidOperationException("The state '" + state.Id + "' has an invalid tone: " + error.Message, error); }
         }
 
         foreach (var id in matrix.TotalStates) if (id == null || !states.Contains(id)) throw new InvalidOperationException("The totals count the undeclared state '" + id + "'.");

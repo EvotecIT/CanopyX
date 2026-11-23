@@ -9,10 +9,10 @@ internal static class ContainedGridsExample {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.contained-grids.html")!;
         using var reader = new StreamReader(stream);
         var template = reader.ReadToEnd();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
-                .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light");
+                .Replace("{{theme}}", theme == ThemeMode.Dark ? "dark" : "light");
             foreach (var id in new[] { "tab-grid", "accordion-grid", "details-grid" }) {
                 var view = new CanopyDataGridView(id, id.Replace('-', ' ')) {
                     Reporting = new CanopyGridReporting { Responsive = true }, PageSize = 100
@@ -27,7 +27,7 @@ internal static class ContainedGridsExample {
                 }
                 page = page.Replace("{{" + id + "}}", view.ToHtmlFragment(new CanopyHtmlOptions { Theme = theme, Height = "320px" }));
             }
-            File.WriteAllText(Path.Combine(output, "contained-grids" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "contained-grids" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page);
         }
     }
 }

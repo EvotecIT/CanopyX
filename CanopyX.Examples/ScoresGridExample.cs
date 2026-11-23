@@ -30,8 +30,8 @@ internal static class ScoresGridExample {
                 row.Cells["coverage"] = 61 + i * 23 % 38;
                 view.Rows.Add(row);
             }
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-                view.SaveHtmlPage(Path.Combine(output, "scores-grid-" + language + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+                view.SaveHtmlPage(Path.Combine(output, "scores-grid-" + language + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = title, Language = language, Theme = theme });
             }
         }

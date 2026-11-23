@@ -5,63 +5,71 @@ namespace CanopyX;
 
 /// <summary>
 /// The icon names a formatting style can use. Each draws a text glyph in the tone's colour, so it prints and survives
-/// forced colours. A style can also give up to four characters of its own.
+/// forced colours. A style can also give up to four characters of its own (<see cref="CanopyFormatStyle.Mark"/>).
 /// </summary>
 public static class CanopyFormatIcons {
     /// <summary>The tone's shape: a cross for danger, a warning sign, a check for success, an information sign, a dot otherwise. The default for a style that only colours.</summary>
-    public const string Automatic = "auto";
+    public static Icon Automatic { get; } = Icon.Named("auto");
     /// <summary>No icon, even for a style that only colours. Give the rule a cue, a badge or the legend instead.</summary>
-    public const string None = "none";
+    public static Icon None { get; } = Icon.Named("none");
     /// <summary>An upward arrow.</summary>
-    public const string Up = "up";
+    public static Icon Up { get; } = Icon.Named("up");
     /// <summary>A downward arrow.</summary>
-    public const string Down = "down";
+    public static Icon Down { get; } = Icon.Named("down");
     /// <summary>A check mark.</summary>
-    public const string Check = "check";
+    public static Icon Check { get; } = Icon.Named("check");
     /// <summary>A cross.</summary>
-    public const string Cross = "cross";
+    public static Icon Cross { get; } = Icon.Named("cross");
     /// <summary>A warning sign.</summary>
-    public const string Warning = "warning";
+    public static Icon Warning { get; } = Icon.Named("warning");
     /// <summary>An information sign.</summary>
-    public const string Info = "info";
+    public static Icon Info { get; } = Icon.Named("info");
     /// <summary>A filled dot.</summary>
-    public const string Dot = "dot";
+    public static Icon Dot { get; } = Icon.Named("dot");
     /// <summary>A ring.</summary>
-    public const string Circle = "circle";
+    public static Icon Circle { get; } = Icon.Named("circle");
     /// <summary>A triangle.</summary>
-    public const string Triangle = "triangle";
+    public static Icon Triangle { get; } = Icon.Named("triangle");
     /// <summary>A square.</summary>
-    public const string Square = "square";
+    public static Icon Square { get; } = Icon.Named("square");
     /// <summary>A diamond.</summary>
-    public const string Diamond = "diamond";
+    public static Icon Diamond { get; } = Icon.Named("diamond");
     /// <summary>A flag.</summary>
-    public const string Flag = "flag";
+    public static Icon Flag { get; } = Icon.Named("flag");
     /// <summary>A star.</summary>
-    public const string Star = "star";
+    public static Icon Star { get; } = Icon.Named("star");
     /// <summary>A minus sign.</summary>
-    public const string Minus = "minus";
+    public static Icon Minus { get; } = Icon.Named("minus");
     /// <summary>A plus sign.</summary>
-    public const string Plus = "plus";
+    public static Icon Plus { get; } = Icon.Named("plus");
     /// <summary>A clock.</summary>
-    public const string Clock = "clock";
+    public static Icon Clock { get; } = Icon.Named("clock");
 
     internal static readonly IReadOnlyDictionary<string, string> Glyphs = new Dictionary<string, string>(StringComparer.Ordinal) {
-        [Up] = "↑", [Down] = "↓", [Check] = "✓", [Cross] = "✕", [Warning] = "⚠︎", [Info] = "ⓘ", [Dot] = "●", [Circle] = "○", [Triangle] = "▲",
-        [Square] = "■", [Diamond] = "◆", [Flag] = "⚑", [Star] = "★", [Minus] = "−", [Plus] = "+", [Clock] = "◷"
+        ["up"] = "↑", ["down"] = "↓", ["check"] = "✓", ["cross"] = "✕", ["warning"] = "⚠︎", ["info"] = "ⓘ", ["dot"] = "●", ["circle"] = "○", ["triangle"] = "▲",
+        ["square"] = "■", ["diamond"] = "◆", ["flag"] = "⚑", ["star"] = "★", ["minus"] = "−", ["plus"] = "+", ["clock"] = "◷"
     };
 
-    /// <summary>The glyph of an icon for a tone, or null for none.</summary>
-    internal static string? Glyph(string? icon, CanopyTone tone) {
-        if (icon == None) return null;
-        if (icon == null || icon == Automatic) icon = tone.Name == "danger" ? Cross : tone.Name == "warning" ? Warning : tone.Name == "success" ? Check : tone.Name == "info" ? Info : Dot;
-        return Glyphs.TryGetValue(icon, out var glyph) ? glyph : icon;
+    /// <summary>The wire token of an icon or a mark: the mark's characters, the icon's key, or null for automatic.</summary>
+    internal static string? Token(Icon icon, string? mark) => mark ?? (icon.IsEmpty ? null : icon.Key);
+
+    /// <summary>The glyph of a token for a tone, or null for none.</summary>
+    internal static string? Glyph(string? token, Tone tone) {
+        if (token == "none") return null;
+        if (token == null || token == "auto") token = tone == Tone.Danger ? "cross" : tone == Tone.Warning ? "warning" : tone == Tone.Success ? "check" : tone == Tone.Info ? "info" : "dot";
+        return Glyphs.TryGetValue(token, out var glyph) ? glyph : token;
     }
 
-    internal static void Validate(string? icon) {
-        if (icon == null || icon == Automatic || icon == None || Glyphs.ContainsKey(icon)) return;
+    /// <summary>Checks a style's icon and mark: a known icon, or up to four characters of the style's own, not both.</summary>
+    internal static void Validate(Icon icon, string? mark) {
+        if (!icon.IsEmpty && mark != null) throw new InvalidOperationException("A style has an icon or a mark, not both.");
+        if (!icon.IsEmpty && icon.Key != "auto" && icon.Key != "none" && !Glyphs.ContainsKey(icon.Key)) throw new InvalidOperationException("Icon '" + icon.Key + "' is not a formatting icon; use a CanopyFormatIcons icon, or Mark for characters of the style's own.");
+        if (mark == null) return;
         var points = 0;
-        foreach (var unit in icon) if (!char.IsLowSurrogate(unit)) points++;
-        if (string.IsNullOrWhiteSpace(icon) || points > 4 || icon.IndexOfAny(new[] { '<', '>' }) >= 0) throw new InvalidOperationException("An icon is a known name or up to four characters.");
-        foreach (var unit in icon) if (char.IsControl(unit)) throw new InvalidOperationException("An icon cannot contain control characters.");
+        foreach (var unit in mark) if (!char.IsLowSurrogate(unit)) points++;
+        if (string.IsNullOrWhiteSpace(mark) || points > 4 || mark.IndexOfAny(new[] { '<', '>' }) >= 0) throw new InvalidOperationException("A mark is up to four characters.");
+        // A mark travels in the same field as an icon key, so a mark spelled like one would draw the icon (or nothing).
+        if (mark == "auto" || mark == "none" || Glyphs.ContainsKey(mark)) throw new InvalidOperationException("Mark '" + mark + "' is the name of a formatting icon; use that CanopyFormatIcons icon, or other characters.");
+        foreach (var unit in mark) if (char.IsControl(unit)) throw new InvalidOperationException("A mark cannot contain control characters.");
     }
 }

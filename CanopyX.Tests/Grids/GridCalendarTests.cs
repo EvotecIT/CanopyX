@@ -58,7 +58,7 @@ public sealed class GridCalendarTests {
             EventStyle = CanopyCalendarEventStyle.Strong, TimeZone = "Europe/Warsaw",
             Editing = new CanopyCalendarEditing { Resize = false, Overlap = false, WorkingHoursOnly = true, AllowedResources = "allowed", SnapMinutes = 15, Commit = CanopyCalendarCommit.Manual },
             Resources = new CanopyCalendarResources(tree) { Width = 320, Label = "Hosts" }, Zoom = CanopyCalendarZoom.Week,
-            Capacity = new CanopyCalendarCapacity { Label = "Concurrent changes" }.Add(3, CanopyTone.Warning).Add(5, CanopyTone.Danger),
+            Capacity = new CanopyCalendarCapacity { Label = "Concurrent changes" }.Add(3, Tone.Warning).Add(5, Tone.Danger),
             Limit = 5000, PhoneView = CanopyCalendarView.Day
         };
         foreach (var item in new[] { CanopyCalendarView.Month, CanopyCalendarView.Week, CanopyCalendarView.Day, CanopyCalendarView.Days, CanopyCalendarView.Agenda, CanopyCalendarView.Year, CanopyCalendarView.Timeline }) calendar.Views.Add(item);
@@ -67,7 +67,7 @@ public sealed class GridCalendarTests {
         calendar.WorkingHours!.Days.Remove(DayOfWeek.Friday);
         calendar.Resources!.Aggregates["load"] = CanopyCalendarAggregate.Busy;
         foreach (var item in new[] { CanopyCalendarZoom.Day, CanopyCalendarZoom.Week, CanopyCalendarZoom.Month }) calendar.Zooms.Add(item);
-        calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 12, 24), new DateTime(2026, 12, 27), "Holidays") { Tone = CanopyTone.Info });
+        calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 12, 24), new DateTime(2026, 12, 27), "Holidays") { Tone = Tone.Info });
         calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 17, 22, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 18, 2, 0, 0, DateTimeKind.Utc), "Maintenance") {
             Resource = "host-1", Kind = CanopyCalendarRangeKind.Unavailable, Recurrence = CanopyRecurrence.Weekly(DayOfWeek.Saturday)
         });
@@ -157,8 +157,8 @@ public sealed class GridCalendarTests {
         Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Hour); calendar.Zooms.Add(CanopyCalendarZoom.Hour); });
         Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Month); calendar.Zoom = CanopyCalendarZoom.Week; });
         Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity());
-        Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity().Add(3, CanopyTone.Warning).Add(3, CanopyTone.Danger));
-        Refused((_, calendar) => { calendar.Capacity = new CanopyCalendarCapacity(); for (var at = 1; at <= 9; at++) calendar.Capacity.Add(at, CanopyTone.Warning); });
+        Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity().Add(3, Tone.Warning).Add(3, Tone.Danger));
+        Refused((_, calendar) => { calendar.Capacity = new CanopyCalendarCapacity(); for (var at = 1; at <= 9; at++) calendar.Capacity.Add(at, Tone.Warning); });
         Refused((_, calendar) => calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 1, 2), new DateTime(2026, 1, 1), "Backwards")));
         Refused((_, calendar) => calendar.Ranges.Add(null!));
         Refused((_, calendar) => { for (var index = 0; index <= 1000; index++) calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 1, 1), new DateTime(2026, 1, 2), "Range")); });
@@ -208,8 +208,8 @@ public sealed class GridCalendarTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyCalendarResources(Resources()) { Width = 801 });
         Assert.Throws<ArgumentException>(() => new CanopyCalendarResources(Resources()) { Label = " " });
         Assert.Throws<ArgumentException>(() => new CanopyCalendarCapacity { Label = new string('x', 257) });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyCalendarThreshold(0, CanopyTone.Warning));
-        Assert.Throws<ArgumentException>(() => new CanopyCalendarThreshold(1, CanopyTone.None));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyCalendarThreshold(0, Tone.Warning));
+        Assert.Throws<ArgumentException>(() => new CanopyCalendarThreshold(1, Tone.None));
         Assert.Throws<ArgumentException>(() => new CanopyCalendarRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(1), " "));
         Assert.Throws<ArgumentException>(() => new CanopyCalendarRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(1), null!));
         Assert.Throws<ArgumentException>(() => new CanopyCalendarRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(1), "Range") { Resource = "" });

@@ -42,8 +42,8 @@ internal static class CspExamples {
     private static CanopyTreeView Tree(string id) {
         var tree = new SyntheticFileTree();
         var view = ExampleViews.FileShares(id, tree.Build(shares: 2, departments: 3, projects: 2, minFiles: 2, maxFiles: 5, longListFiles: 5));
-        var notes = new CanopyNode("notes", "Notes") { Kind = "folder", Icon = "folder", Expanded = true };
-        notes.Children.Add(new CanopyNode("notes/readme", "Read me") { Kind = "file", Icon = "file", Detail = new CanopyHtmlDetail("<p class=\"csp-note\">Trusted <strong>host</strong> markup in an html detail.</p>") });
+        var notes = new CanopyNode("notes", "Notes") { Kind = "folder", Icon = Icon.Named("folder"), Expanded = true };
+        notes.Children.Add(new CanopyNode("notes/readme", "Read me") { Kind = "file", Icon = Icon.Named("file"), Detail = new CanopyHtmlDetail("<p class=\"csp-note\">Trusted <strong>host</strong> markup in an html detail.</p>") });
         view.Roots.Insert(0, notes);
         return view;
     }

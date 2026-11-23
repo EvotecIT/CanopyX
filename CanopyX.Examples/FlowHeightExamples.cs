@@ -12,7 +12,7 @@ internal static class FlowHeightExamples {
                 var options = new CanopyHtmlOptions {
                     Height = explicitHeight ? "600px" : null,
                     Nonce = nonce ? "flow-height-example" : null,
-                    Theme = CanopyTheme.Light
+                    Theme = ThemeMode.Light
                 };
                 var name = (nonce ? "nonce" : "inline") + (explicitHeight ? "-600" : "-auto") + ".html";
                 File.WriteAllText(Path.Combine(folder, name), FlowPauseExample.Flow().ToHtmlPage(options));

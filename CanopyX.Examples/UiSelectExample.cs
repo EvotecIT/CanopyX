@@ -11,7 +11,7 @@ internal static class UiSelectExample {
             ("US", "United States", "Americas", "Washington"), ("BR", "Brazil", "Americas", "Brasília"), ("JP", "Japan", "Asia", "Tokyo") })
             country.Items.Add(new CanopySelectOption(code.ToLowerInvariant(), name) { Flag = code, Group = group, Description = capital, Selected = code == "PL" });
         var owners = new CanopySelect("owners", "owners", "Owners", new CanopySelectOptions { Multiple = true, Max = 3, Placeholder = "Add owners" });
-        foreach (var (id, name, role, tone) in new[] { ("ada", "Ada Lovelace", "Admin", CanopyTone.Danger), ("alan", "Alan Turing", "Operator", CanopyTone.Info), ("grace", "Grace Hopper", "Operator", CanopyTone.Info), ("linus", "Linus Torvalds", "Reader", CanopyTone.Neutral) })
+        foreach (var (id, name, role, tone) in new[] { ("ada", "Ada Lovelace", "Admin", Tone.Danger), ("alan", "Alan Turing", "Operator", Tone.Info), ("grace", "Grace Hopper", "Operator", Tone.Info), ("linus", "Linus Torvalds", "Reader", Tone.Neutral) })
             owners.Items.Add(new CanopySelectOption(id, name) { Badge = role, BadgeTone = tone, Description = id + "@example.com", Selected = id == "ada" });
         var labels = new CanopySelect("labels", "labels", "Labels", new CanopySelectOptions { Multiple = true, Tags = true, Placeholder = "Type a label" });
         foreach (var label in new[] { "production", "staging", "critical" }) labels.Items.Add(new CanopySelectOption(label, label));

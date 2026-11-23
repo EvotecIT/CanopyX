@@ -39,7 +39,7 @@ public sealed class JsonEncodingTests {
         var folder = new CanopyNode("a", "Folder") { Expanded = true };
         folder.Cells["size"] = 1536;
         var file = new CanopyNode("a/b", "File");
-        file.Cells["size"] = new CanopyCell(512) { Text = "512 B", Tone = CanopyTone.Muted };
+        file.Cells["size"] = new CanopyCell(512) { Text = "512 B", Tone = Tone.Muted };
         folder.Children.Add(file);
         view.Roots.Add(folder);
 
@@ -60,7 +60,7 @@ public sealed class JsonEncodingTests {
         node.Cells["when"] = new DateTime(2026, 9, 27, 12, 30, 5, DateTimeKind.Unspecified);
         node.Cells["precise"] = new DateTime(2026, 9, 27, 12, 30, 5, 250, DateTimeKind.Utc);
         node.Cells["offset"] = new DateTimeOffset(2026, 9, 27, 14, 30, 5, TimeSpan.FromHours(2));
-        node.Cells["state"] = new CanopyCell("ok") { Tone = CanopyTone.Success, Text = "Healthy" };
+        node.Cells["state"] = new CanopyCell("ok") { Tone = Tone.Success, Text = "Healthy" };
         var page = new CanopyPage(null);
         page.Items.Add(node);
 

@@ -13,7 +13,7 @@ public sealed class CanopyMatrixState {
     /// <param name="tone">The tone of the cell and its symbol.</param>
     /// <param name="symbol">The symbol, so the state never relies on colour alone.</param>
     /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
-    public CanopyMatrixState(string id, string label, CanopyTone tone, CanopyMatrixSymbol symbol) {
+    public CanopyMatrixState(string id, string label, Tone tone, CanopyMatrixSymbol symbol) {
         Id = CanopyFlowValues.RequireIdentifier(id, nameof(id), "A state id");
         Label = label;
         Tone = tone;
@@ -27,7 +27,7 @@ public sealed class CanopyMatrixState {
     public string Label { get; set; }
 
     /// <summary>Gets or sets the tone.</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets the symbol.</summary>
     public CanopyMatrixSymbol Symbol { get; set; }

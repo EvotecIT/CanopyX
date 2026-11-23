@@ -22,6 +22,7 @@ namespace CanopyX;
 /// the columns, with the same kind, and its own titles, formats, presenters and widths.
 /// </para>
 /// </remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyDataset {
     private CanopyDataset(string id, CanopyGridSourceKind kind) {
         CanopyIdentifiers.Require(id, nameof(id));

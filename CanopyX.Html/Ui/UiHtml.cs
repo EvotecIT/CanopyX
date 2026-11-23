@@ -8,6 +8,7 @@ namespace CanopyX.Html.Ui;
 
 // Shared encoding and identity checks for declarative UI fragments. No asset or runtime side effects.
 internal static class UiHtml {
+    internal static string? IconKey(Icon icon) => icon.IsEmpty ? null : icon.Key;
     internal static string Encode(string? text) => WebUtility.HtmlEncode(text ?? string.Empty);
     internal static string Bool(bool value) => value ? "true" : "false";
     internal static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);

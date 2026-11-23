@@ -6,6 +6,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds dependency-free declarative tabs with readable content before runtime readiness.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyTabs {
     /// <summary>Creates a tab set with a page-unique root identity and an accessible tab list label.</summary>
     public CanopyTabs(string id, string label, CanopyTabsOptions? options = null) {
@@ -78,9 +79,9 @@ public sealed class CanopyTabs {
             if (tab.Disabled) UiHtml.Attribute(html, "aria-disabled", "true");
             UiHtml.Attribute(html, "data-state", tab.Disabled ? "disabled" : selected ? "selected" : null);
             html.Append('>');
-            if (tab.Icon != null) {
+            if (!tab.Icon.IsEmpty) {
                 html.Append("<span class=\"cx-tab-icon\" aria-hidden=\"true\"");
-                UiHtml.Attribute(html, "data-icon", tab.Icon);
+                UiHtml.Attribute(html, "data-icon", tab.Icon.Key);
                 html.Append("></span>");
             }
             UiHtml.Span(html, "cx-tab-label", tab.Label);

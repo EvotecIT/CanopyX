@@ -81,7 +81,7 @@ public static class FleetDemo {
     }
 
     /// <summary>The note above the editable grid: how saving works and the button that plays the other user.</summary>
-    public static string EditNote(CanopyTheme theme) => Style(theme) + """
+    public static string EditNote(ThemeMode theme) => Style(theme) + """
 <div class="fleet-note" role="region" aria-label="About this page">
 <p>Edit cells (F2 or double-click), then <strong>Save</strong>: the server checks every value again and saves each machine on its own.
 For a conflict, change a machine's memory, select its row, press the button, then save.</p>
@@ -100,15 +100,15 @@ document.getElementById("fleet-other-user").addEventListener("click", async () =
 """;
 
     /// <summary>The note above the grouped grid.</summary>
-    public static string GroupNote(CanopyTheme theme) => Style(theme) + """
+    public static string GroupNote(ThemeMode theme) => Style(theme) + """
 <div class="fleet-note" role="region" aria-label="About this page">
 <p>Grouped by site (busiest first) and operating system; each heading counts machines and models and sums memory.
 Change the levels in the group bar or a column menu.</p>
 </div>
 """;
 
-    private static string Style(CanopyTheme theme) {
-        var dark = theme == CanopyTheme.Dark;
+    private static string Style(ThemeMode theme) {
+        var dark = theme == ThemeMode.Dark;
         return "<style>" +
             ".cx-main{display:flex;flex-direction:column;height:100vh;box-sizing:border-box}" +
             "body.cx-page>.cx-main>.cx-host{flex:1;min-height:0;height:auto}" +

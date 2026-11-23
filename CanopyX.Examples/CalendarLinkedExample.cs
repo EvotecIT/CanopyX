@@ -16,7 +16,7 @@ internal static class CalendarLinkedExample {
         using var css = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.examples.css")!;
         using var cssReader = new StreamReader(css);
         var exampleStyle = cssReader.ReadToEnd();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string height) {
                 var options = new CanopyHtmlOptions { Theme = theme, Height = height, Document = document };
@@ -33,7 +33,7 @@ internal static class CalendarLinkedExample {
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{calendar}}", calendar.ToHtmlFragment(Options("560px")))
                 .Replace("{{grid}}", grid.ToHtmlFragment(Options("380px")));
-            File.WriteAllText(Path.Combine(output, "calendar-linked" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "calendar-linked" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), page);
         }
     }
 }

@@ -35,10 +35,10 @@ record.Sections.Add(people);
 
 var row = new CanopyGridRow("cert-1");
 row.Cells["cn"] = "app.example.com";
-row.Cells["status"] = new CanopyCell("Valid") { Tone = CanopyTone.Success };
+row.Cells["status"] = new CanopyCell("Valid") { Tone = Tone.Success };
 row.Cells["names"] = CanopyCell.List("app.example.com", "www.app.example.com");
 row.Fields["thumbprint"] = "A1B2…";
-row.Fields["history"] = CanopyCell.Timeline(new[] { new CanopyRecordEvent(DateTime.UtcNow, "Certificate issued") { Kind = "Issued", Tone = CanopyTone.Success } });
+row.Fields["history"] = CanopyCell.Timeline(new[] { new CanopyRecordEvent(DateTime.UtcNow, "Certificate issued") { Kind = "Issued", Tone = Tone.Success } });
 view.Rows.Add(row);
 ```
 

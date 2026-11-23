@@ -22,7 +22,7 @@ public sealed partial class CanopyCell {
 
     private sealed class CellExtras {
         internal string? Text, SearchText, Title, Secondary, Html;
-        internal CanopyTone Tone;
+        internal Tone Tone;
         internal object? SortKey;
         internal List<CanopyBadge>? Badges;
         internal List<CanopyCellPeriod>? Series;
@@ -107,7 +107,7 @@ public sealed partial class CanopyCell {
     public IList<CanopyCellPeriod> Series => Extras.Series ??= new List<CanopyCellPeriod>();
 
     /// <summary>Gets or sets the semantic colour of the cell text.</summary>
-    public CanopyTone Tone { get => _extras?.Tone ?? CanopyTone.None; set { if (value != CanopyTone.None || _extras != null) Extras.Tone = value; } }
+    public Tone Tone { get => _extras?.Tone ?? Tone.None; set { if (value != Tone.None || _extras != null) Extras.Tone = value; } }
 
     /// <summary>
     /// Gets or sets the key this cell sorts by when it differs from its value:
@@ -269,7 +269,7 @@ public sealed partial class CanopyCell {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
-        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (SeriesList == null || SeriesList.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
+        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (SeriesList == null || SeriesList.Count == 0) && Tone == Tone.None && !HasBadges &&
             SortKey == null && !IsStructured && Ref == null && Html == null;
         if (simple) {
             WriteValue(writer);
@@ -288,7 +288,7 @@ public sealed partial class CanopyCell {
         writer.OptionalProperty("title", Title);
         writer.OptionalProperty("secondary", Secondary);
         if (SeriesList != null && SeriesList.Count > 0) { writer.Name("series").BeginArray(); foreach (var point in SeriesList) point.WriteJson(writer); writer.EndArray(); }
-        writer.OptionalProperty("tone", Tone.Name);
+        writer.OptionalProperty("tone", Tone.WireName());
         if (SortKey != null) {
             writer.Name("sort");
             // Date keys always carry milliseconds, so their text sorts in time order within a second too.

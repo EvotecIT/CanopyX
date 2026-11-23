@@ -30,7 +30,7 @@ public sealed class GridColumnCapabilityTests {
         var column = new CanopyColumn("display", "Display") { Filterable = false };
         view.Columns.Add(column);
         var condition = new CanopyGridFilter("display", CanopyGridFilterOperator.Equal, "Shown");
-        view.HighlightRules.Add(new CanopyGridHighlightRule(condition, CanopyTone.Success));
+        view.HighlightRules.Add(new CanopyGridHighlightRule(condition, Tone.Success));
         Assert.Contains("highlightRules", view.ToJson());
         var query = new CanopyGridQuery(view.Id);
         if (nested) query.FilterGroup = new CanopyGridFilterGroup(CanopyGridFilterJunction.All) {

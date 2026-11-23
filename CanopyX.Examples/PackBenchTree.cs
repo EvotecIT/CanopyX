@@ -61,7 +61,7 @@ internal static class PackBenchTree {
         var id = "svc-" + region + "-" + number.ToString("0000", CultureInfo.InvariantCulture);
         var service = new CanopyNode(id, Products[random.Below(Products.Length)] + " " + Tiers[random.Below(Tiers.Length)] + " " + region + number.ToString("0000", CultureInfo.InvariantCulture)) { Kind = "service" };
         var changed = Now.AddMinutes(-random.Below(60 * 24 * 120));
-        service.Cells["state"] = random.Below(10) == 0 ? new CanopyCell("degraded") { Text = "Degraded", Tone = CanopyTone.Warning } : new CanopyCell("ok") { Text = "OK", Tone = CanopyTone.Success };
+        service.Cells["state"] = random.Below(10) == 0 ? new CanopyCell("degraded") { Text = "Degraded", Tone = Tone.Warning } : new CanopyCell("ok") { Text = "OK", Tone = Tone.Success };
         service.Cells["changed"] = changed;
         service.Cells["by"] = People[random.Below(People.Length)];
         service.Children.Add(Releases(id, changed, ref random));
@@ -82,7 +82,7 @@ internal static class PackBenchTree {
             var table = new CanopyTableDetail("Changes in release " + r).AddColumns("Setting", "Area", "Change", "Before", "After");
             var rows = 14 + random.Below(30);
             for (var i = 0; i < rows; i++) {
-                table.AddRow(Setting(ref random), Areas[random.Below(Areas.Length)], i % 5 == 0 ? "Added" : "Changed", Value(ref random), new CanopyCell(Value(ref random)) { Tone = CanopyTone.Success });
+                table.AddRow(Setting(ref random), Areas[random.Below(Areas.Length)], i % 5 == 0 ? "Added" : "Changed", Value(ref random), new CanopyCell(Value(ref random)) { Tone = Tone.Success });
             }
 
             release.Children.Add(new CanopyNode(release.Id + "/changes", "Changes") { Kind = "detail", Detail = table });
@@ -118,7 +118,7 @@ internal static class PackBenchTree {
         var count = 10 + random.Below(7);
         for (var e = 0; e < count; e++) {
             var endpoint = new CanopyNode(section.Id + "/" + e, "https://" + Regions[random.Below(Regions.Length)].ToLowerInvariant() + "-" + e + ".example.test/v" + (1 + random.Below(4))) { Kind = "endpoint" };
-            endpoint.Cells["state"] = random.Below(12) == 0 ? new CanopyCell("off") { Text = "Disabled", Tone = CanopyTone.Muted } : "Enabled";
+            endpoint.Cells["state"] = random.Below(12) == 0 ? new CanopyCell("off") { Text = "Disabled", Tone = Tone.Muted } : "Enabled";
             var properties = new CanopyPropertiesDetail()
                 .Add("Protocol", e % 4 == 0 ? "gRPC" : "HTTPS")
                 .Add("Certificate", "CN=" + id + "-" + e + ".example.test, valid until 2027-0" + (1 + random.Below(9)) + "-15")
@@ -159,7 +159,7 @@ internal static class PackBenchTree {
         for (var i = 0; i < rows; i++) {
             var inSync = random.Below(15) != 0;
             table.AddRow("instance-" + i + "." + id + ".example.test", "4." + random.Below(20) + "." + random.Below(300), Now.AddMinutes(-random.Below(600)).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
-                new CanopyCell(inSync) { Text = inSync ? "Yes" : "No", Tone = inSync ? CanopyTone.Success : CanopyTone.Danger });
+                new CanopyCell(inSync) { Text = inSync ? "Yes" : "No", Tone = inSync ? Tone.Success : Tone.Danger });
         }
 
         section.Children.Add(new CanopyNode(section.Id + "/table", "Health") { Kind = "detail", Detail = table });

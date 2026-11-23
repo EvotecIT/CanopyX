@@ -9,7 +9,7 @@ namespace CanopyX.Tests.Matrix;
 public sealed class MatrixTableTests {
     private static CanopyMatrix Linked(int rows = 2) {
         var matrix = new CanopyMatrix("checks", "Checks");
-        matrix.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Attribute("site", "Site", facet: true);
         matrix.Rows.GroupBy = "site";
         for (var r = 0; r < rows; r++) matrix.Rows.Item("r" + r, "Server " + r, item => { item.Value("site", r % 2 == 0 ? "North" : "South"); item.Href = "/servers/r" + r; });

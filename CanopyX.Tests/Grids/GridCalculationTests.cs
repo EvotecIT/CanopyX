@@ -16,7 +16,7 @@ public sealed class GridCalculationTests {
         total.Kind = CanopyColumnKind.Text;
         subtotal.Calculation = null;
         var detail = new CanopyPropertiesDetail();
-        var input = new CanopyGridRow("r") { Tone = CanopyTone.Warning, ClassName = "source", Detail = detail };
+        var input = new CanopyGridRow("r") { Tone = Tone.Warning, ClassName = "source", Detail = detail };
         var amount = new CanopyCell(4L) { Text = "four" };
         input.Cells["amount"] = amount;
         input.Cells["total"] = 123;
@@ -78,7 +78,7 @@ public sealed class GridCalculationTests {
         foreach (var id in new[] { "upstream", "dependent" }) {
             Assert.Null(result.Cells[id].Value);
             Assert.Equal("#DIV/0", result.Cells[id].Text);
-            Assert.Equal(CanopyTone.Danger, result.Cells[id].Tone);
+            Assert.Equal(Tone.Danger, result.Cells[id].Tone);
             Assert.Contains("Failed: Division by zero", result.Cells[id].Title);
             Assert.StartsWith(id + " (", result.Cells[id].Title);
         }

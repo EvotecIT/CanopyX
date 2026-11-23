@@ -10,22 +10,22 @@ public sealed class GridActivityPresenterTests {
     private static CanopyDataGridView Jobs() {
         var view = new CanopyDataGridView("jobs", "Scheduled jobs");
         view.Columns.Add(new CanopyColumn("state", "State") {
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Active"] = CanopyTone.Success, ["Error"] = CanopyTone.Danger })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Active"] = Tone.Success, ["Error"] = Tone.Danger })
                 .WithPill().WithIcons(new Dictionary<string, string> { ["Read-only"] = "🔒" })
         });
         view.Columns.Add(new CanopyColumn("at", "Schedule"));
         view.Columns.Add(new CanopyColumn("next", "Next run") { Kind = CanopyColumnKind.DateTime, Presenter = CanopyGridPresenter.RelativeTime("at") });
         view.Columns.Add(new CanopyColumn("runs", "Recent runs") { Presenter = CanopyGridPresenter.SparklineBars().WithSlots() });
-        view.Columns.Add(new CanopyColumn("log", "Log") { Presenter = CanopyGridPresenter.Log(3, levelTones: new Dictionary<string, CanopyTone> { ["SKIP"] = CanopyTone.Warning }) });
+        view.Columns.Add(new CanopyColumn("log", "Log") { Presenter = CanopyGridPresenter.Log(3, levelTones: new Dictionary<string, Tone> { ["SKIP"] = Tone.Warning }) });
         view.Columns.Add(new CanopyColumn("raw", "Raw log") { Presenter = CanopyGridPresenter.Log(split: true) });
         var row = new CanopyGridRow("backup");
         row.Cells["state"] = "Active";
         row.Cells["at"] = "At 02:00";
         row.Cells["next"] = new DateTime(2026, 11, 12, 2, 0, 0, DateTimeKind.Utc);
         var runs = new CanopyCell("3 runs");
-        runs.Series.Add(new CanopyCellPeriod("Mon", 42, tone: CanopyTone.Success));
+        runs.Series.Add(new CanopyCellPeriod("Mon", 42, tone: Tone.Success));
         runs.Series.Add(new CanopyCellPeriod("Tue"));
-        runs.Series.Add(new CanopyCellPeriod("Wed", 3, tone: CanopyTone.Danger));
+        runs.Series.Add(new CanopyCellPeriod("Wed", 3, tone: Tone.Danger));
         row.Cells["runs"] = runs;
         var log = new CanopyCell("Backup started\nBackup failed");
         log.Events.Add(new CanopyRecordEvent(new DateTime(2026, 11, 11, 2, 0, 1, DateTimeKind.Utc), "Backup started") { Kind = "INFO" });

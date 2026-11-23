@@ -31,9 +31,9 @@ public sealed class GridRowDataTests {
     [Fact]
     public void GetChunk_WritesArraysInColumnOrder_InIdentityOrder_WithoutTrailingEmptyCells() {
         var view = Grid();
-        view.Rows[0].Tone = CanopyTone.Warning;
+        view.Rows[0].Tone = Tone.Warning;
         view.Rows[0].ClassName = "flagged";
-        view.Rows[1].Cells["size"] = new CanopyCell { Text = "unknown", Tone = CanopyTone.Muted };
+        view.Rows[1].Cells["size"] = new CanopyCell { Text = "unknown", Tone = Tone.Muted };
 
         var data = new CanopyGridRowData(view);
         var rows = Chunk(data, 0);

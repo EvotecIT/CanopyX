@@ -307,7 +307,7 @@ public static partial class CanopyStaticHtml {
     }
 
     private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles, CanopyLabels labels, StringBuilder text) {
-        html.Append("<td style=\"").Append(styles.InnerCell).Append(styles.ToneColor(cell?.Tone ?? CanopyTone.None)).Append('"');
+        html.Append("<td style=\"").Append(styles.InnerCell).Append(styles.ToneColor(cell?.Tone ?? Tone.None)).Append('"');
         if (!string.IsNullOrEmpty(cell?.Title)) {
             html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
         }

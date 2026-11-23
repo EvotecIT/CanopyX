@@ -6,6 +6,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds the ordered-list stepper contract, readable reports, and static progress headers.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page for interactive mode. Fragments never load assets or execute callbacks.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyStepper {
     /// <summary>Creates a stepper with a page-unique root identity and an accessible label.</summary>
     public CanopyStepper(string id, string label, CanopyStepperOptions? options = null) {

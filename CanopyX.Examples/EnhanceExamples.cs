@@ -86,8 +86,8 @@ internal static class EnhanceExamples {
             row.Cells["cpu"] = new CanopyCell(cpu) { Text = cpu.ToString(CultureInfo.InvariantCulture) + " %" };
             grid.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : "";
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : "";
             File.WriteAllText(Path.Combine(output, "paged-grid" + suffix + ".html"), grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX pager settings", Theme = theme }));
         }
     }

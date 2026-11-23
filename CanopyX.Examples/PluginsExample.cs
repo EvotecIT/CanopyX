@@ -80,8 +80,8 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 36px)}
             tree.Roots.Add(site);
         }
 
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : "";
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : "";
             var gridPage = grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX plugins", Theme = theme });
             File.WriteAllText(Path.Combine(output, "plugins" + suffix + ".html"), Inject(gridPage));
             var treePage = tree.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX plugins on a tree", Theme = theme });

@@ -55,19 +55,19 @@ internal static class CanopyChangeFormat {
     };
 
     /// <summary>The tone of a kind: added success, removed danger, modified info, renamed neutral.</summary>
-    internal static CanopyTone Tone(CanopyChangeKind kind) => kind switch {
-        CanopyChangeKind.Added => CanopyTone.Success,
-        CanopyChangeKind.Removed => CanopyTone.Danger,
-        CanopyChangeKind.Renamed => CanopyTone.Neutral,
-        _ => CanopyTone.Info
+    internal static Tone ToneOf(CanopyChangeKind kind) => kind switch {
+        CanopyChangeKind.Added => Tone.Success,
+        CanopyChangeKind.Removed => Tone.Danger,
+        CanopyChangeKind.Renamed => Tone.Neutral,
+        _ => Tone.Info
     };
 
     /// <summary>The label, symbol and tone of a propagation state.</summary>
-    internal static (string Label, string Symbol, CanopyTone Tone) State(CanopyPropagationState state, CanopyLabels labels) => state switch {
-        CanopyPropagationState.Converged => (labels.ChangeConverged, "✓", CanopyTone.Success),
-        CanopyPropagationState.Propagating => (labels.ChangePropagating, "◷", CanopyTone.Warning),
-        CanopyPropagationState.Fault => (labels.ChangeFault, "✕", CanopyTone.Danger),
-        _ => (labels.ChangeUnknown, "?", CanopyTone.Muted)
+    internal static (string Label, string Symbol, Tone Tone) State(CanopyPropagationState state, CanopyLabels labels) => state switch {
+        CanopyPropagationState.Converged => (labels.ChangeConverged, "✓", Tone.Success),
+        CanopyPropagationState.Propagating => (labels.ChangePropagating, "◷", Tone.Warning),
+        CanopyPropagationState.Fault => (labels.ChangeFault, "✕", Tone.Danger),
+        _ => (labels.ChangeUnknown, "?", Tone.Muted)
     };
 
     /// <summary>

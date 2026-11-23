@@ -34,8 +34,8 @@ internal static class CalendarExample {
     internal static readonly DateTime Today = new(2026, 10, 16, 0, 0, 0, DateTimeKind.Utc);
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            Create().View.SaveHtmlPage(Path.Combine(output, "calendar" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            Create().View.SaveHtmlPage(Path.Combine(output, "calendar" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Operations calendar", Theme = theme, Height = "760px" });
         }
         foreach (var (suffix, labels, language) in new[] { ("pl", CanopyLabels.Polish(), "pl"), ("de", CanopyLabels.German(), "de") }) {
@@ -71,9 +71,9 @@ internal static class CalendarExample {
         grid.Column(x => x.Kind, configure: column => column.Sortable = true);
         grid.Column(x => x.Status, configure: column => {
             column.Sortable = true;
-            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> {
-                ["Incident"] = CanopyTone.Danger, ["Expired"] = CanopyTone.Danger, ["Warning"] = CanopyTone.Warning, ["Running"] = CanopyTone.Info,
-                ["Planned"] = CanopyTone.Neutral, ["Done"] = CanopyTone.Success
+            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> {
+                ["Incident"] = Tone.Danger, ["Expired"] = Tone.Danger, ["Warning"] = Tone.Warning, ["Running"] = Tone.Info,
+                ["Planned"] = Tone.Neutral, ["Done"] = Tone.Success
             });
         });
         grid.Column(x => x.Starts, "Starts", column => { column.Sortable = true; column.Editable = true; column.Section = "Schedule"; });
@@ -100,7 +100,7 @@ internal static class CalendarExample {
         settings.WorkingHours = new CanopyCalendarHours(TimeSpan.FromHours(8), TimeSpan.FromHours(18));
         settings.ScrollTime = TimeSpan.FromHours(7);
         settings.Editing = new CanopyCalendarEditing { SnapMinutes = 15 };
-        settings.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 30, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Utc), "Company holiday") { Tone = CanopyTone.Success });
+        settings.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 30, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Utc), "Company holiday") { Tone = Tone.Success });
 
         var record = view.Record ??= new CanopyRecordPanel();
         record.DeepLink = true; record.HeaderStatus = grid.ColumnId(x => x.Status);

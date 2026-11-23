@@ -25,7 +25,7 @@ internal static class DocsSnippets {
         projects.Children.Add(File("plan", "Project plan.docx", 48_128, "anna.kowalska"));
         projects.Children.Add(File("budget", "Budget 2026.xlsx", 22_016, "ben.okafor"));
         var report = File("report", "Quarterly report.pdf", 2_048, "chen.wei");
-        report.Badges.Add(new CanopyBadge("new", CanopyTone.Info));
+        report.Badges.Add(new CanopyBadge("new", Tone.Info));
         projects.Children.Add(report);
 
         var archive = new CanopyNode("archive", "Archive");
@@ -130,7 +130,7 @@ internal static class DocsSnippets {
             row.Cells["site"] = site;
             row.Cells["patch"] = new CanopyCell(patch) {
                 Text = $"{patch}%",
-                Tone = patch < 70 ? CanopyTone.Danger : CanopyTone.None
+                Tone = patch < 70 ? Tone.Danger : Tone.None
             };
             row.Cells["encrypted"] = encrypted;
             devices.Rows.Add(row);

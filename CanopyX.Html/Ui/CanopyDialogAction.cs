@@ -13,7 +13,7 @@ namespace CanopyX.Html.Ui;
 /// dialog's <see cref="CanopyDialog.Fields"/>, and an action without one closes the dialog with the reason <c>action</c>.
 /// </remarks>
 public sealed class CanopyDialogAction {
-    private CanopyTone _tone;
+    private Tone _tone;
     private string? _target;
 
     /// <summary>Creates an action with an identity, unique within its dialog, and a plain text label.</summary>
@@ -37,14 +37,14 @@ public sealed class CanopyDialogAction {
     public CanopyDialogActionKind Kind { get; }
 
     /// <summary>
-    /// Gets or sets the tone. <see cref="CanopyTone.Danger"/> draws a destructive button; <see cref="CanopyTone.None"/> draws a
+    /// Gets or sets the tone. <see cref="Tone.Danger"/> draws a destructive button; <see cref="Tone.None"/> draws a
     /// submit action as the primary button. Every tone is written as <c>data-tone</c> for host themes. Cancel actions have none.
     /// </summary>
     /// <exception cref="InvalidOperationException">The action is a cancel action.</exception>
-    public CanopyTone Tone {
+    public Tone Tone {
         get => _tone;
         set {
-            if (Kind == CanopyDialogActionKind.Cancel && value != CanopyTone.None) throw new InvalidOperationException("A cancel action has no tone.");
+            if (Kind == CanopyDialogActionKind.Cancel && value != Tone.None) throw new InvalidOperationException("A cancel action has no tone.");
             _tone = value;
         }
     }
@@ -74,9 +74,9 @@ public sealed class CanopyDialogAction {
     /// <summary>Creates a submit action.</summary>
     /// <param name="id">The answer the action gives.</param>
     /// <param name="label">The button text.</param>
-    /// <param name="tone">The tone, for example <see cref="CanopyTone.Danger"/> for a destructive action.</param>
+    /// <param name="tone">The tone, for example <see cref="Tone.Danger"/> for a destructive action.</param>
     /// <param name="target">The address to submit to, or null to leave the answer to the host.</param>
-    public static CanopyDialogAction Submit(string id, string label, CanopyTone tone = default, string? target = null)
+    public static CanopyDialogAction Submit(string id, string label, Tone tone = default, string? target = null)
         => new(id, label) { Tone = tone, Target = target };
 
     private static bool IsSafeTarget(string url) {

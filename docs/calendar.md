@@ -673,7 +673,7 @@ CanopyX.createCalendar(host, { events, view: "week", timeZone: "Europe/Warsaw",
 
 In C#, `CanopyCalendar.Merge` (`CanopyCalendarMerge`), `FadePast`, `DayNotes` (`CanopyCalendarDayNote`), `Faces`
 (`CanopyCalendarFace`), `ListDays`, `DayWidth`, `ListBelow`, `Reset` and `Location`, `CanopyCalendarSource.Avatar`, `Initials`
-and `Icon`, and `CanopyCalendarEvent.Location` write the same settings; the typed builder maps `Location(x => x.Where)`.
+and `Mark` (the `icon` characters), and `CanopyCalendarEvent.Location` write the same settings; the typed builder maps `Location(x => x.Where)`.
 
 ## API
 

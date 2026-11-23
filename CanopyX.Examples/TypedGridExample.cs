@@ -32,8 +32,8 @@ internal static class TypedGridExample {
     private static readonly string[] Contacts = { "Ada", "Brook", "Casey", "Dana", "Eli" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            Create().View.SaveHtmlPage(Path.Combine(output, "typed-grid" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            Create().View.SaveHtmlPage(Path.Combine(output, "typed-grid" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Servers from typed records", Theme = theme, Height = "600px" });
         }
     }
@@ -49,7 +49,7 @@ internal static class TypedGridExample {
         grid.Column(x => x.Owner.Team, "Team", column => column.Sortable = true);
         grid.Column(x => x.Health, configure: column => {
             column.Sortable = true;
-            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Down"] = CanopyTone.Danger, ["Degraded"] = CanopyTone.Warning, ["Healthy"] = CanopyTone.Success });
+            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Down"] = Tone.Danger, ["Degraded"] = Tone.Warning, ["Healthy"] = Tone.Success });
         });
         grid.Column(x => x.Cores, configure: column => column.Sortable = true);
         grid.Column(x => x.LoadAverage, "Load", column => column.Sortable = true, load => new CanopyCell(load) { Text = load.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) });
@@ -84,7 +84,7 @@ internal static class TypedGridExample {
                 Uptime = Enumerable.Range(0, 12).Select(hour => {
                     var state = history.Next(30) == 0 ? "Down" : history.Next(12) == 0 ? "Degraded" : "Up";
                     return new CanopyCellPeriod(start.AddHours(hour).ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture), state: state,
-                        tone: state == "Down" ? CanopyTone.Danger : state == "Degraded" ? CanopyTone.Warning : CanopyTone.Success);
+                        tone: state == "Down" ? Tone.Danger : state == "Degraded" ? Tone.Warning : Tone.Success);
                 }).ToList()
             };
         }
