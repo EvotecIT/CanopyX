@@ -24,22 +24,22 @@ internal static class FlowMailChecksExample {
                 .Option("tls", "TLS from the start", "Encrypted from the first byte. Port 465 is usual.")
                 .Option("none", "No encryption", "Only inside a trusted network.")
                 .Required().Default("starttls").Parameter("Security").Path("mail.security"))
-            .Check("connection", "Test the connection", check => check.Fields("host", "port", "security").RequireRun()
-                .Describe("Opens a connection to the server and reads its greeting. Nothing is sent.")));
+            .Check("connection", "Test the connection", check => check.Field("host").Field("port").Field("security").RequireRun()
+                .Description("Opens a connection to the server and reads its greeting. Nothing is sent.")));
         flow.Step("sign-in", "How does it sign in?", step => step
             .Text("user", "User name", f => f.Required().Help("Often the sender address, such as alerts@example.com.").Parameter("User").Path("mail.user"))
             .Secret("password", "Password", f => f.Required().Parameter("Password"))
-            .Check("sign-in-test", "Test sign-in", check => check.Fields("host", "port", "user", "password").RequirePass()));
+            .Check("sign-in-test", "Test sign-in", check => check.Field("host").Field("port").Field("user").Field("password").RequirePass()));
         flow.Step("route", "Where does the mail go?", step => step
             .Select("region", "Data centre", f => f.Option("eu", "Europe").Option("us", "United States").Option("ap", "Asia Pacific").Required().Half().Parameter("Region").Path("mail.region"))
             .Select("relay", "Relay", f => f.FromHost().DependsOn("region").Half().Help("The relays the service can use in that data centre.").Parameter("Relay").Path("mail.relay"))
-            .List("to", "Recipients", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 20).Placeholder("For example: name@example.com").Parameter("To").Path("mail.to"))
+            .List("to", "Recipients", f => f.Required().ItemRule(CanopyFlowItemRule.Email).Count(1, 20).Placeholder("For example: name@example.com").Parameter("To").Path("mail.to"))
             .Records("rules", "Routing rules", f => f
                 .Column("severity", "Severity", CanopyFlowRecordColumnKind.Select, column => column.Option("error", "Errors").Option("warning", "Warnings").Option("info", "Information").Required())
                 .Column("address", "Send to", CanopyFlowRecordColumnKind.Text, column => column.Required())
                 .Column("quiet", "Quiet hours", CanopyFlowRecordColumnKind.Toggle)
                 .Count(null, 10).Help("Extra recipients by severity. Quiet hours hold information messages until the morning.").Path("mail.rules")));
-        flow.Review(review => review.Preview().Declaration("Saving applies the settings to new messages. Messages in the queue keep their old route."));
+        flow.Review(review => review.ShowsPreview().Declaration("Saving applies the settings to new messages. Messages in the queue keep their old route."));
         flow.Preset("office", "Office relay", preset => preset.Value("host", "relay.office.example.com").Value("port", 25d).Value("security", "none").Value("region", "eu"));
         flow.Preset("cloud", "Cloud mail service", preset => preset.Value("host", "smtp.mail.example.net").Value("port", 587d).Value("security", "starttls").Value("region", "us"));
         flow.Initial["host"] = "mail.example.com";

@@ -88,7 +88,7 @@ internal static class ViewCode {
         return "View code: " + pages + " snippet pages for " + manifest.Count + " views.";
     }
 
-    /// <summary>Runs a snippet in the output folder, where its SaveHtmlPage call writes, and names the page after its language.</summary>
+    /// <summary>Runs a snippet in the output folder, where its Save call writes, and names the page after its language.</summary>
     private static void RunIn(string folder, Action run, string written, string page) {
         var previous = Environment.CurrentDirectory;
         try {

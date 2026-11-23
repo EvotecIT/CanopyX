@@ -14,7 +14,7 @@ root.Cells["size"] = 42;
 root.Children.Add(new CanopyNode("root/child", "Child"));
 view.Roots.Add(root);
 
-var page = view.ToHtmlPage();
+var page = view.ToHtml();
 Require(page.Contains("data-canopyx-host", StringComparison.Ordinal), "the page has no view host element");
 Require(page.Contains("\"protocol\":\"canopyx/2\"", StringComparison.Ordinal), "the page has no view document");
 Require(page.Contains(CanopyHtmlAssets.Script, StringComparison.Ordinal), "the page does not inline the runtime");
@@ -25,7 +25,7 @@ Require(assets.All(File.Exists), "the asset files were not written");
 var outline = CanopyStaticHtml.Render(view);
 Require(outline.Contains("Child", StringComparison.Ordinal) && !outline.Contains("<script", StringComparison.Ordinal), "the static outline is wrong");
 
-var bundle = view.SaveHtmlBundle(Path.Combine(output, "bundle"));
+var bundle = view.SaveBundle(Path.Combine(output, "bundle"));
 Require(bundle.NodeCount == 2 && File.Exists(Path.Combine(output, "bundle", "index.html")), "the bundle was not written");
 Require(File.Exists(Path.Combine(bundle.DataDirectory, "manifest.js")), "the bundle has no manifest");
 // The page references the assets under the names they were written with.
@@ -37,7 +37,7 @@ foreach (var name in new[] { CanopyHtmlAssets.HashedScriptFileName, CanopyHtmlAs
 view.Checkboxes = CanopyCheckboxMode.Hierarchical;
 view.CheckIntents.Add(new CanopyCheckIntent(new[] { "root" }, true));
 var checkingDirectory = Path.Combine(output, "checking");
-view.SaveHtmlBundle(checkingDirectory);
+view.SaveBundle(checkingDirectory);
 var checkingPage = File.ReadAllText(Path.Combine(checkingDirectory, "index.html"));
 foreach (var name in new[] {
     CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.InteractiveTreeGrid),
@@ -52,7 +52,7 @@ view.CheckIntents.Clear();
 view.Columns[0].Editable = true;
 view.DragDrop = true;
 view.ContextActions.Add(new CanopyContextAction("inspect", "Inspect record"));
-var interactionPage = view.ToHtmlPage();
+var interactionPage = view.ToHtml();
 Require(interactionPage.Contains("\"editable\":true", StringComparison.Ordinal) && interactionPage.Contains("\"contextActions\"", StringComparison.Ordinal), "interaction definitions are missing");
 Require(interactionPage.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.Ordinal), "interaction definitions chose the wrong runtime");
 
@@ -61,7 +61,7 @@ reporting.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
 reporting.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
 var reportingRow = new CanopyGridRow("item-2"); reportingRow.Cells["name"] = "Item 2"; reporting.Rows.Add(reportingRow);
 Require(CanopyHtmlAssets.GetRuntime(reporting) == CanopyRuntime.ReportingGrid, "reporting definitions chose the wrong runtime");
-Require(reporting.ToHtmlPage().Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid), StringComparison.Ordinal), "the package lost the embedded reporting script");
+Require(reporting.ToHtml().Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid), StringComparison.Ordinal), "the package lost the embedded reporting script");
 Require(CanopyStaticHtml.RenderGrid(reporting).Contains("Item 2", StringComparison.Ordinal), "the reporting static fallback lost its record");
 var printedGrid = CanopyStaticHtml.RenderGridWithResult(reporting);
 Require(printedGrid.Rows.Count == 1 && printedGrid.Rows[0][0] == "Item 2" && printedGrid.TotalRows == 1 && !printedGrid.HasUnknownTotal,

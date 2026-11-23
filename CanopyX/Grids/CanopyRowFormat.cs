@@ -6,7 +6,7 @@ public enum CanopyRowFormat {
     /// Chosen from the rows: row objects for up to <see cref="CanopyRowDataOptions.CompactAboveRows"/> rows, compact row data
     /// above that, and gzip-compressed compact row data when its JSON comes to more than
     /// <see cref="CanopyRowDataOptions.GzipAboveBytes"/>. In a page, rows with a detail payload or record fields stay row
-    /// objects. A bundle (<c>SaveHtmlBundle</c>) always writes compact row data, compressed by the same size rule, and so refuses
+    /// objects. A bundle (<c>SaveBundle</c>) always writes compact row data, compressed by the same size rule, and so refuses
     /// such rows.
     /// </summary>
     Auto = 0,

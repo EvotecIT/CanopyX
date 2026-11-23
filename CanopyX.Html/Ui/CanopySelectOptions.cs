@@ -20,6 +20,4 @@ public sealed class CanopySelectOptions {
     public bool Required { get; set; }
     /// <summary>Gets or sets whether the select is shown but cannot be changed.</summary>
     public bool Disabled { get; set; }
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

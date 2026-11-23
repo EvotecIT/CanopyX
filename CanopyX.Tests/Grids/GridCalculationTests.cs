@@ -16,7 +16,7 @@ public sealed class GridCalculationTests {
         total.Kind = CanopyColumnKind.Text;
         subtotal.Calculation = null;
         var detail = new CanopyPropertiesDetail();
-        var input = new CanopyGridRow("r") { Tone = Tone.Warning, ClassName = "source", Detail = detail };
+        var input = new CanopyGridRow("r") { Tone = Tone.Warning, Detail = detail };
         var amount = new CanopyCell(4L) { Text = "four" };
         input.Cells["amount"] = amount;
         input.Cells["total"] = 123;
@@ -27,7 +27,6 @@ public sealed class GridCalculationTests {
         Assert.NotSame(input, result);
         Assert.Equal("r", result.Id);
         Assert.Equal(input.Tone, result.Tone);
-        Assert.Equal("source", result.ClassName);
         Assert.Same(detail, result.Detail);
         Assert.Same(input.Fields["record"], result.Fields["record"]);
         Assert.Same(amount, result.Cells["amount"]);

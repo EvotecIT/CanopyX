@@ -101,7 +101,7 @@ public sealed class FlowContractTests {
     [InlineData(CanopyFlowFieldKind.List)]
     [InlineData(CanopyFlowFieldKind.MultiChoice)]
     public void ToContract_CollectionDefault_OmitsNullAndWritesArrays(CanopyFlowFieldKind kind) {
-        var field = new CanopyFlowField("items", kind, "Items") { DefaultValue = null };
+        var field = new CanopyFlowField("items", kind, "Items") { Default = null };
         if (kind == CanopyFlowFieldKind.MultiChoice) field.Option("one");
         var flow = new CanopyFlow("create", "Create settings").Step("settings", "Settings");
         flow.Steps[0].Fields.Add(field);
@@ -113,7 +113,7 @@ public sealed class FlowContractTests {
         FlowSamples.AssertValid(json, "A collection field with no default");
 
         foreach (var values in new[] { Array.Empty<string>(), new[] { "one" } }) {
-            field.DefaultValue = values;
+            field.Default = values;
             json = flow.ToContract();
             using var document = JsonDocument.Parse(json);
             var start = document.RootElement.GetProperty("steps")[0].GetProperty("fields")[0].GetProperty("default");
@@ -229,11 +229,11 @@ public sealed class FlowContractTests {
         Assert.Contains("token", flow.StoredSecrets);
         var window = flow.Steps.Single(step => step.Id == "when").Fields.Single(field => field.Id == "window");
         Assert.Equal(TimeSpan.FromMinutes(5), window.MinimumDuration);
-        Assert.Equal(new[] { CanopyFlowDurationUnit.Minutes, CanopyFlowDurationUnit.Hours }, window.DurationUnits);
+        Assert.Equal(new[] { CanopyFlowDurationUnit.Minutes, CanopyFlowDurationUnit.Hours }, window.Units);
         var delivery = flow.Steps.Single(step => step.Id == "delivery");
         Assert.True(delivery.IsOptional);
-        Assert.True(delivery.Condition!.IsGroup);
-        Assert.Equal(CanopyFlowGroupOperator.Any, delivery.Condition.GroupOperator);
+        Assert.True(delivery.When!.IsGroup);
+        Assert.Equal(CanopyFlowGroupOperator.Any, delivery.When.GroupOperator);
         Assert.Equal(CanopyFlowItemRule.Email, delivery.Fields[0].ItemRule);
         Assert.Equal(CanopyFlowStepKind.Review, flow.Steps[flow.Steps.Count - 1].Kind);
         Assert.Null(flow.Steps[flow.Steps.Count - 1].Title);

@@ -32,8 +32,8 @@ public sealed class LargeDataHtmlTests {
         Assert.Contains("data-canopyx-host id=\"" + grid.Id + "\" data-cx-mount=\"visible\">", grid.ToHtmlFragment(new CanopyHtmlOptions { MountWhenVisible = true }));
         Assert.Contains("data-cx-mount=\"manual\"", grid.ToHtmlFragment(new CanopyHtmlOptions { MountWhenVisible = true, AutoMount = false }));
         Assert.DoesNotContain("data-cx-mount", grid.ToHtmlFragment());
-        Assert.Contains("data-cx-mount=\"visible\"", grid.ToHtmlPage(new CanopyHtmlOptions { MountWhenVisible = true }));
-        Assert.Contains("data-cx-mount=\"visible\"", SampleDocuments.FullView().ToHtmlPage(new CanopyHtmlOptions { MountWhenVisible = true }));
+        Assert.Contains("data-cx-mount=\"visible\"", grid.ToHtml(new CanopyHtmlOptions { MountWhenVisible = true }));
+        Assert.Contains("data-cx-mount=\"visible\"", SampleDocuments.FullView().ToHtml(new CanopyHtmlOptions { MountWhenVisible = true }));
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class LargeDataHtmlTests {
         Assert.Equal(3, Regex.Matches(external, "x-canopyx-rows").Count);
         Assert.DoesNotContain(part.Markup, external);
         // A page carries the same chunks.
-        Assert.Contains(data.GetChunk(0), grid.ToHtmlPage(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.Compact } }));
+        Assert.Contains(data.GetChunk(0), grid.ToHtml(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.Compact } }));
     }
 
     [Fact]
@@ -71,11 +71,11 @@ public sealed class LargeDataHtmlTests {
     }
 
     [Fact]
-    public void SaveHtmlBundle_WritesThePage_TheAssets_AndTheRowFiles() {
+    public void SaveBundle_WritesThePage_TheAssets_AndTheRowFiles() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-grid-bundle-" + Guid.NewGuid().ToString("N"));
         try {
             var grid = Grid(250);
-            var result = grid.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, RowData = new CanopyRowDataOptions { ChunkSize = 100 } });
+            var result = grid.SaveBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, RowData = new CanopyRowDataOptions { ChunkSize = 100 } });
 
             Assert.Equal(3, result.FileCount);
             var page = File.ReadAllText(Path.Combine(directory, "index.html"));
@@ -88,7 +88,7 @@ public sealed class LargeDataHtmlTests {
             Assert.True(File.Exists(Path.Combine(result.DataDirectory, "rows", "2.js")));
             // The default options write external assets too.
             var second = Path.Combine(directory, "default");
-            grid.SaveHtmlBundle(second);
+            grid.SaveBundle(second);
             Assert.True(File.Exists(Path.Combine(second, "assets", CanopyHtmlAssets.GetPart("data").HashedScriptFileName)));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
@@ -106,7 +106,7 @@ public sealed class LargeDataHtmlTests {
         var compact = Grid(CanopyRowDataOptions.CompactAboveRows + 1);
         Assert.Equal("compact", Format(Config(compact)));
         Assert.Contains(part.Markup, compact.ToHtmlFragment());
-        Assert.Contains(part.Markup, compact.ToHtmlPage());
+        Assert.Contains(part.Markup, compact.ToHtml());
         Assert.Equal(1, Config(compact).GetProperty("rowData").GetProperty("version").GetInt32());
         // Several fragments of one document carry the part once.
         var document = new CanopyHtmlDocument();
@@ -137,28 +137,28 @@ public sealed class LargeDataHtmlTests {
     }
 
     [Fact]
-    public void SaveHtmlBundle_WritesCompactRows_CompressedBySize_AndRefusesObjects() {
+    public void SaveBundle_WritesCompactRows_CompressedBySize_AndRefusesObjects() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-grid-bundle-" + Guid.NewGuid().ToString("N"));
         try {
             var small = Grid(250);
-            small.SaveHtmlBundle(directory);
+            small.SaveBundle(directory);
             var rowData = JsonDocument.Parse(ConfigOf(File.ReadAllText(Path.Combine(directory, "index.html")))).RootElement.GetProperty("rowData");
             Assert.False(rowData.TryGetProperty("encoding", out _));
-            small.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
+            small.SaveBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
             rowData = JsonDocument.Parse(ConfigOf(File.ReadAllText(Path.Combine(directory, "index.html")))).RootElement.GetProperty("rowData");
             Assert.Equal("gzip", rowData.GetProperty("encoding").GetString());
-            Assert.Throws<InvalidOperationException>(() => small.SaveHtmlBundle(directory, new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } }));
+            Assert.Throws<InvalidOperationException>(() => small.SaveBundle(directory, new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } }));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
     }
 
     [Fact]
-    public void SaveHtmlBundle_RejectsHostedGrids() {
+    public void SaveBundle_RejectsHostedGrids() {
         var hosted = new CanopyDataGridView("hosted", "Hosted") { Source = CanopyGridSource.HostedOffset() };
         hosted.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Throws<InvalidOperationException>(() => hosted.SaveHtmlBundle(Path.Combine(Path.GetTempPath(), "canopyx-never-" + Guid.NewGuid().ToString("N"))));
-        Assert.Throws<ArgumentException>(() => Grid(1).SaveHtmlBundle(""));
+        Assert.Throws<InvalidOperationException>(() => hosted.SaveBundle(Path.Combine(Path.GetTempPath(), "canopyx-never-" + Guid.NewGuid().ToString("N"))));
+        Assert.Throws<ArgumentException>(() => Grid(1).SaveBundle(""));
     }
 
     private static long Gzip(string value) {

@@ -69,7 +69,7 @@ public sealed class CanopyFlowSubmission {
     /// <summary>Gets, in edit mode, the answers that differ from the edited settings, computed from <see cref="CanopyFlow.Initial"/>.</summary>
     public IReadOnlyList<CanopyFlowChange> Changes { get; }
 
-    /// <summary>Gets the JSON patch of the fields with a setting path (<see cref="CanopyFlowField.ConfigPath"/>), computed from the answers.</summary>
+    /// <summary>Gets the JSON patch of the fields with a setting path (<see cref="CanopyFlowField.Path"/>), computed from the answers.</summary>
     public IReadOnlyList<CanopyFlowPatchOperation> Patch { get; }
 
     /// <summary>Gets the check results the browser reports, by check id. Claims only: run a check again before relying on it.</summary>

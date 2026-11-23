@@ -79,10 +79,10 @@ internal static class PackBenchTree {
             var release = new CanopyNode(section.Id + "/" + r, "Release " + r + " " + Areas[random.Below(Areas.Length)].ToLowerInvariant() + " update") { Kind = "release" };
             release.Cells["changed"] = changed.AddDays(-(count - r) * 5);
             release.Cells["by"] = People[random.Below(People.Length)];
-            var table = new CanopyTableDetail("Changes in release " + r).AddColumns("Setting", "Area", "Change", "Before", "After");
+            var table = new CanopyTableDetail("Changes in release " + r).Column("Setting", "Area", "Change", "Before", "After");
             var rows = 14 + random.Below(30);
             for (var i = 0; i < rows; i++) {
-                table.AddRow(Setting(ref random), Areas[random.Below(Areas.Length)], i % 5 == 0 ? "Added" : "Changed", Value(ref random), new CanopyCell(Value(ref random)) { Tone = Tone.Success });
+                table.Row(Setting(ref random), Areas[random.Below(Areas.Length)], i % 5 == 0 ? "Added" : "Changed", Value(ref random), new CanopyCell(Value(ref random)) { Tone = Tone.Success });
             }
 
             release.Children.Add(new CanopyNode(release.Id + "/changes", "Changes") { Kind = "detail", Detail = table });
@@ -98,10 +98,10 @@ internal static class PackBenchTree {
         var count = 4 + random.Below(3);
         for (var g = 0; g < count; g++) {
             var group = new CanopyNode(section.Id + "/" + g, Areas[g % Areas.Length]) { Kind = "settings" };
-            var table = new CanopyTableDetail().AddColumns("Setting", "Scope", "Value", "Source");
+            var table = new CanopyTableDetail().Column("Setting", "Scope", "Value", "Source");
             var rows = 26 + random.Below(40);
             for (var i = 0; i < rows; i++) {
-                table.AddRow(Setting(ref random), i % 3 == 0 ? "Region" : "Service", Value(ref random), "Policy " + random.Below(400).ToString("000", CultureInfo.InvariantCulture) + " / " + Areas[random.Below(Areas.Length)]);
+                table.Row(Setting(ref random), i % 3 == 0 ? "Region" : "Service", Value(ref random), "Policy " + random.Below(400).ToString("000", CultureInfo.InvariantCulture) + " / " + Areas[random.Below(Areas.Length)]);
             }
 
             group.Cells["items"] = rows;
@@ -120,11 +120,11 @@ internal static class PackBenchTree {
             var endpoint = new CanopyNode(section.Id + "/" + e, "https://" + Regions[random.Below(Regions.Length)].ToLowerInvariant() + "-" + e + ".example.test/v" + (1 + random.Below(4))) { Kind = "endpoint" };
             endpoint.Cells["state"] = random.Below(12) == 0 ? new CanopyCell("off") { Text = "Disabled", Tone = Tone.Muted } : "Enabled";
             var properties = new CanopyPropertiesDetail()
-                .Add("Protocol", e % 4 == 0 ? "gRPC" : "HTTPS")
-                .Add("Certificate", "CN=" + id + "-" + e + ".example.test, valid until 2027-0" + (1 + random.Below(9)) + "-15")
-                .Add("Allowed callers", People[random.Below(People.Length)] + ", " + People[random.Below(People.Length)] + ", service accounts of " + Products[random.Below(Products.Length)])
-                .Add("Rate limit", (100 * (1 + random.Below(50))).ToString("#,0", CultureInfo.InvariantCulture) + " requests per minute, burst " + (10 * (1 + random.Below(40))))
-                .Add("Notes", "Reviewed " + Now.AddDays(-random.Below(300)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + "; next review after the " + Areas[random.Below(Areas.Length)].ToLowerInvariant() + " change window.");
+                .Item("Protocol", e % 4 == 0 ? "gRPC" : "HTTPS")
+                .Item("Certificate", "CN=" + id + "-" + e + ".example.test, valid until 2027-0" + (1 + random.Below(9)) + "-15")
+                .Item("Allowed callers", People[random.Below(People.Length)] + ", " + People[random.Below(People.Length)] + ", service accounts of " + Products[random.Below(Products.Length)])
+                .Item("Rate limit", (100 * (1 + random.Below(50))).ToString("#,0", CultureInfo.InvariantCulture) + " requests per minute, burst " + (10 * (1 + random.Below(40))))
+                .Item("Notes", "Reviewed " + Now.AddDays(-random.Below(300)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + "; next review after the " + Areas[random.Below(Areas.Length)].ToLowerInvariant() + " change window.");
             endpoint.Children.Add(new CanopyNode(endpoint.Id + "/properties", "Properties") { Kind = "detail", Detail = properties });
             section.Children.Add(endpoint);
         }
@@ -142,9 +142,9 @@ internal static class PackBenchTree {
             section.Children.Add(grant);
         }
 
-        var table = new CanopyTableDetail("Inherited access").AddColumns("Principal", "Permission", "Inherited from");
+        var table = new CanopyTableDetail("Inherited access").Column("Principal", "Permission", "Inherited from");
         for (var i = 0; i < 8; i++) {
-            table.AddRow("Role " + Areas[random.Below(Areas.Length)] + " operators " + i, i % 2 == 0 ? "Read" : "Operate", Regions[random.Below(Regions.Length)] + " region policy " + random.Below(90));
+            table.Row("Role " + Areas[random.Below(Areas.Length)] + " operators " + i, i % 2 == 0 ? "Read" : "Operate", Regions[random.Below(Regions.Length)] + " region policy " + random.Below(90));
         }
 
         section.Children.Add(new CanopyNode(section.Id + "/inherited", "Inherited access") { Kind = "detail", Detail = table });
@@ -154,11 +154,11 @@ internal static class PackBenchTree {
 
     private static CanopyNode Health(string id, ref Lcg random) {
         var section = Section(id + "/health", "Health");
-        var table = new CanopyTableDetail().AddColumns("Instance", "Version", "Last check", "In sync");
+        var table = new CanopyTableDetail().Column("Instance", "Version", "Last check", "In sync");
         var rows = 4 + random.Below(9);
         for (var i = 0; i < rows; i++) {
             var inSync = random.Below(15) != 0;
-            table.AddRow("instance-" + i + "." + id + ".example.test", "4." + random.Below(20) + "." + random.Below(300), Now.AddMinutes(-random.Below(600)).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
+            table.Row("instance-" + i + "." + id + ".example.test", "4." + random.Below(20) + "." + random.Below(300), Now.AddMinutes(-random.Below(600)).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
                 new CanopyCell(inSync) { Text = inSync ? "Yes" : "No", Tone = inSync ? Tone.Success : Tone.Danger });
         }
 

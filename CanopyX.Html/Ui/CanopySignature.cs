@@ -24,7 +24,6 @@ public sealed class CanopySignature {
     /// <summary>Renders the pad's root with encoded settings.</summary>
     /// <exception cref="ArgumentException">A colour or the download name holds characters a CSS colour or a file name cannot.</exception>
     public string ToHtmlFragment() {
-        Colour(Options.Ink); Colour(Options.Background);
         if (Options.DownloadName != null && (Options.DownloadName.Length == 0 || Options.DownloadName.IndexOfAny(new[] { '/', '\\', ':', '"', '<', '>', '|', '?', '*' }) >= 0))
             throw new ArgumentException("The download name is a plain file name without extension.");
         var html = new StringBuilder("<div");
@@ -33,17 +32,10 @@ public sealed class CanopySignature {
         UiHtml.Attribute(html, "data-label", Label);
         UiHtml.Attribute(html, "data-name", Options.Name);
         if (Options.SubmitPng) UiHtml.Attribute(html, "data-format", "png");
-        UiHtml.Attribute(html, "data-ink", Options.Ink);
-        UiHtml.Attribute(html, "data-background", Options.Background);
         if (Options.Colours) UiHtml.Attribute(html, "data-colours", "true");
         UiHtml.Attribute(html, "data-download", Options.DownloadName);
         if (Options.ReadOnly) UiHtml.Attribute(html, "data-readonly", "true");
         return html.Append("></div>").ToString();
     }
 
-    private static void Colour(string? value) {
-        if (value == null) return;
-        foreach (var c in value) if (!(char.IsLetterOrDigit(c) || c == '#' || c == '(' || c == ')' || c == ',' || c == '.' || c == '%' || c == ' ' || c == '-' || c == '/'))
-            throw new ArgumentException("A colour is a CSS colour such as #1d4ed8, rgb(0, 0, 0) or rgb(0 0 0 / 50%).");
-    }
 }

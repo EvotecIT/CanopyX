@@ -115,7 +115,7 @@ public sealed class StaticHtmlTests {
         var view = SmallView();
         var cell = new CanopyCell("value") { Title = "A & B" };
         cell.Badges.Add(new CanopyBadge("Changed", Tone.Warning));
-        view.Roots.Add(new CanopyNode("props", "Properties") { Detail = new CanopyPropertiesDetail().Add("Status", cell) });
+        view.Roots.Add(new CanopyNode("props", "Properties") { Detail = new CanopyPropertiesDetail().Item("Status", cell) });
         var html = CanopyStaticHtml.Render(view);
         Assert.Contains("title=\"A &amp; B\"", html);
         Assert.Contains(">Changed</span>", html);
@@ -204,7 +204,7 @@ public sealed class StaticHtmlTests {
         plans.Cells["size"] = new CanopyCell(4096L) { Text = "4 KB", Tone = Tone.Danger };
         plans.Children.Add(new CanopyNode("s/plans/q3", "Q3 budget"));
         plans.Children.Add(new CanopyNode("s/plans/diff", "Diff") {
-            Detail = new CanopyTableDetail("Changed settings").AddColumns("Setting", "Before", "After").AddRow("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, "90 days")
+            Detail = new CanopyTableDetail("Changed settings").Column("Setting", "Before", "After").Row("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, "90 days")
         });
         share.Children.Add(plans);
         share.Children.Add(new CanopyNode("s/reports", "Reports"));

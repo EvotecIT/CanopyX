@@ -119,7 +119,7 @@ public sealed class Wave1ModelRegressionTests {
         var grid = Grid();
         var cell = CanopyCell.List("Before", "Other");
         cell.Title = "Original title";
-        var row = new CanopyGridRow("r1") { Cells = { ["value"] = cell }, Tone = Tone.Info, ClassName = "before" };
+        var row = new CanopyGridRow("r1") { Cells = { ["value"] = cell }, Tone = Tone.Info };
         grid.Rows.Add(row);
         var data = new CanopyGridRowData(grid);
         var captured = data.GetChunk(0);
@@ -127,11 +127,10 @@ public sealed class Wave1ModelRegressionTests {
         cell.Items.Clear();
         row.Cells["value"] = "After";
         row.Tone = Tone.Danger;
-        row.ClassName = "after";
         Assert.Equal(captured, data.GetChunk(0));
         Assert.Contains("Before", captured);
         Assert.Contains("Original title", captured);
-        Assert.Contains("before", captured);
+        Assert.Contains("info", captured);
     }
 
     [Fact]

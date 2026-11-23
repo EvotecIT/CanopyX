@@ -36,7 +36,7 @@ matrix.TimeSlider = new CanopyTimeSlider<CanopyMatrix> {
 };
 matrix.TimeSlider.Snapshots.Add(new CanopyTimeSnapshot<CanopyMatrix>(at, Capture("waiting"), "Waiting for update"));
 matrix.TimeSlider.Snapshots.Add(new CanopyTimeSnapshot<CanopyMatrix>(at.AddMinutes(1), Capture("ready"), "Update received"));
-matrix.SaveHtmlPage("service-history.html");
+matrix.Save("service-history.html");
 ```
 
 Use `CanopyTimeSlider<CanopyPropagation>` and

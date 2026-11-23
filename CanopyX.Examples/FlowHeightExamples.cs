@@ -15,7 +15,7 @@ internal static class FlowHeightExamples {
                     Theme = ThemeMode.Light
                 };
                 var name = (nonce ? "nonce" : "inline") + (explicitHeight ? "-600" : "-auto") + ".html";
-                File.WriteAllText(Path.Combine(folder, name), FlowPauseExample.Flow().ToHtmlPage(options));
+                File.WriteAllText(Path.Combine(folder, name), FlowPauseExample.Flow().ToHtml(options));
             }
         }
     }

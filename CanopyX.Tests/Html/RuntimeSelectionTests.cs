@@ -19,7 +19,7 @@ public sealed class RuntimeSelectionTests {
 
         var runtime = CanopyHtmlAssets.GetRuntime(view);
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, runtime);
-        var page = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
+        var page = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
         Assert.Contains(CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime), page);
         Assert.Contains(CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime), page);
     }

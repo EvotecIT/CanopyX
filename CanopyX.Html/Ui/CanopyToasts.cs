@@ -34,7 +34,6 @@ public sealed class CanopyToasts {
         var html = new StringBuilder("<section");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-toasts\" data-cx-toasts data-cx-part=\"toasts\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-position", UiHtml.Token(Options.Position));
         UiHtml.Attribute(html, "data-max", UiHtml.Number(Options.Max));
         UiHtml.Attribute(html, "data-timeout", UiHtml.Number(Options.Timeout));

@@ -26,7 +26,7 @@ internal static class CalculatedColumnExample {
         }
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            File.WriteAllText(Path.Combine(output, "analysis-calculations" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = view.Label }));
+            File.WriteAllText(Path.Combine(output, "analysis-calculations" + suffix + ".html"), view.ToHtml(new CanopyHtmlOptions { Theme = theme, Title = view.Label }));
         }
         AnalystExample.WriteStatic(output, "analysis-calculations-static", options => CanopyStaticHtml.RenderGrid(view, options: options));
     }

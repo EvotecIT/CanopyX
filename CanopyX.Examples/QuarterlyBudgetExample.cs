@@ -34,13 +34,13 @@ CanopyX.configure("budget", { onPaste(paste) {
     internal static void Write(string output) {
         var grid = Build();
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var page = grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX quarterly budget", Theme = theme });
+            var page = grid.ToHtml(new CanopyHtmlOptions { Title = "CanopyX quarterly budget", Theme = theme });
             File.WriteAllText(Path.Combine(output, "quarterly-budget" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page.Insert(page.LastIndexOf("</body>", StringComparison.Ordinal), PasteScript));
         }
         // The reporting runtime adds move handles to the headers: a group's handle moves the whole group, a column's stays in its group.
         var reporting = Build();
         reporting.Reporting = new CanopyGridReporting { ColumnReorder = true };
-        var reorder = reporting.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX quarterly budget with header moves" });
+        var reorder = reporting.ToHtml(new CanopyHtmlOptions { Title = "CanopyX quarterly budget with header moves" });
         File.WriteAllText(Path.Combine(output, "quarterly-budget-reorder.html"), reorder.Insert(reorder.LastIndexOf("</body>", StringComparison.Ordinal), PasteScript));
     }
 

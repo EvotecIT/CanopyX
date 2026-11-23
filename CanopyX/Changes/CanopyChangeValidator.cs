@@ -132,7 +132,7 @@ internal static class CanopyChangeValidator {
         if (action == null || action.Id.Length > 64 || !ids.Add(action.Id)) throw new InvalidOperationException("Change list actions need unique ids of at most 64 characters.");
         var what = "The action '" + action.Id + "'";
         Text(action.Label, "The label of action '" + action.Id + "'", 64, false);
-        if (!Enum.IsDefined(typeof(CanopyChangeActionIcon), action.Icon) || !Enum.IsDefined(typeof(CanopyChangeReveal), action.Reveal)) throw new InvalidOperationException(what + " has an unknown icon or reveal.");
+        if (!action.Icon.IsEmpty && !CanopyActionIcons.ChangeKeys.Contains(action.Icon.Key) || !Enum.IsDefined(typeof(CanopyChangeReveal), action.Reveal)) throw new InvalidOperationException(what + " has an unknown icon or reveal.");
         if (action.Copy != null && (action.Copy.Length == 0 || action.Copy.Length > 64)) throw new InvalidOperationException(what + " copies a value key of 1 to 64 characters.");
         if (action.Link != null && (action.Link.Length == 0 || action.Link.Length > 64)) throw new InvalidOperationException(what + " opens a value key of 1 to 64 characters.");
         var kinds = (action.Copy != null ? 1 : 0) + (action.Link != null ? 1 : 0) + (action.Reveal != CanopyChangeReveal.None ? 1 : 0);

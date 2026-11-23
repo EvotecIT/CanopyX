@@ -42,13 +42,13 @@ public sealed class FlowEndpointTests : IAsyncLifetime {
                     : CanopyFlowCheckResult.Fail("No answer.").FieldError("host", "Nothing listens there."));
             },
             Validate = (context, request) => Task.FromResult(request.Step?.Id == "server" ? new CanopyFlowValidationResult().Warning("Port 25 is often blocked.") : new CanopyFlowValidationResult()),
-            Preview = (context, request) => Task.FromResult(new CanopyFlowPreview("What changes").Row("Host", (string?)request.Values["host"] ?? "-", CanopyFlowTone.Warning)),
+            Preview = (context, request) => Task.FromResult(new CanopyFlowPreview("What changes").Row("Host", (string?)request.Values["host"] ?? "-", Tone.Warning)),
             Drafts = new MemoryDrafts(_drafts),
             Submit = (context, submission) => {
                 _submitted++;
                 var secret = submission.ReadSecret("password");
                 if (secret != null) _secretsSeen.Add(secret);
-                return Task.FromResult(CanopyFlowAnswer.Saved("Saved.").AddResult("Changes", submission.Patch.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                return Task.FromResult(CanopyFlowAnswer.Saved("Saved.").Result("Changes", submission.Patch.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             }
         };
         _app.MapCanopyFlow("/api/flows/mail", _ => FlowServerSamples.Mail(), handlers, options => options.AuthorizationPolicy = "Mail.Admin");
@@ -219,7 +219,7 @@ public sealed class FlowEndpointTests : IAsyncLifetime {
     public void Handlers_NameTheirRoutesForTheFlow() {
         var handlers = new CanopyFlowHandlers { Check = (context, request) => Task.FromResult(CanopyFlowCheckResult.Pass()), Submit = (context, submission) => Task.FromResult(CanopyFlowAnswer.Saved()) };
         Assert.Equal(CanopyFlowRoutes.Check | CanopyFlowRoutes.Submit, handlers.Routes);
-        var flow = FlowServerSamples.Mail().UseEndpoint("/api/flows/mail", handlers.Routes);
+        var flow = FlowServerSamples.Mail().Endpoint(new CanopyFlowEndpoint("/api/flows/mail", handlers.Routes));
         Assert.Contains("\"endpoint\":{\"url\":\"/api/flows/mail\",\"routes\":[\"check\",\"submit\"]}", flow.ToContract());
     }
 

@@ -94,7 +94,7 @@ public sealed class FallbackBoundaryTests {
     [Fact]
     public void StaticAndJsonRejectMalformedDetailCollections() {
         var view = View();
-        var table = new CanopyTableDetail().AddColumns("Value");
+        var table = new CanopyTableDetail().Column("Value");
         view.Roots.Add(new CanopyNode("detail", "Detail") { Detail = table });
         foreach (var row in new IList<CanopyCell>[] { new List<CanopyCell>(), null! }) {
             table.Rows.Clear(); table.Rows.Add(row);
@@ -102,7 +102,7 @@ public sealed class FallbackBoundaryTests {
             Assert.Throws<InvalidOperationException>(() => view.ToJson());
         }
         table.Rows.Clear();
-        var cell = new CanopyCell("Value"); cell.Badges.Add(null!); table.AddRow(cell);
+        var cell = new CanopyCell("Value"); cell.Badges.Add(null!); table.Row(cell);
         Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view));
         var properties = new CanopyPropertiesDetail();
         view.Roots[0].Detail = properties;
@@ -137,7 +137,7 @@ public sealed class FallbackBoundaryTests {
             var result = new CanopyBundleWriter().Write(view, directory);
             Assert.True(result.SearchShardCount > 0);
             Assert.Equal(CanopySourceKind.Sidecar, result.Source.Kind);
-            view.SaveHtmlBundle(directory);
+            view.SaveBundle(directory);
             Assert.True(File.Exists(Path.Combine(directory, "index.html")));
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
@@ -150,9 +150,9 @@ public sealed class FallbackBoundaryTests {
         try {
             var view = View();
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain, AssetBaseUrl = assetUrl, Height = "100px" };
-            Assert.DoesNotContain("data-cx-height=\"100px", view.ToHtmlPage(options));
+            Assert.DoesNotContain("data-cx-height=\"100px", view.ToHtml(options));
             Assert.Contains("data-cx-height=\"100px\"", view.ToHtmlFragment(options));
-            view.SaveHtmlBundle(directory, options: options);
+            view.SaveBundle(directory, options: options);
             Assert.True(File.Exists(Path.Combine(directory, assetUrl, "canopyx.js")));
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }

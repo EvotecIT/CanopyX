@@ -31,7 +31,7 @@ public sealed class CanopyPopover {
 
     /// <summary>Renders the closed popover; the host runtime owns opening, dismissal and focus management.</summary>
     public string ToHtmlFragment() {
-        var html = UiOverlayHtml.Start("div", "popover", Id, TriggerId, Description, Options.Variant);
+        var html = UiOverlayHtml.Start("div", "popover", Id, TriggerId, Description);
         UiHtml.Attribute(html, "data-placement", UiHtml.Token(Options.Placement));
         html.Append(" popover=\"manual\" hidden");
         return UiOverlayHtml.Finish(html, "div", "popover", Id, Title, Description, ContentHtml, FooterHtml, null);

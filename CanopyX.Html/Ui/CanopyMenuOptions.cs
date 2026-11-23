@@ -6,6 +6,4 @@ public sealed class CanopyMenuOptions {
     public string? TriggerId { get; set; }
     /// <summary>Gets or sets the preferred placement.</summary>
     public CanopyOverlayPlacement Placement { get; set; } = CanopyOverlayPlacement.BottomStart;
-    /// <summary>Gets or sets a product styling variant.</summary>
-    public string? Variant { get; set; }
 }

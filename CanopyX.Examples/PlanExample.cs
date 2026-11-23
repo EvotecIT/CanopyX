@@ -8,7 +8,7 @@ internal static class PlanExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Create().SaveHtmlPage(Path.Combine(output, "plan" + suffix + ".html"), new CanopyHtmlOptions { Title = "Migration plan", Theme = theme, Height = "1000px" });
+            Create().Save(Path.Combine(output, "plan" + suffix + ".html"), new CanopyHtmlOptions { Title = "Migration plan", Theme = theme, Height = "1000px" });
         }
         File.WriteAllText(Path.Combine(output, "plan-static.html"), "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Migration plan</title></head><body>" +

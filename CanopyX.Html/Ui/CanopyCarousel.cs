@@ -38,7 +38,6 @@ public sealed class CanopyCarousel {
         var html = new StringBuilder("<section");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-carousel\" data-cx-carousel data-cx-part=\"carousel\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "aria-label", Label);
         if (Options.PerView != 1) UiHtml.Attribute(html, "data-per-view", UiHtml.Number(Options.PerView));
         if (Options.Loop) UiHtml.Attribute(html, "data-loop", "true");

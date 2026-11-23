@@ -219,15 +219,15 @@ CanopyX.Data.CanopyFilters : static class
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? All(params CanopyX.Data.CanopyFilterNode?[] filters)
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? WithoutColumn(CanopyX.Data.CanopyFilterNode? filter, System.String columnId)
 CanopyX.Data.CanopyFlowAnswer : sealed class
-CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer AddLink(System.String label, System.String href)
-CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer AddResult(System.String label, System.String value, System.Boolean once = False)
 CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer FieldError(System.String fieldId, System.String message)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer Link(System.String label, System.String href)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer Result(System.String label, System.String value, System.Boolean once = False)
 CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer StepError(System.String stepId, System.String message)
 CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswerStatus Status { get; }
 CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IDictionary<System.String, System.String> FieldErrors { get; }
 CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IDictionary<System.String, System.String> StepErrors { get; }
 CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowLink> Links { get; }
-CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowResultRow> Result { get; }
+CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowResultRow> Results { get; }
 CanopyX.Data.CanopyFlowAnswer.System.String ToJson()
 CanopyX.Data.CanopyFlowAnswer.System.String? Message { get; }
 CanopyX.Data.CanopyFlowAnswer.static CanopyX.Data.CanopyFlowAnswer Accepted(System.String? message = null)
@@ -278,14 +278,14 @@ CanopyX.Data.CanopyFlowPatchOperation.System.String Path { get; }
 CanopyX.Data.CanopyFlowPreview : sealed class
 CanopyX.Data.CanopyFlowPreview..ctor(System.String? title = null)
 CanopyX.Data.CanopyFlowPreview.CanopyX.Data.CanopyFlowPreview Note(System.String text)
-CanopyX.Data.CanopyFlowPreview.CanopyX.Data.CanopyFlowPreview Row(System.String label, System.String value, CanopyX.Data.CanopyFlowTone tone = Neutral)
+CanopyX.Data.CanopyFlowPreview.CanopyX.Data.CanopyFlowPreview Row(System.String label, System.String value, CanopyX.Tone tone = null)
 CanopyX.Data.CanopyFlowPreview.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowPreviewRow> Rows { get; }
 CanopyX.Data.CanopyFlowPreview.System.Collections.Generic.IList<System.String> Notes { get; }
 CanopyX.Data.CanopyFlowPreview.System.String ToJson()
 CanopyX.Data.CanopyFlowPreview.System.String? Title { get; }
 CanopyX.Data.CanopyFlowPreviewRow : sealed class
-CanopyX.Data.CanopyFlowPreviewRow..ctor(System.String label, System.String value, CanopyX.Data.CanopyFlowTone tone = Neutral)
-CanopyX.Data.CanopyFlowPreviewRow.CanopyX.Data.CanopyFlowTone Tone { get; }
+CanopyX.Data.CanopyFlowPreviewRow..ctor(System.String label, System.String value, CanopyX.Tone tone = null)
+CanopyX.Data.CanopyFlowPreviewRow.CanopyX.Tone Tone { get; }
 CanopyX.Data.CanopyFlowPreviewRow.System.String Label { get; }
 CanopyX.Data.CanopyFlowPreviewRow.System.String Value { get; }
 CanopyX.Data.CanopyFlowReadOptions : sealed class
@@ -354,12 +354,6 @@ CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState Blocked 
 CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState Complete = 0
 CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState NeedsAction = 1
 CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState NotStarted = 3
-CanopyX.Data.CanopyFlowTone : enum System.Int32
-CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Danger = 4
-CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Info = 1
-CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Neutral = 0
-CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Success = 2
-CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Warning = 3
 CanopyX.Data.CanopyFlowValidationResult : sealed class
 CanopyX.Data.CanopyFlowValidationResult..ctor()
 CanopyX.Data.CanopyFlowValidationResult.CanopyX.Data.CanopyFlowValidationResult Error(System.String message)

@@ -27,7 +27,7 @@ internal static class TestTrees {
                 }
 
                 if (f == 1) {
-                    folder.Children.Add(new CanopyNode(folder.Id + "/details", "Details") { Detail = new CanopyPropertiesDetail().Add("Owner", "Team " + s) });
+                    folder.Children.Add(new CanopyNode(folder.Id + "/details", "Details") { Detail = new CanopyPropertiesDetail().Item("Owner", "Team " + s) });
                 }
 
                 share.Children.Add(folder);

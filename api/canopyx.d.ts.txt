@@ -977,6 +977,11 @@ import type{
   CanopyPlugin
 }
 from "./plugins.js";
+import type{
+  UiApi
+}
+from "./ui.js";
+export * from "./ui.js";
 export interface FlowSignature{
   readonly svg:string;
   readonly png:string
@@ -1275,7 +1280,7 @@ export declare function mount(root?:ParentNode):FlowApi[];
 export declare function use(plugin:Pick<CanopyPlugin,"name"|"editors">):() => void;
 export declare function registerPart(name:string,part:{version:string;requires?:string[];install(context:object):void}):void;
 export declare function setNonce(nonce:string):void;
-declare const CanopyX:{
+declare const CanopyX:Readonly<UiApi&{
   createFlow:typeof createFlow;
   configure:typeof configure;
   unconfigure:typeof unconfigure;
@@ -1284,7 +1289,7 @@ declare const CanopyX:{
   registerPart:typeof registerPart;
   setNonce:typeof setNonce
 }
-;
+>;
 export default CanopyX;
 
 // ---- JavaScript/formatting.d.ts ----

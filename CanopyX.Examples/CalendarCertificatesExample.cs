@@ -18,8 +18,8 @@ internal static class CalendarCertificatesExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Certificates().SaveHtmlPage(Path.Combine(output, "calendar-certificates" + suffix + ".html"), new CanopyHtmlOptions { Title = "Certificate expiries", Theme = theme, Height = "760px" });
-            Passwords().SaveHtmlPage(Path.Combine(output, "calendar-passwords" + suffix + ".html"), new CanopyHtmlOptions { Title = "Password expiries", Theme = theme, Height = "700px" });
+            Certificates().Save(Path.Combine(output, "calendar-certificates" + suffix + ".html"), new CanopyHtmlOptions { Title = "Certificate expiries", Theme = theme, Height = "760px" });
+            Passwords().Save(Path.Combine(output, "calendar-passwords" + suffix + ".html"), new CanopyHtmlOptions { Title = "Password expiries", Theme = theme, Height = "700px" });
         }
     }
 
@@ -48,8 +48,8 @@ internal static class CalendarCertificatesExample {
         };
         foreach (var item in new[] { CanopyCalendarView.Month, CanopyCalendarView.Agenda, CanopyCalendarView.Year, CanopyCalendarView.Timeline }) calendar.Views.Add(item);
         calendar.Resources.Aggregates["count"] = CanopyCalendarAggregate.Count;
-        calendar.Capacity = new CanopyCalendarCapacity { Label = "Expiring at once" }.Add(40, Tone.Warning).Add(80, Tone.Danger);
-        view.FacetPanel = new CanopyFacetPanel().Add("issuer").Add("status").Add("environment").Add("owner");
+        calendar.Capacity = new CanopyCalendarCapacity { Label = "Expiring at once" }.Threshold(40, Tone.Warning).Threshold(80, Tone.Danger);
+        view.FacetPanel = new CanopyFacetPanel().Facet("issuer").Facet("status").Facet("environment").Facet("owner");
         var random = new Random(5);
         for (var i = 0; i < count; i++) {
             var days = (int)Math.Round(-20 + Math.Pow(random.NextDouble(), 0.85) * 380);

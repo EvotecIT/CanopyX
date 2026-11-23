@@ -573,7 +573,7 @@ export function popover(target: UiTarget, options?: UiOverlayOptions): UiOverlay
 export function tooltip(target: UiTarget, options?: UiOverlayOptions): UiOverlayController;
 export function menu(target: UiTarget, options?: UiMenuOptions): UiMenuController;
 
-/** Named UI exports shared by the tree, grid, reporting and UI entry points. */
+/** Named UI exports shared by every entry point: tree, grid, reporting, flow and UI. */
 export interface UiApi {
   mountUi: typeof mountUi;
   contextMenu: typeof contextMenu;

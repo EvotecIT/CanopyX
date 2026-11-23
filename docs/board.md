@@ -22,7 +22,7 @@ view.Board.Fields.Add("team");
 view.Rows.Add(new CanopyGridRow("review-1") {
     Cells = { ["title"] = "Review the migration plan", ["status"] = "ready", ["team"] = "Operations" }
 });
-view.SaveHtmlPage("requests.html");
+view.Save("requests.html");
 var email = view.ToBoardStaticHtml();
 ```
 

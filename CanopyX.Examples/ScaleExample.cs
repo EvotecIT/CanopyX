@@ -26,19 +26,19 @@ internal static class ScaleExample {
         Directory.CreateDirectory(folder);
         foreach (var tier in tiers ?? Tiers) {
             var users = Users("users", "Users", tier, 20, 7);
-            users.SaveHtmlPage(Path.Combine(folder, "users-" + tier + ".html"), Page("Users"));
-            users.SaveHtmlBundle(Path.Combine(folder, "users-" + tier + "-bundle"), Bundle("Users"));
+            users.Save(Path.Combine(folder, "users-" + tier + ".html"), Page("Users"));
+            users.SaveBundle(Path.Combine(folder, "users-" + tier + "-bundle"), Bundle("Users"));
             users = null;
-            Computers(tier).SaveHtmlPage(Path.Combine(folder, "computers-" + tier + ".html"), Page("Computers"));
+            Computers(tier).Save(Path.Combine(folder, "computers-" + tier + ".html"), Page("Computers"));
             if (tier is 5_000 or 50_000) {
-                foreach (var width in new[] { 100, 150 }) Users("users", "Users", tier, width, 11).SaveHtmlPage(Path.Combine(folder, "users-wide" + width + "-" + tier + ".html"), Page("Users"));
+                foreach (var width in new[] { 100, 150 }) Users("users", "Users", tier, width, 11).Save(Path.Combine(folder, "users-wide" + width + "-" + tier + ".html"), Page("Users"));
             }
 
             var tree = Membership(tier);
-            tree.SaveHtmlPage(Path.Combine(folder, "groups-" + tier + ".html"), Page("Group membership"));
-            tree.SaveHtmlBundle(Path.Combine(folder, "groups-" + tier + "-bundle"), Bundle("Group membership"));
-            Matrix(tier).SaveHtmlPage(Path.Combine(folder, "matrix-" + tier + ".html"), Page("Policy by server", CanopyRuntime.DataGrid));
-            Changes(tier).SaveHtmlPage(Path.Combine(folder, "changes-" + tier + ".html"), Page("Changes", CanopyRuntime.DataGrid));
+            tree.Save(Path.Combine(folder, "groups-" + tier + ".html"), Page("Group membership"));
+            tree.SaveBundle(Path.Combine(folder, "groups-" + tier + "-bundle"), Bundle("Group membership"));
+            Matrix(tier).Save(Path.Combine(folder, "matrix-" + tier + ".html"), Page("Policy by server", CanopyRuntime.DataGrid));
+            Changes(tier).Save(Path.Combine(folder, "changes-" + tier + ".html"), Page("Changes", CanopyRuntime.DataGrid));
             Console.WriteLine("scale/: tier " + tier.ToString(CultureInfo.InvariantCulture) + " written");
         }
     }

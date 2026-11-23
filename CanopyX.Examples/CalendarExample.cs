@@ -35,14 +35,14 @@ internal static class CalendarExample {
 
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            Create().View.SaveHtmlPage(Path.Combine(output, "calendar" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().View.Save(Path.Combine(output, "calendar" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Operations calendar", Theme = theme, Height = "760px" });
         }
         foreach (var (suffix, labels, language) in new[] { ("pl", CanopyLabels.Polish(), "pl"), ("de", CanopyLabels.German(), "de") }) {
             var grid = Create().View;
             grid.Labels = labels;
             Translate(grid, suffix);
-            grid.SaveHtmlPage(Path.Combine(output, "calendar-" + suffix + ".html"), new CanopyHtmlOptions { Title = "Operations calendar", Height = "760px", Language = language });
+            grid.Save(Path.Combine(output, "calendar-" + suffix + ".html"), new CanopyHtmlOptions { Title = "Operations calendar", Height = "760px", Language = language });
         }
     }
 

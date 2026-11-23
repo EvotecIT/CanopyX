@@ -12,7 +12,7 @@ internal static class ContentGridExample {
         view.Columns.Add(new CanopyColumn("notes", "Notes") { Wrap = true });
         view.AutoRowHeight = true;
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Needs review"),
-            Tone.Warning, "needs-review"));
+            Tone.Warning));
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Complete"),
             Tone.Success, target: CanopyGridHighlightTarget.Cell));
         view.GetColumn("name").Sizing = CanopyColumnSizing.Content(120, 300);

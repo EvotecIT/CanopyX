@@ -19,6 +19,4 @@ public sealed class CanopyCarouselOptions {
     public CanopyCarouselIndicatorPosition Indicators { get; set; }
     /// <summary>Gets or sets where slide captions (<see cref="CanopyCarouselSlide.Caption"/>) show.</summary>
     public CanopyCarouselCaptionPosition Captions { get; set; }
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

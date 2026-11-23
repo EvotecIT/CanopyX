@@ -8,7 +8,7 @@ namespace CanopyX.Examples;
 internal static class StackExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            Create().SaveHtmlPage(Path.Combine(output, "stack" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().Save(Path.Combine(output, "stack" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Configuration layers", Theme = theme, Height = "820px" });
         }
         var html = CanopyStaticHtml.RenderGrid(Create());

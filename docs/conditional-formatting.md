@@ -85,7 +85,7 @@ defines (`--hfx-color-status-<name>-fg`). Tones follow the light, dark and print
 | `bar` | A data bar before the value: `{ minimum, maximum, tone, showValue }`. |
 | `scale` | A two- or three-stop colour scale: `{ stops: [{ type: "min" | "max" | "number" | "percent", value?, tone }] }`. |
 | `bands` | Threshold bands: `[{ upperBound, tone, label?, icon? }]`, rising, the last one open. |
-| `className`, `css` | The escape hatch: extra classes, and up to 16 plain declarations (no `url()` or other image sources, expressions, imports, quotes, braces or semicolons). A row rule puts them on the row. |
+| `className`, `css` | JavaScript documents only (the .NET `CanopyFormatStyle` paints with tones). The escape hatch: extra classes, and up to 16 plain declarations (no `url()` or other image sources, expressions, imports, quotes, braces or semicolons). A row rule puts them on the row. |
 
 A rule draws one of a bar, a scale and bands; they read the rule's `column` and paint its cell or its `columns`. Without
 `minimum`, `maximum` or a numeric stop, the bounds come from every row of an inline grid, or from the rows a host grid has

@@ -24,8 +24,6 @@ public sealed class StaticGridResultTests {
     [InlineData("cell", true)]
     [InlineData("row", true)]
     [InlineData("format", true)]
-    [InlineData("cell-css", true)]
-    [InlineData("row-css", true)]
     public void LinkedTextPreservesRowAndCellColors(string toneSource, bool inherits) {
         var view = new CanopyDataGridView("toned-links", "Evidence");
         view.Columns.Add(new CanopyColumn("label", "Reference") { Presenter = CanopyGridPresenter.Link("url") });
@@ -36,10 +34,6 @@ public sealed class StaticGridResultTests {
                 ["url"] = "https://example.test/evidence" }
         });
         if (toneSource == "format") view.FormatRules.Add(CanopyFormatRule.ForCell("ink", "label", CanopyFormatStyle.Highlight(Tone.Danger)));
-        if (toneSource.EndsWith("-css", StringComparison.Ordinal)) {
-            var style = new CanopyFormatStyle(); style.Css["color"] = "#ad1234";
-            view.FormatRules.Add(toneSource == "row-css" ? new CanopyFormatRule("ink", style) { Target = CanopyFormatTarget.Row } : CanopyFormatRule.ForCell("ink", "label", style));
-        }
         var html = CanopyStaticHtml.RenderGrid(view);
         Assert.Equal(inherits, html.Contains("style=\"color:inherit;\""));
         Assert.Contains("href=\"https://example.test/evidence\"", html);

@@ -7,7 +7,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridFooterStaticTests {
     private static CanopyDataGridView View() {
         var view = GridOptionsContractTests.View();
-        view.Columns[1].ClassName = "money"; view.Columns[1].Alignment = "center";
+        view.Columns[1].Alignment = CanopyColumnAlignment.Center;
         view.Columns[1].Format = CanopyGridNumberFormat.Fixed(2, "$ ");
         foreach (var scope in new[] { CanopyGridFooterScope.Page, CanopyGridFooterScope.All }) {
             var footer = new CanopyGridFooter(scope == CanopyGridFooterScope.Page ? "page" : "all", "<Totals>", scope);
@@ -32,7 +32,7 @@ public sealed class GridFooterStaticTests {
         Assert.Contains("(Page)", footer); Assert.Contains("(All matching)", footer);
         Assert.Contains("&lt;Totals&gt;", footer); Assert.Contains("&lt;Sum&gt;", footer);
         Assert.DoesNotContain("<Totals>", footer); Assert.Contains("Mode: Unavailable", footer);
-        Assert.Contains("class=\"money\"", footer); Assert.Contains("text-align:center;", footer);
+        Assert.Contains("text-align:center;", footer);
         Assert.DoesNotContain("<script", result.Html); Assert.DoesNotContain("onclick", result.Html);
     }
 

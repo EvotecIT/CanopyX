@@ -21,6 +21,6 @@ internal static class FlowInputsExample {
             .Signature("signature", "Signature", f => f.Required().Help("Sign as the device owner, or type your name.")));
         flow.Review(review => review.Declaration("The device joins the inventory once an administrator approves it."));
         Directory.CreateDirectory(output);
-        File.WriteAllText(Path.Combine(output, "flow-device-registration.html"), flow.ToHtmlPage(new CanopyHtmlOptions { Title = "Register a device" }));
+        File.WriteAllText(Path.Combine(output, "flow-device-registration.html"), flow.ToHtml(new CanopyHtmlOptions { Title = "Register a device" }));
     }
 }

@@ -27,7 +27,7 @@ public static partial class CanopyHtmlExtensions {
     /// <remarks>Clicking a cell raises <c>canopyx:matrixCell</c> for the host (docs/matrix.md).</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The matrix is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
-    public static string ToHtmlPage(this CanopyMatrix matrix, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyMatrix matrix, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(matrix, options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves a complete matrix page as UTF-8, creating its directory when needed.</summary>
@@ -37,10 +37,10 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The matrix is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyMatrix matrix, string path, CanopyHtmlOptions? options = null) {
+    public static void Save(this CanopyMatrix matrix, string path, CanopyHtmlOptions? options = null) {
         if (matrix == null) throw new ArgumentNullException(nameof(matrix));
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is required.", nameof(path));
-        var html = matrix.ToHtmlPage(options);
+        var html = matrix.ToHtml(options);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         File.WriteAllText(path, html, new UTF8Encoding(false));
     }

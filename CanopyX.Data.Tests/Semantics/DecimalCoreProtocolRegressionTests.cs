@@ -31,18 +31,18 @@ public sealed class DecimalCoreProtocolRegressionTests {
     public void StaticNumericPredicates_HighlightAndFormatWireEqualDecimals() {
         var view = View("10000000000000.099609375", "10000000000000.1");
         var operand = decimal.Parse("10000000000000.1", CultureInfo.InvariantCulture);
-        view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("amount", CanopyGridFilterOperator.Equal, operand), className: "wire-equal"));
-        view.FormatRules.Add(CanopyFormatRule.ForCell("same", "amount", new CanopyFormatStyle { ClassName = "format-equal" },
+        view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("amount", CanopyGridFilterOperator.Equal, operand), Tone.Danger));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("same", "amount", new CanopyFormatStyle { Badge = "format-equal" },
             CanopyFormatCondition.All(new CanopyFormatPredicate("amount", CanopyFormatOperator.Equal, operand))));
         var html = CanopyStaticHtml.RenderGrid(view);
-        Assert.Equal(2, Occurrences(html, "class=\"wire-equal\""));
+        Assert.Equal(2, Occurrences(html, "color:" + CanopyX.Rendering.CanopyStaticTheme.Light().Danger));
         Assert.Equal(2, Occurrences(html, "format-equal"));
     }
 
     [Fact]
     public void StaticTextFormatting_ReadsTheWireNumberTextOfDecimalCells() {
         var view = View("10000000000000.099609375", "10000000000000.1");
-        view.FormatRules.Add(CanopyFormatRule.ForCell("text", "amount", new CanopyFormatStyle { ClassName = "text-equal" },
+        view.FormatRules.Add(CanopyFormatRule.ForCell("text", "amount", new CanopyFormatStyle { Badge = "text-equal" },
             CanopyFormatCondition.All(new CanopyFormatPredicate("amount", CanopyFormatOperator.Equal, "10000000000000.1") { ValueType = CanopyFormatValueType.Text })));
         Assert.Equal(2, Occurrences(CanopyStaticHtml.RenderGrid(view), "text-equal"));
     }

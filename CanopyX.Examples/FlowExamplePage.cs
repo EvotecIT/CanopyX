@@ -4,7 +4,7 @@ using CanopyX.Html;
 namespace CanopyX.Examples;
 
 /// <summary>
-/// Writes a flow example page in the light and dark palettes: the flow written by <see cref="CanopyFlow.ToHtmlPage"/> with the
+/// Writes a flow example page in the light and dark palettes: the flow written by <see cref="CanopyFlow.ToHtml"/> with the
 /// flow entry point, a page around it, and a mock host that answers the proposal and shows what it received. The mock host
 /// prints the submitted document as JSON, so the page itself proves that secrets never travel in it (docs/flow.md).
 /// </summary>
@@ -35,7 +35,7 @@ internal static class FlowExamplePage {
         foreach (var theme in dark ? new[] { ThemeMode.Light, ThemeMode.Dark } : new[] { ThemeMode.Light }) {
             var options = new CanopyHtmlOptions { Title = title, Theme = theme, Language = language, Direction = direction };
             foreach (var part in parts ?? Enumerable.Empty<string>()) options.Parts.Add(part);
-            var page = flow.ToHtmlPage(options);
+            var page = flow.ToHtml(options);
             File.WriteAllText(Path.Combine(output, name + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), Inject(page, theme, width, script));
         }
     }

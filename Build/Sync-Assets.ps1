@@ -146,13 +146,14 @@ $assets = @(
         Module = $true
         Grid = $true
     }
-    # The flow entry point: forms and flows without grid or tree code. It takes the core's small shared parts by name and the
-    # flow shell the grid entry points also carry; the forms and flow parts load beside it (Build/parts.json, runtime "flow").
+    # The flow entry point: forms, flows and the UI factories without grid or tree code. It takes the core's small shared parts
+    # by name, the UI factories and the flow shell the grid entry points also carry; the forms, flow and UI parts load beside it
+    # (Build/parts.json, runtime "flow").
     @{
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
         Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
-            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell,
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', 'CanopyX.Html/Assets/canopyx.source/85-ui.js', $flowShell,
             'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-entry.js'
         Folding = $true
@@ -167,7 +168,7 @@ $assets = @(
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
         Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
-            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell,
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', 'CanopyX.Html/Assets/canopyx.source/85-ui.js', $flowShell,
             'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-module.mjs'
         Folding = $true
@@ -333,10 +334,9 @@ export default CanopyX;
         $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.createFlow')
         $header = $header.Replace('interactive runtime or module before the core script', 'flow or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'createFlow, configure, unconfigure, mount, use, registerPart, setNonce')
-        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, select, dialog, drawer, popover, tooltip, menu', '')
     }
     if ($Ui) {
-        # The UI module needs only an entry point with the UI factories, which every entry point except the flow entry has.
+        # The UI module needs only an entry point with the UI factories, which every entry point has.
         $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.mountUi')
         $header = $header.Replace('interactive runtime or module before the core script', 'UI, tree or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'registerPart, setNonce')

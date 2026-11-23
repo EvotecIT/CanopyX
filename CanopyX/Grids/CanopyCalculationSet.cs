@@ -51,7 +51,7 @@ public sealed class CanopyCalculationSet {
     /// <exception cref="ArgumentNullException">The row is null.</exception>
     public CanopyGridRow Apply(CanopyGridRow row, CanopyLabels? labels = null) {
         if (row == null) throw new ArgumentNullException(nameof(row));
-        var copy = new CanopyGridRow(row.Id) { Tone = row.Tone, ClassName = row.ClassName, Detail = row.Detail };
+        var copy = new CanopyGridRow(row.Id) { Tone = row.Tone, Detail = row.Detail };
         foreach (var cell in row.Cells) copy.Cells.Add(cell);
         if (row.HasFields) foreach (var field in row.Fields) copy.Fields.Add(field);
         var results = new Dictionary<string, CanopyCalculatedValue>(StringComparer.Ordinal);

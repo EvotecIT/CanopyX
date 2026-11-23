@@ -62,7 +62,7 @@ test("a deferred runtime leaves room for a deferred host script to configure the
     const entries = performance.getEntriesByType.bind(performance);
     performance.getEntriesByType = type => type === "navigation" ? [] : entries(type);
   });
-  // The page SaveHtmlBundle writes loads canopyx.js with defer; a host adds its own deferred script after it.
+  // The page SaveBundle writes loads canopyx.js with defer; a host adds its own deferred script after it.
   const { script, style } = runtimeAssets();
   const html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Deferred</title><style>" + style + "</style>"
     + "<script src=\"/canopyx.js\" defer></script><script src=\"/host.js\" defer></script></head><body class=\"cx-page\">"

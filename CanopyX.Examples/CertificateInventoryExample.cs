@@ -115,7 +115,7 @@ internal static class CertificateInventoryExample {
         var view = View();
         for (var i = 0; i < Count; i++) view.Rows.Add(CertificateRecords.Row(i, Count, withFields: true));
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate inventory", Theme = theme });
+            var page = view.ToHtml(new CanopyHtmlOptions { Title = "CanopyX certificate inventory", Theme = theme });
             File.WriteAllText(Path.Combine(output, "certificate-inventory" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page.Replace("</body>", Plugin + "</body>"));
         }
 
@@ -125,7 +125,7 @@ internal static class CertificateInventoryExample {
             view.RecordDrawerModal = modal;
             foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
                 var name = "certificate-drawer" + (modal ? "-modal" : "") + (theme == ThemeMode.Dark ? "-dark" : "");
-                var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate drawer", Theme = theme });
+                var page = view.ToHtml(new CanopyHtmlOptions { Title = "CanopyX certificate drawer", Theme = theme });
                 File.WriteAllText(Path.Combine(output, name + ".html"), page.Replace("</body>", Plugin + "</body>"));
             }
         }
@@ -140,7 +140,7 @@ internal static class CertificateInventoryExample {
             foreach (var field in CertificateRecords.Fields(i, Count)) details.Fields[field.Key] = field.Value;
             return details;
         }));
-        File.WriteAllText(Path.Combine(folder, "index.html"), sidecar.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate inventory (record packs)" }).Replace("</body>", Plugin + "</body>"));
+        File.WriteAllText(Path.Combine(folder, "index.html"), sidecar.ToHtml(new CanopyHtmlOptions { Title = "CanopyX certificate inventory (record packs)" }).Replace("</body>", Plugin + "</body>"));
 
         WriteTree(output);
     }
@@ -175,6 +175,6 @@ internal static class CertificateInventoryExample {
             }
             tree.Roots.Add(node);
         }
-        File.WriteAllText(Path.Combine(output, "certificate-tree.html"), tree.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate tree" }));
+        File.WriteAllText(Path.Combine(output, "certificate-tree.html"), tree.ToHtml(new CanopyHtmlOptions { Title = "CanopyX certificate tree" }));
     }
 }

@@ -11,7 +11,7 @@ internal static class FlowPauseExample {
             Submit = new CanopyFlowSubmit(polish ? "Wstrzymaj" : "Pause")
         };
         flow.Step("pause", polish ? "Na jak długo?" : "For how long?", step => step
-            .Duration("for", polish ? "Wstrzymaj na" : "Pause for", f => f.Required().Default(TimeSpan.FromHours(2)).Units(CanopyFlowDurationUnit.Minutes, CanopyFlowDurationUnit.Hours, CanopyFlowDurationUnit.Days)
+            .Duration("for", polish ? "Wstrzymaj na" : "Pause for", f => f.Required().Default(TimeSpan.FromHours(2)).Unit(CanopyFlowDurationUnit.Minutes).Unit(CanopyFlowDurationUnit.Hours).Unit(CanopyFlowDurationUnit.Days)
                 .Range(TimeSpan.FromMinutes(15), TimeSpan.FromDays(14)))
             .Choice("scope", polish ? "Które powiadomienia" : "Which notifications", f => f
                 .Option("all", polish ? "Wszystkie" : "All").Option("warnings", polish ? "Tylko ostrzeżenia" : "Warnings only", polish ? "Błędy nadal przychodzą." : "Errors still come through.")

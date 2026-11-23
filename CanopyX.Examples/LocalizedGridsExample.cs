@@ -29,7 +29,7 @@ internal static class LocalizedGridsExample {
                 view.Rows.Add(row);
             }
             foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
-                view.SaveHtmlPage(Path.Combine(output, "localized-grid-" + languages[language] + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
+                view.Save(Path.Combine(output, "localized-grid-" + languages[language] + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = titles[language], Language = languages[language], Theme = theme });
         }
         WriteTree(output);
@@ -52,6 +52,6 @@ internal static class LocalizedGridsExample {
             }
             tree.Roots.Add(node);
         }
-        tree.SaveHtmlPage(Path.Combine(output, "localized-tree-pl.html"), new CanopyHtmlOptions { Title = tree.Label, Language = "pl" });
+        tree.Save(Path.Combine(output, "localized-tree-pl.html"), new CanopyHtmlOptions { Title = tree.Label, Language = "pl" });
     }
 }

@@ -67,7 +67,7 @@ app.MapCanopyRemote("/api/machines", http => http.RequestServices.GetRequiredSer
 
 // 4. The page: the grid plus the script that points its source at the endpoints.
 app.MapGet("/machines", () => Results.Content(
-    view.ToHtmlPage(new CanopyHtmlOptions { Title = "Machines", HeadHtml = CanopyRemoteScript.Element(map.Schema, "/api/machines") }),
+    view.ToHtml(new CanopyHtmlOptions { Title = "Machines", HeadHtml = CanopyRemoteScript.Element(map.Schema, "/api/machines") }),
     "text/html"));
 ```
 
@@ -124,7 +124,7 @@ and export to the server without changing what readers see:
    filtered, searched or exported, even if a request names them.
 4. **Give the data a revision.** Return a value that changes when the data changes (a row version, a change counter, an
    import timestamp). Clients that hold an older revision reload instead of mixing snapshots.
-5. **Replace the page's data with the script.** Render the grid with `ToHtmlPage`/`ToHtmlFragment` and add
+5. **Replace the page's data with the script.** Render the grid with `ToHtml`/`ToHtmlFragment` and add
    `CanopyRemoteScript.Element(...)`. The grid's Export menu gains a server CSV entry that downloads every matching row.
 6. **Index for the common orders.** The default order is the key; add indexes for frequently sorted or filtered columns
    (see [Performance](#performance)).
@@ -718,7 +718,7 @@ app.MapCanopyRemote("/api/machines", Readable, records, options => {
 });
 
 // 4. The page script: a record schema wires the grid source's record hook to the route.
-var html = view.ToHtmlPage(new CanopyHtmlOptions { HeadHtml = CanopyRemoteScript.Element(records.Schema, "/api/machines") });
+var html = view.ToHtml(new CanopyHtmlOptions { HeadHtml = CanopyRemoteScript.Element(records.Schema, "/api/machines") });
 ```
 
 **Mapping.** Every mapped field must be a record panel field of the view (`CanopyRecordPanel.Fields`), every drawer value a

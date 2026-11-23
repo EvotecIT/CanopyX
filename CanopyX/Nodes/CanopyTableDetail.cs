@@ -37,7 +37,7 @@ public sealed class CanopyTableDetail : CanopyDetail {
     /// <summary>Adds column headers.</summary>
     /// <param name="titles">The header texts, in order.</param>
     /// <returns>This detail, for chaining.</returns>
-    public CanopyTableDetail AddColumns(params string[] titles) {
+    public CanopyTableDetail Column(params string[] titles) {
         foreach (var title in titles ?? Array.Empty<string>()) {
             Columns.Add(title ?? string.Empty);
         }
@@ -49,7 +49,7 @@ public sealed class CanopyTableDetail : CanopyDetail {
     /// <param name="cells">One cell per column.</param>
     /// <returns>This detail, for chaining.</returns>
     /// <exception cref="ArgumentException">The number of cells differs from the number of columns.</exception>
-    public CanopyTableDetail AddRow(params CanopyCell[] cells) {
+    public CanopyTableDetail Row(params CanopyCell[] cells) {
         if (cells == null || cells.Length != Columns.Count) {
             throw new ArgumentException("A table row needs one cell per column (" + Columns.Count + ").", nameof(cells));
         }

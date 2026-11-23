@@ -8,7 +8,7 @@ internal static class OfficeExportExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var view = Create();
-            view.SaveHtmlPage(Path.Combine(output, "office-export" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
+            view.Save(Path.Combine(output, "office-export" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Theme = theme, Title = "Resource costs and offline exports", Height = "680px" });
         }
     }

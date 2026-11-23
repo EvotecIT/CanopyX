@@ -54,7 +54,7 @@ internal static partial class ViewSnippets {
 
         files.Roots.Add(finance);
         files.Roots.Add(people);
-        files.SaveHtmlPage("files.html");
+        files.Save("files.html");
 
         CanopyNode Document(string id, string name, long bytes, string owner, int age) {
             var node = new CanopyNode(id, name) { Kind = "file" };
@@ -119,7 +119,7 @@ internal static partial class ViewSnippets {
             row.Cells["encrypted"] = encrypted;
             devices.Rows.Add(row);
         }
-        devices.SaveHtmlPage("inventory.html");
+        devices.Save("inventory.html");
         // view:end
     }
 
@@ -159,7 +159,7 @@ internal static partial class ViewSnippets {
             new("SRV-WAW-0003", "Warsaw", "Windows Server 2025", 88, true, "service"),
             new("WS-LON-0004", "London", "Windows 11 24H2", 100, true, "chen.wei"),
             new("SRV-BER-0005", "Berlin", "Windows Server 2022", 58, true, "service")
-        }).View.SaveHtmlPage("inventory.html");
+        }).View.Save("inventory.html");
         // view:end
     }
 
@@ -205,7 +205,7 @@ internal static partial class ViewSnippets {
         }, CanopyCalendarPreset.Standard);
         calendar.Date = new DateTime(2026, 10, 16);
         calendar.FirstDay = DayOfWeek.Monday;
-        calendar.SaveHtmlPage("calendar.html");
+        calendar.Save("calendar.html");
         // view:end
     }
 
@@ -247,7 +247,7 @@ internal static partial class ViewSnippets {
                 At(7, 18), At(7, 19), "Identity"),
             new("op-5", "Data centre power test", "Planned",
                 At(24, 6), At(24, 18), "Facilities")
-        }).View.SaveHtmlPage("calendar.html");
+        }).View.Save("calendar.html");
         // view:end
     }
 
@@ -322,7 +322,7 @@ internal static partial class ViewSnippets {
             Resources = new CanopyCalendarResources(hosts) { Label = "Hosts" }
         };
         events.Calendar.Resources.Aggregates["events"] = CanopyCalendarAggregate.Count;
-        events.SaveHtmlPage("timeline.html");
+        events.Save("timeline.html");
         // view:end
     }
 
@@ -362,7 +362,7 @@ internal static partial class ViewSnippets {
             new("e1", "Patch window", "Maintenance", "waw-web-01", At(6), At(9)),
             new("e2", "Replication lag", "Incident", "waw-db-01", At(9), At(11)),
             new("e3", "Index rebuild", "Maintenance", "waw-db-01", At(14), At(18))
-        }).View.SaveHtmlPage("timeline.html");
+        }).View.Save("timeline.html");
         // view:end
     }
 
@@ -409,7 +409,7 @@ internal static partial class ViewSnippets {
                 if (cells[i] == "critical") cell.Title = "Probes failing: 3/3.";
             }
         }
-        matrix.SaveHtmlPage("matrix.html");
+        matrix.Save("matrix.html");
         // view:end
     }
 
@@ -418,8 +418,8 @@ internal static partial class ViewSnippets {
         // view:begin changes-cs
         var seen = new DateTimeOffset(2026, 10, 21, 10, 42, 0, TimeSpan.Zero);
         var list = new CanopyChangeList("share-changes", "Changes on the deployment share");
-        list.Action("copy-path", "Copy the path", CanopyChangeActionIcon.Copy, copy: "unc")
-            .Action("acknowledge", "Acknowledge", CanopyChangeActionIcon.Check);
+        list.Action("copy-path", "Copy the path", CanopyActionIcons.Copy, copy: "unc")
+            .Action("acknowledge", "Acknowledge", CanopyActionIcons.Check);
 
         var payload = list.Add(
             "payload", CanopyChangeKind.Added, "Scripts/Logon/agent.exe");
@@ -449,7 +449,7 @@ internal static partial class ViewSnippets {
             Time = seen.AddDays(-400)
         };
         removed.Values["unc"] = @"\\fs01\deploy\Tools\legacy-inventory.vbs";
-        list.SaveHtmlPage("changes.html");
+        list.Save("changes.html");
         // view:end
     }
 
@@ -477,7 +477,7 @@ internal static partial class ViewSnippets {
             .Group("Connect")
             .List("admins", "Administrators", f => f
                 .Required()
-                .Items(CanopyFlowItemRule.Email)
+                .ItemRule(CanopyFlowItemRule.Email)
                 .Count(1, 10))
             .Toggle("digest", "Send a daily digest", f => f.Default(true)));
         flow.Step("branding", "Add your branding", step => step
@@ -490,7 +490,7 @@ internal static partial class ViewSnippets {
                 .Default("teal")));
         flow.Review(review => review
             .Declaration("Starting the service runs the first schedules today."));
-        flow.SaveHtmlPage("flow.html");
+        flow.Save("flow.html");
         // view:end
     }
 

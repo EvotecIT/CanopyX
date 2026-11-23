@@ -80,7 +80,7 @@ public sealed class FlowDraftTests {
     [Fact]
     public void Draft_ChecksHiddenHostAnswersAndReusesFieldAdmissionAcrossSections() {
         var flow = FlowServerSamples.Engine();
-        flow.Steps[0].Sections[0].Condition = CanopyFlowCondition.Equal("engine", "file");
+        flow.Steps[0].Sections[0].When = CanopyFlowCondition.Equal("engine", "file");
         var options = new CanopyFlowReadOptions { SectionFields = (section, answers) => Fields() };
 
         Assert.Contains("\"database\":\"Mail\"", CanopyFlowResponses.Draft(flow,

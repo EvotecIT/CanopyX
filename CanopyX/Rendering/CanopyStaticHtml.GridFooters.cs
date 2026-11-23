@@ -17,7 +17,6 @@ public static partial class CanopyStaticHtml {
                 .Append(Encode(footer.Label)).Append(pageScope ? " (Page)" : " (All matching)").Append("</th></tr><tr>");
             foreach (var column in columns) {
                 html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append('"');
-                if (column.ClassName != null) html.Append(" class=\"").Append(Encode(column.ClassName)).Append('"');
                 html.Append('>');
                 var separator = false;
                 if (footer.Cells.TryGetValue(column.Id, out var cellText)) { html.Append(Encode(cellText)); separator = true; }

@@ -7,7 +7,7 @@ namespace CanopyX.Examples;
 internal static class GraphiteGridExample {
     internal static void Write(string output) {
         var view = View();
-        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) view.SaveHtmlPage(Path.Combine(output, theme == ThemeMode.Dark ? "graphite-grid-dark.html" : "graphite-grid.html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) view.Save(Path.Combine(output, theme == ThemeMode.Dark ? "graphite-grid-dark.html" : "graphite-grid.html"),
             new CanopyHtmlOptions { Title = "CanopyX Graphite presenters", Theme = theme });
     }
 

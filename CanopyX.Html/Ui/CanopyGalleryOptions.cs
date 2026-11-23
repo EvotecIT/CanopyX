@@ -6,6 +6,4 @@ public sealed class CanopyGalleryOptions {
     public bool Loop { get; set; }
     /// <summary>Gets or sets whether captions show under the thumbnails. They always show in the viewer. Default true.</summary>
     public bool ShowCaptions { get; set; } = true;
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

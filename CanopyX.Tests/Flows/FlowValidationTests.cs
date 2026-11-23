@@ -31,17 +31,16 @@ public sealed class FlowValidationTests {
     [Fact]
     public void Setters_CheckTheirRanges() {
         var field = new CanopyFlowField("f", CanopyFlowFieldKind.TextArea, "F");
-        Assert.Throws<ArgumentOutOfRangeException>(() => field.RowCount = 1);
-        Assert.Throws<ArgumentOutOfRangeException>(() => field.RowCount = 21);
-        Assert.Throws<ArgumentOutOfRangeException>(() => field.NumberStep = 0);
-        Assert.Throws<ArgumentOutOfRangeException>(() => field.NumberStep = double.NaN);
+        Assert.Throws<ArgumentOutOfRangeException>(() => field.Rows = 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => field.Rows = 21);
+        Assert.Throws<ArgumentOutOfRangeException>(() => field.Step = 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => field.Step = double.NaN);
         Assert.Throws<ArgumentOutOfRangeException>(() => field.MinItems = -1);
         Assert.Throws<ArgumentOutOfRangeException>(() => field.MaxItems = 1001);
         Assert.Throws<ArgumentException>(() => new CanopyFlowOption(new object()));
         Assert.Throws<ArgumentException>(() => new CanopyFlowOption(double.PositiveInfinity));
         Assert.Throws<ArgumentException>(() => new CanopyFlowOption(9007199254740993L));
         Assert.Equal(5d, new CanopyFlowOption(5).Value);
-        Assert.Throws<ArgumentNullException>(() => field.Default(null!));
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public sealed class FlowValidationTests {
         Invalid(new CanopyFlow("flow", "A flow").Step("a", "A").Review(review => review.Text("f", "F")), "only form steps");
         Invalid(new CanopyFlow("flow", "A flow").Step("a", "A", s => s.Text("f", "F")).Review(review => review.When(CanopyFlowCondition.IsEmpty("f"))), "always shows");
         Invalid(new CanopyFlow("flow", "A flow").Step("a", "A", step => step.Declaration("x")), "apply to the review step");
-        Invalid(new CanopyFlow("flow", "A flow").Info("a", "A").Step("b", "B", step => step.ChangesOnly()), "apply to the review step");
+        Invalid(new CanopyFlow("flow", "A flow").Info("a", "A").Step("b", "B", step => step.ChangesOnly(true)), "apply to the review step");
         var info = new CanopyFlow("flow", "A flow").Info("a", "A");
         info.Steps[0].Fields.Add(new CanopyFlowField("f", CanopyFlowFieldKind.Text, "F"));
         Invalid(info, "only form steps");
@@ -147,16 +146,16 @@ public sealed class FlowValidationTests {
         Invalid(One(step => step.Text("f", "F", f => f.States("On", "Off"))), "state texts");
         Invalid(One(step => step.Text("f", "F", f => f.Rows(4))), "rows");
         Invalid(One(step => step.Text("f", "F", f => f.Step(1))), "step");
-        Invalid(One(step => step.Text("f", "F", f => f.KeepWhenBlank())), "secret");
+        Invalid(One(step => step.Text("f", "F", f => f.KeepWhenBlank(true))), "secret");
         Invalid(One(step => step.Text("f", "F", f => f.NoReveal())), "secret");
-        Invalid(One(step => step.Text("f", "F", f => f.Units(CanopyFlowDurationUnit.Days))), "duration");
-        Invalid(One(step => step.Duration("f", "F", f => f.Units(CanopyFlowDurationUnit.Days, CanopyFlowDurationUnit.Days))), "twice");
+        Invalid(One(step => step.Text("f", "F", f => f.Unit(CanopyFlowDurationUnit.Days))), "duration");
+        Invalid(One(step => step.Duration("f", "F", f => f.Unit(CanopyFlowDurationUnit.Days).Unit(CanopyFlowDurationUnit.Days))), "twice");
         Invalid(One(step => step.Duration("f", "F", f => f.Range(TimeSpan.FromHours(2), TimeSpan.FromHours(1)))), "shortest");
         Invalid(One(step => step.Duration("f", "F", f => f.Range(TimeSpan.FromSeconds(-1), null))), "non-negative");
         Invalid(One(step => step.Duration("f", "F", f => f.Range(TimeSpan.FromMilliseconds(1500), null))), "whole seconds");
         Invalid(One(step => step.Text("f", "F", f => f.Count(1, 2))), "item counts");
         Invalid(One(step => step.List("f", "F", f => f.Count(3, 2))), "fewest items");
-        Invalid(One(step => step.Text("f", "F", f => f.Items(CanopyFlowItemRule.Email))), "item checks");
+        Invalid(One(step => step.Text("f", "F", f => f.ItemRule(CanopyFlowItemRule.Email))), "item checks");
         Invalid(One(step => step.Text("f", "F", f => f.ItemPattern("[a-z]+"))), "item checks");
         Invalid(One(step => step.List("f", "F", f => f.ItemPattern("(a|b)"))), "Patterns require");
         Invalid(One(step => step.Toggle("f", "F", f => f.Placeholder("x"))), "placeholders");
@@ -198,7 +197,7 @@ public sealed class FlowValidationTests {
     [InlineData(CanopyFlowFieldKind.Secret, "hunter2")]
     [InlineData(CanopyFlowFieldKind.List, "one")]
     public void Defaults_FitTheKind(CanopyFlowFieldKind kind, object value) {
-        var field = new CanopyFlowField("f", kind, "F") { DefaultValue = value };
+        var field = new CanopyFlowField("f", kind, "F") { Default = value };
         var flow = new CanopyFlow("flow", "A flow").Step("s", "S");
         flow.Steps[0].Fields.Add(field);
         Assert.Throws<InvalidOperationException>(() => flow.ToContract());

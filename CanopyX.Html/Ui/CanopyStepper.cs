@@ -32,7 +32,6 @@ public sealed class CanopyStepper {
         html.Append(" class=\"cx-stepper-host\" data-cx-stepper data-cx-part=\"stepper\"");
         UiHtml.Attribute(html, "data-linear", UiHtml.Bool(Options.Linear));
         UiHtml.Attribute(html, "data-mode", UiHtml.Token(Options.Mode));
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         html.Append('>');
         if (Options.Mode != CanopyUiMode.Report) Header(html);
         var toolbars = Options.Mode == CanopyUiMode.Interactive && Options.ShowFooter;

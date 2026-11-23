@@ -11,7 +11,7 @@ public sealed class GridActivityPresenterTests {
         var view = new CanopyDataGridView("jobs", "Scheduled jobs");
         view.Columns.Add(new CanopyColumn("state", "State") {
             Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Active"] = Tone.Success, ["Error"] = Tone.Danger })
-                .WithPill().WithIcons(new Dictionary<string, string> { ["Read-only"] = "🔒" })
+                .WithPill().WithMarks(new Dictionary<string, string> { ["Read-only"] = "🔒" })
         });
         view.Columns.Add(new CanopyColumn("at", "Schedule"));
         view.Columns.Add(new CanopyColumn("next", "Next run") { Kind = CanopyColumnKind.DateTime, Presenter = CanopyGridPresenter.RelativeTime("at") });
@@ -83,7 +83,7 @@ public sealed class GridActivityPresenterTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyGridPresenter.Log(501));
         Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Enum().WithPill());
         Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.SparklineLine().WithSlots());
-        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithIcons(new Dictionary<string, string> { ["Locked"] = " " }));
+        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithMarks(new Dictionary<string, string> { ["Locked"] = " " }));
         foreach (var (kind, presenter) in new[] { (CanopyColumnKind.Text, CanopyGridPresenter.RelativeTime()), (CanopyColumnKind.Number, CanopyGridPresenter.Log()) }) {
             var view = new CanopyDataGridView("wrong", "Wrong");
             view.Columns.Add(new CanopyColumn("value", "Value") { Kind = kind, Presenter = presenter });

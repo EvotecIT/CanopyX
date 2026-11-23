@@ -27,13 +27,13 @@ var fileRoots = fileTree.Build(shares: 26, departments: 8, projects: 10, minFile
 fileRoots[0].Children[0].Expanded = true;
 fileRoots[0].Children[0].Children[0].Expanded = true;
 var files = ExampleViews.FileShares("files", fileRoots);
-var bundle = files.SaveHtmlBundle(Path.Combine(demos, "files"),
+var bundle = files.SaveBundle(Path.Combine(demos, "files"),
     new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX file explorer", Theme = ThemeMode.Auto });
 
 // Device inventory: a reporting grid with grouping, aggregates, facets and visual history presenters.
 var inventory = DeviceInventory.Create(1_200);
 File.WriteAllText(Path.Combine(demos, "inventory.html"),
-    inventory.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX device inventory", Theme = ThemeMode.Auto }), utf8);
+    inventory.ToHtml(new CanopyHtmlOptions { Title = "CanopyX device inventory", Theme = ThemeMode.Auto }), utf8);
 
 // Change review: a change list with flags and diffs, how the change reached six servers, and one script's diff, on one page.
 var changeDocument = new CanopyHtmlDocument();

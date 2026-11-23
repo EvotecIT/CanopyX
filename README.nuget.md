@@ -31,7 +31,7 @@ using CanopyX;
 using CanopyX.Html;
 
 var items = new[] { new Item("Archive", 2048, DateTime.UtcNow), new Item("Documents", 512, DateTime.UtcNow) };
-CanopyDataGridView.From(items, x => x.Name).SaveHtmlPage("inventory.html");
+CanopyDataGridView.From(items, x => x.Name).Save("inventory.html");
 
 record Item(string Name, long Size, DateTime Modified);
 ```
@@ -42,7 +42,7 @@ Every public property becomes a typed column: `Size` sorts as a number and `Modi
 var inventory = new CanopyDataGridView<Item>("inventory", "Inventory", x => x.Name);
 inventory.Column(x => x.Name, configure: column => column.Sortable = true);
 inventory.Column(x => x.Size, cell: bytes => new CanopyCell(bytes) { Text = $"{bytes:N0} bytes" });
-inventory.AddRows(items).SaveHtmlPage("inventory.html");
+inventory.AddRows(items).Save("inventory.html");
 ```
 
 Open `inventory.html` in any browser. It carries its own runtime and data, so you can attach it to a ticket or put it on a file share. Numeric values drive sorting; `Text` is what the reader sees.
@@ -60,8 +60,8 @@ report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
 projects.Children.Add(report);
 files.Roots.Add(projects);
 
-files.SaveHtmlPage("files.html");     // one file
-files.SaveHtmlBundle("file-report");  // or a folder that loads branches on demand
+files.Save("files.html");     // one file
+files.SaveBundle("file-report");  // or a folder that loads branches on demand
 ```
 
 ### A table for email and print
@@ -78,8 +78,8 @@ The result is an HTML table with inline styles and no scripts, ready for a mail 
 
 | You want | Write | What you get |
 | --- | --- | --- |
-| One file to attach or archive | `view.SaveHtmlPage("report.html")` | Data and runtime in a single page |
-| A big tree or grid on a file share | `view.SaveHtmlBundle("report")` | A folder whose branches and rows load as the reader scrolls |
+| One file to attach or archive | `view.Save("report.html")` | Data and runtime in a single page |
+| A big tree or grid on a file share | `view.SaveBundle("report")` | A folder whose branches and rows load as the reader scrolls |
 | Millions of database rows | `CanopyX.Data` + `CanopyX.AspNetCore` | Paging, filters, summaries, export and edits answered by your server |
 | A table in an email | `view.ToStaticHtml()` | A script-free table that survives mail clients |
 

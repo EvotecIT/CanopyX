@@ -6,12 +6,11 @@ public sealed class GridOptionsSchemaTests {
     private static CanopyDataGridView View() {
         var view = GridOptionsContractTests.View();
         view.Presentation = CanopyGridPresentation.Paged;
-        view.GetColumn("name").ClassName = null;
         view.GetColumn("name").Alignment = null;
         view.GetColumn("name").SortComparator = null;
         view.GetColumn("name").OrderData.Clear();
         view.GetColumn("name").OrderSequence.Clear();
-        var defaults = new CanopyGridColumnDefaults { ClassName = "amount", Alignment = "end", OrderData = new List<string> { "amount" } };
+        var defaults = new CanopyGridColumnDefaults { Alignment = CanopyColumnAlignment.End, OrderData = new List<string> { "amount" } };
         defaults.Targets.Add("*"); view.ColumnDefaults.Add(defaults);
         view.PreSort.Add(new CanopyGridSort("rank"));
         var footer = new CanopyGridFooter("total", "Matching totals");

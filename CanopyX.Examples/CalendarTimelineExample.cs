@@ -18,8 +18,8 @@ internal static class CalendarTimelineExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Create().SaveHtmlPage(Path.Combine(output, "calendar-timeline" + suffix + ".html"), new CanopyHtmlOptions { Title = "Incidents by host", Theme = theme, Height = "760px" });
-            Resources().SaveHtmlPage(Path.Combine(output, "calendar-resources" + suffix + ".html"), new CanopyHtmlOptions { Title = "Engineers' day", Theme = theme, Height = "760px" });
+            Create().Save(Path.Combine(output, "calendar-timeline" + suffix + ".html"), new CanopyHtmlOptions { Title = "Incidents by host", Theme = theme, Height = "760px" });
+            Resources().Save(Path.Combine(output, "calendar-resources" + suffix + ".html"), new CanopyHtmlOptions { Title = "Engineers' day", Theme = theme, Height = "760px" });
         }
     }
 
@@ -63,7 +63,7 @@ internal static class CalendarTimelineExample {
         var calendar = view.Calendar = new CanopyCalendar("starts") {
             End = "ends", Title = "title", Status = "kind", Resource = "host", Recurrence = "rule", View = CanopyCalendarView.Timeline, Zoom = CanopyCalendarZoom.Day,
             Date = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), FirstDay = DayOfWeek.Monday, Resources = new CanopyCalendarResources(tree) { Label = "Hosts", Width = 392 },
-            Capacity = new CanopyCalendarCapacity().Add(4, Tone.Warning).Add(7, Tone.Danger),
+            Capacity = new CanopyCalendarCapacity().Threshold(4, Tone.Warning).Threshold(7, Tone.Danger),
             Editing = new CanopyCalendarEditing { Overlap = false, AllowedResources = "allowed", SnapMinutes = 15 }
         };
         foreach (var item in new[] { CanopyCalendarView.Timeline, CanopyCalendarView.Month, CanopyCalendarView.Week, CanopyCalendarView.Agenda }) calendar.Views.Add(item);

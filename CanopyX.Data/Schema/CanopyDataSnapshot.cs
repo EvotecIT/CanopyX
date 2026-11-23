@@ -10,7 +10,7 @@ internal static class CanopyDataSnapshot {
         Filterable = source.Filterable, Exportable = source.Exportable,
         Editable = source.Editable, Editor = Editor(source.Editor), Validation = Validation(source.Validation),
         Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable, Format = source.Format,
-        ClassName = source.ClassName, Alignment = source.Alignment, SortComparator = source.SortComparator,
+        Alignment = source.Alignment, SortComparator = source.SortComparator,
         OrderData = new System.Collections.Generic.List<string>(source.OrderData), OrderSequence = new System.Collections.Generic.List<string>(source.OrderSequence),
         Section = source.Section, ShowInDrawer = source.ShowInDrawer, Renderer = source.Renderer,
         ResponsivePriority = source.ResponsivePriority, AlwaysVisible = source.AlwaysVisible, Pinned = source.Pinned,

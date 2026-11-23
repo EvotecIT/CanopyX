@@ -17,7 +17,7 @@ internal static class FlowActOnRowsExample {
         view.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true });
         view.Columns.Add(new CanopyColumn("role", "Role") { Sortable = true });
         view.Columns.Add(new CanopyColumn("lastSeen", "Last seen") { Kind = CanopyColumnKind.DateTime, Sortable = true });
-        view.FacetPanel = new CanopyFacetPanel().Add("site").Add("role");
+        view.FacetPanel = new CanopyFacetPanel().Facet("site").Facet("role");
         var start = new DateTime(2026, 10, 20, 8, 0, 0, DateTimeKind.Utc);
         for (var i = 0; i < 48; i++) {
             var row = new CanopyGridRow("srv-" + (i + 1).ToString("00", CultureInfo.InvariantCulture));
@@ -38,7 +38,7 @@ internal static class FlowActOnRowsExample {
             Submit = new CanopyFlowSubmit("Retire")
         };
         flow.Pick("servers", "Which servers?", Servers(), picker => {
-            picker.Label("name");
+            picker.LabelColumn("name");
             picker.Field.Count(1, 20).Required().Help("Search or filter by site and role, then tick the servers. The Chosen list keeps what you picked while you search.");
         });
         flow.Step("when", "When and why?", step => step

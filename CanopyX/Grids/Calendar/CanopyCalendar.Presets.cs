@@ -61,7 +61,7 @@ public sealed partial class CanopyCalendar {
     private void CompletePreset() {
         // Without resources the default views are exactly month, week, day and agenda.
         if (_preset == CanopyCalendarPreset.Basic && Views.Count == 0) foreach (var view in DefaultViews) Views.Add(view);
-        if (_preset == CanopyCalendarPreset.Scheduler && Capacity == null) Capacity = new CanopyCalendarCapacity().Add(3, CanopyX.Tone.Warning).Add(5, CanopyX.Tone.Danger);
+        if (_preset == CanopyCalendarPreset.Scheduler && Capacity == null) Capacity = new CanopyCalendarCapacity().Threshold(3, CanopyX.Tone.Warning).Threshold(5, CanopyX.Tone.Danger);
     }
 
     private void Items(params CanopyCalendarToolbarItem[] items) {

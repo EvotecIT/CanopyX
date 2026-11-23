@@ -43,7 +43,7 @@ internal static class FlowSamples {
         };
         flow.Info("welcome", "Before you start", "You need a recipient list.");
         flow.Step("basics", "What does the report hold?", step => step
-            .Describe("Name the report and pick its content.")
+            .Description("Name the report and pick its content.")
             .Text("name", "Report name", f => f.Required().Length(3, 80).Pattern("[A-Za-z0-9 ]+", "Letters, digits and spaces.").Help("Shown in the subject line.").Parameter("Name").Path("report.name"))
             .TextArea("notes", "Notes", f => f.Rows(6).Placeholder("Anything the readers should know").Path("report.notes"))
             .Select("format", "Format", f => f.Option("pdf", "PDF").Option("html", "Web page").Default("pdf").Path("report.format"))
@@ -62,19 +62,19 @@ internal static class FlowSamples {
             .Date("start", "First run", f => f.Default(new DateTime(2026, 11, 2)).Half().Path("schedule.start"))
             .Time("at", "Time of day", f => f.Default("07:30").Half().Path("schedule.at"))
             .DateTime("until", "Stop after", f => f.Range(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero)).Path("schedule.until"))
-            .Duration("window", "Delivery window", f => f.Units(CanopyFlowDurationUnit.Minutes, CanopyFlowDurationUnit.Hours).Range(TimeSpan.FromMinutes(5), TimeSpan.FromHours(12)).Default(TimeSpan.FromMinutes(90)).Path("schedule.window"))
+            .Duration("window", "Delivery window", f => f.Unit(CanopyFlowDurationUnit.Minutes).Unit(CanopyFlowDurationUnit.Hours).Range(TimeSpan.FromMinutes(5), TimeSpan.FromHours(12)).Default(TimeSpan.FromMinutes(90)).Path("schedule.window"))
             .Number("retries", "Retries", f => f.Range(0, 10).Step(1).Default(2).Path("schedule.retries"))
             .Toggle("weekends", "Run on weekends", f => f.States("Yes, also on weekends", "Weekdays only").Path("schedule.weekends"))
             .Section("advanced", "Advanced", section => section
-                .Describe("Only for unusual schedules.")
+                .Description("Only for unusual schedules.")
                 .When(CanopyFlowCondition.Equal("weekends", true))
                 .Text("calendar", "Holiday calendar", f => f.Path("schedule.calendar"))));
         flow.Step("delivery", "Where does it go?", step => step
             .Optional()
             .When(CanopyFlowCondition.Any(CanopyFlowCondition.Equal("format", "pdf"), CanopyFlowCondition.All(CanopyFlowCondition.IsNotEmpty("owner"), CanopyFlowCondition.None(CanopyFlowCondition.In("audience", "all")))))
-            .List("recipients", "Recipients", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 50).Placeholder("name@example.com").Path("delivery.recipients"))
+            .List("recipients", "Recipients", f => f.Required().ItemRule(CanopyFlowItemRule.Email).Count(1, 50).Placeholder("name@example.com").Path("delivery.recipients"))
             .List("hosts", "Relay hosts", f => f.ItemPattern("[a-z0-9.-]+").Path("delivery.hosts"))
-            .Secret("token", "Access token", f => f.Length(8, 128).KeepWhenBlank().NoReveal().Path("delivery.token"))
+            .Secret("token", "Access token", f => f.Length(8, 128).KeepWhenBlank(true).NoReveal().Path("delivery.token"))
             .Text("relay", "Relay", f => f.Sensitive().ReadOnly().When(CanopyFlowCondition.Matches("owner", "^a")).Path("delivery.relay")));
         flow.Review(review => review.ChangesOnly(false).Declaration("The schedule starts with the next run."));
         flow.Initial["name"] = "Weekly summary";

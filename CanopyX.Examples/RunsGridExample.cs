@@ -10,7 +10,7 @@ internal static class RunsGridExample {
     private static readonly string[] Pipelines = { "Nightly build", "Release candidate", "Security scan", "Docs publish" };
 
     internal static void Write(string output) =>
-        Create().SaveHtmlPage(Path.Combine(output, "runs-grid.html"), new CanopyHtmlOptions { Title = "Pipeline runs" });
+        Create().Save(Path.Combine(output, "runs-grid.html"), new CanopyHtmlOptions { Title = "Pipeline runs" });
 
     internal static CanopyDataGridView Create() {
         var view = new CanopyDataGridView("runs", "Pipeline runs") { Selection = CanopySelectionMode.Single };

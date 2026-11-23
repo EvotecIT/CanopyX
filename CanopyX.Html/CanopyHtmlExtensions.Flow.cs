@@ -23,7 +23,7 @@ public static partial class CanopyHtmlExtensions {
     /// <remarks>The page loads no grid code. The host answers the proposal through the <c>canopyx:flowSubmit</c> event (docs/flow.md).</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="flow"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The flow is invalid, tree filter IDs are specified, or a requested part does not ship with the flow entry point.</exception>
-    public static string ToHtmlPage(this CanopyFlow flow, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyFlow flow, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(flow, options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves a complete flow page as UTF-8, creating its directory when needed.</summary>
@@ -34,10 +34,10 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="flow"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The flow is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyFlow flow, string path, CanopyHtmlOptions? options = null) {
+    public static void Save(this CanopyFlow flow, string path, CanopyHtmlOptions? options = null) {
         if (flow == null) throw new ArgumentNullException(nameof(flow));
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is required.", nameof(path));
-        var html = flow.ToHtmlPage(options);
+        var html = flow.ToHtml(options);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         File.WriteAllText(path, html, new UTF8Encoding(false));
     }

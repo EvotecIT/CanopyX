@@ -14,6 +14,4 @@ public sealed class CanopyRatingOptions {
     public bool Disabled { get; set; }
     /// <summary>Gets or sets the labels whose <c>RatingValue</c> names each step. Null uses English.</summary>
     public CanopyLabels? Labels { get; set; }
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

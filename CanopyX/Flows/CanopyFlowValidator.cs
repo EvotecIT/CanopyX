@@ -37,7 +37,7 @@ internal static class CanopyFlowValidator {
                 fields.Add(field.Id, field);
                 if (fields.Count > CanopyFlow.MaxFields) throw new InvalidOperationException("A flow holds at most 1000 fields.");
                 field.Validate();
-                if (field.ConfigPath != null) paths.Add(field.ConfigPath);
+                if (field.Path != null) paths.Add(field.Path);
             }
         }
 
@@ -74,12 +74,12 @@ internal static class CanopyFlowValidator {
         if (step.Kind != CanopyFlowStepKind.Form && (step.Fields.Count > 0 || step.Sections.Count > 0)) throw new InvalidOperationException(what + ": only form steps hold fields and sections.");
         if (review) {
             if (!last) throw new InvalidOperationException("A review step is the last step of a flow, and a flow has at most one.");
-            if (step.Condition != null || step.IsOptional) throw new InvalidOperationException(what + ": the review step always shows and is never optional.");
-        } else if (step.DeclarationText != null || step.ShowChangesOnly.HasValue) {
+            if (step.When != null || step.IsOptional) throw new InvalidOperationException(what + ": the review step always shows and is never optional.");
+        } else if (step.Declaration != null || step.ChangesOnly.HasValue) {
             throw new InvalidOperationException(what + ": a declaration and the changes-only default apply to the review step.");
         }
 
-        CanopyFlowValues.CheckLong(step.DeclarationText, what + " (declaration)");
+        CanopyFlowValues.CheckLong(step.Declaration, what + " (declaration)");
     }
 
     /// <summary>Paths are unique, and none is the parent of another, so the proposal's JSON patch never writes a setting twice.</summary>
@@ -108,9 +108,9 @@ internal static class CanopyFlowValidator {
         }
 
         foreach (var step in flow.Steps) {
-            Check(step.Condition, "The condition of step " + step.Id);
-            foreach (var section in step.Sections) Check(section.Condition, "The condition of section " + section.Id);
-            foreach (var (field, _) in step.AllFields()) Check(field.Condition, "The condition of field " + field.Id);
+            Check(step.When, "The condition of step " + step.Id);
+            foreach (var section in step.Sections) Check(section.When, "The condition of section " + section.Id);
+            foreach (var (field, _) in step.AllFields()) Check(field.When, "The condition of field " + field.Id);
         }
 
         // Each field depends on the fields its own, its section's and its step's conditions read; a cycle (a field whose
@@ -136,9 +136,9 @@ internal static class CanopyFlowValidator {
         foreach (var step in flow.Steps) {
             foreach (var (field, section) in step.AllFields()) {
                 var list = new List<string>();
-                if (field.Condition != null) list.AddRange(field.Condition.Fields());
-                if (section?.Condition != null) list.AddRange(section.Condition.Fields());
-                if (step.Condition != null) list.AddRange(step.Condition.Fields());
+                if (field.When != null) list.AddRange(field.When.Fields());
+                if (section?.When != null) list.AddRange(section.When.Fields());
+                if (step.When != null) list.AddRange(step.When.Fields());
                 dependencies[field.Id] = list;
             }
         }
@@ -165,9 +165,9 @@ internal static class CanopyFlowValidator {
         bool IsVisible(string id) {
             if (visible.TryGetValue(id, out var known)) return known;
             var owner = owners[id];
-            var shown = (owner.Step.Condition == null || owner.Step.Condition.EvaluateWith(Read)) &&
-                (owner.Section?.Condition == null || owner.Section.Condition.EvaluateWith(Read)) &&
-                (owner.Field.Condition == null || owner.Field.Condition.EvaluateWith(Read));
+            var shown = (owner.Step.When == null || owner.Step.When.EvaluateWith(Read)) &&
+                (owner.Section?.When == null || owner.Section.When.EvaluateWith(Read)) &&
+                (owner.Field.When == null || owner.Field.When.EvaluateWith(Read));
             visible[id] = shown;
             return shown;
         }
@@ -189,8 +189,8 @@ internal static class CanopyFlowValidator {
             foreach (var (field, section) in step.AllFields()) {
                 if (field.Kind != CanopyFlowFieldKind.Secret) continue;
                 object? Read(string id) => shown.Contains(id) && answers.TryGetValue(id, out var value) ? Generic(Find(flow, id), value) : null;
-                if ((step.Condition == null || step.Condition.EvaluateWith(Read)) && (section?.Condition == null || section.Condition.EvaluateWith(Read)) &&
-                    (field.Condition == null || field.Condition.EvaluateWith(Read))) shown.Add(field.Id);
+                if ((step.When == null || step.When.EvaluateWith(Read)) && (section?.When == null || section.When.EvaluateWith(Read)) &&
+                    (field.When == null || field.When.EvaluateWith(Read))) shown.Add(field.Id);
             }
         }
 

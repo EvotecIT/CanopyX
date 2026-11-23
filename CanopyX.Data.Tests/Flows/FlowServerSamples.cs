@@ -11,9 +11,9 @@ internal static class FlowServerSamples {
                 .Toggle("auth", "Sign in", field => field.Path("mail.auth"))
                 .Text("user", "User name", field => field.Required().When(CanopyFlowCondition.Equal("auth", true)).Path("mail.user"))
                 .Secret("password", "Password", field => field.Required().Length(4, null).When(CanopyFlowCondition.Equal("auth", true)).Parameter("Credential"))
-                .Check("connection", "Test the connection", check => check.Fields("host", "port", "password")))
+                .Check("connection", "Test the connection", check => check.Field("host").Field("port").Field("password")))
             .Step("recipients", "Recipients", step => step
-                .List("to", "To", field => field.Items(CanopyFlowItemRule.Email).Count(1, 5).Path("mail.to"))
+                .List("to", "To", field => field.ItemRule(CanopyFlowItemRule.Email).Count(1, 5).Path("mail.to"))
                 .Duration("retry", "Retry after", field => field.Range(TimeSpan.FromMinutes(1), TimeSpan.FromHours(1)))
                 .Records("rules", "Rules", field => field
                     .Column("name", "Name", CanopyFlowRecordColumnKind.Text, column => column.Required())
@@ -38,7 +38,7 @@ internal static class FlowServerSamples {
             .Step("pick", "Engine", step => step
                 .Select("engine", "Engine", field => field.Required().Option("sql", "SQL").Option("file", "File"))
                 .Select("region", "Region", field => field.FromHost())
-                .Section("engine-options", "Options", section => section.FromHost("engine")));
+                .Section("engine-options", "Options", section => section.FromHost().DependsOn("engine")));
 
     /// <summary>A proposal of the mail flow in create mode, with replaceable parts.</summary>
     public static string MailProposal(string values, string secrets = "{}", string extra = "") =>

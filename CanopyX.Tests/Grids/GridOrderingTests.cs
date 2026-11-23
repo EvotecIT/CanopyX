@@ -59,7 +59,7 @@ public sealed class GridOrderingTests {
         view.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.Natural, new[] { "Pinned" });
         ProtocolSchema.AssertValid(view.ToJson(), "reporting ordering");
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(view));
-        Assert.Contains("canopyx-reporting.js", view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain }));
+        Assert.Contains("canopyx-reporting.js", view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain }));
         view.GetColumn("name").Sortable = false;
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }

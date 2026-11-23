@@ -104,7 +104,7 @@ public sealed class StreamedViewJsonTests {
         switch (name) {
             case "hostile":
                 view.Icons[Icon.Named("i")] = "<svg viewBox=\"0 0 1 1\"><path d=\"M0 0\"/></svg>";
-                view.Roots.Add(new CanopyNode("</script>", "<!-- & \"q\" \\ \u2028\u2029 \t\r\n\b\f `${x}` $ {") { Icon = Icon.Named("i"), ClassName = "a&b" });
+                view.Roots.Add(new CanopyNode("</script>", "<!-- & \"q\" \\ \u2028\u2029 \t\r\n\b\f `${x}` $ {") { Icon = Icon.Named("i") });
                 view.Roots.Add(new CanopyNode("lone", "broken \uD800 and \uDC00 end \uD83D"));
                 break;
             case "unicode":
@@ -122,15 +122,15 @@ public sealed class StreamedViewJsonTests {
                 break;
             case "details":
                 var parent = new CanopyNode("p", "Parent") { Expanded = true };
-                var table = new CanopyTableDetail("Changes <b>").AddColumns("Setting", "Before", "After");
+                var table = new CanopyTableDetail("Changes <b>").Column("Setting", "Before", "After");
                 table.ColumnWidths.Add(3);
                 table.ColumnWidths.Add(1);
                 table.ColumnWidths.Add(1);
-                table.AddRow("Password length", 8, new CanopyCell("14") { Tone = Tone.Success, Title = "raised" });
-                table.AddRow("Lockout & reset", null!, DateTime.SpecifyKind(new DateTime(2026, 10, 7, 4, 53, 31), DateTimeKind.Utc));
+                table.Row("Password length", 8, new CanopyCell("14") { Tone = Tone.Success, Title = "raised" });
+                table.Row("Lockout & reset", null!, DateTime.SpecifyKind(new DateTime(2026, 10, 7, 4, 53, 31), DateTimeKind.Utc));
                 parent.Children.Add(new CanopyNode("p/t", "Table") { Detail = table });
                 parent.Children.Add(new CanopyNode("p/h", "Html") { Detail = new CanopyHtmlDetail("<p>trusted & \"raw\"</p>") { Height = 3 } });
-                parent.Children.Add(new CanopyNode("p/x", "Properties") { Detail = new CanopyPropertiesDetail().Add("Owner", "Team ${a}").Add("Size", 1.5) });
+                parent.Children.Add(new CanopyNode("p/x", "Properties") { Detail = new CanopyPropertiesDetail().Item("Owner", "Team ${a}").Item("Size", 1.5) });
                 view.Roots.Add(parent);
                 break;
             case "large":
@@ -145,8 +145,8 @@ public sealed class StreamedViewJsonTests {
                         if (c % 7 == 0) child.Badges.Add(new CanopyBadge("new", Tone.Info));
                         if (c % 11 == 0) child.Data["k"] = "v" + c;
                         if (c % 13 == 0) {
-                            var detail = new CanopyTableDetail().AddColumns("A", "B");
-                            detail.AddRow(new string('x', random.Next(1, 5000)), c);
+                            var detail = new CanopyTableDetail().Column("A", "B");
+                            detail.Row(new string('x', random.Next(1, 5000)), c);
                             child.Children.Add(new CanopyNode(child.Id + "/d", "Detail") { Detail = detail });
                         }
 

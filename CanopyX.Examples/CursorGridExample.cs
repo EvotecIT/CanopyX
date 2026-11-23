@@ -18,7 +18,7 @@ internal static class CursorGridExample {
         File.WriteAllText(Path.Combine(output, "cursor-grid-static.html"), "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Cursor snapshot</title><body>" +
             CanopyStaticHtml.RenderGrid(view, snapshot) + "</body></html>");
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
-            var html = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX cursor navigation", Theme = theme, HeadHtml = Source });
+            var html = view.ToHtml(new CanopyHtmlOptions { Title = "CanopyX cursor navigation", Theme = theme, HeadHtml = Source });
             File.WriteAllText(Path.Combine(output, theme == ThemeMode.Light ? "cursor-grid.html" : "cursor-grid-dark.html"),
                 html);
         }

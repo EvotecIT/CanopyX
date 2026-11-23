@@ -18,7 +18,7 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The page markup.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The calendar was not built from events (it has no grid of its own), or the definition is invalid.</exception>
-    public static string ToHtmlPage(this CanopyCalendar calendar, CanopyHtmlOptions? options = null) => GridOf(calendar).ToHtmlPage(options);
+    public static string ToHtml(this CanopyCalendar calendar, CanopyHtmlOptions? options = null) => GridOf(calendar).ToHtml(options);
 
     /// <summary>Saves a calendar built from events as a complete page, UTF-8, creating its directory when needed (see <see cref="CanopyCalendar.Grid"/>).</summary>
     /// <param name="calendar">The calendar, built from events.</param>
@@ -27,7 +27,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">The calendar was not built from events (it has no grid of its own), or the definition is invalid.</exception>
-    public static void SaveHtmlPage(this CanopyCalendar calendar, string path, CanopyHtmlOptions? options = null) => GridOf(calendar).SaveHtmlPage(path, options);
+    public static void Save(this CanopyCalendar calendar, string path, CanopyHtmlOptions? options = null) => GridOf(calendar).Save(path, options);
 
     private static CanopyDataGridView GridOf(CanopyCalendar calendar) {
         if (calendar == null) throw new ArgumentNullException(nameof(calendar));

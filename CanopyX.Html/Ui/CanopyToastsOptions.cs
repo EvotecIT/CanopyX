@@ -11,6 +11,4 @@ public sealed class CanopyToastsOptions {
     public int Timeout { get; set; } = 5000;
     /// <summary>Gets or sets the region's accessible name. Null uses the localized label.</summary>
     public string? Label { get; set; }
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

@@ -8,7 +8,7 @@ namespace CanopyX.AspNetCore;
 
 /// <summary>
 /// The host's answers to a flow's routes (<see cref="CanopyFlowEndpointExtensions.MapCanopyFlow"/>). Each handler that is set maps
-/// its route; <see cref="Routes"/> names them for <see cref="CanopyFlow.UseEndpoint"/>. Handlers observe
+/// its route; <see cref="Routes"/> names them for <see cref="CanopyFlow.Endpoint"/>. Handlers observe
 /// <see cref="HttpContext.RequestAborted"/> for cancellation.
 /// </summary>
 public sealed class CanopyFlowHandlers {
@@ -36,7 +36,7 @@ public sealed class CanopyFlowHandlers {
     /// <summary>Gets or sets what applies a proposal (<c>POST submit</c>), read and checked by the server first.</summary>
     public Func<HttpContext, CanopyFlowSubmission, Task<CanopyFlowAnswer>>? Submit { get; set; }
 
-    /// <summary>Gets the routes the handlers map, for <see cref="CanopyFlow.UseEndpoint"/>.</summary>
+    /// <summary>Gets the routes the handlers map, for <see cref="CanopyFlow.Endpoint"/>.</summary>
     public CanopyFlowRoutes Routes =>
         (Options != null ? CanopyFlowRoutes.Options : CanopyFlowRoutes.None) | (Fields != null ? CanopyFlowRoutes.Fields : CanopyFlowRoutes.None) |
         (Check != null ? CanopyFlowRoutes.Check : CanopyFlowRoutes.None) | (Validate != null ? CanopyFlowRoutes.Validate : CanopyFlowRoutes.None) |

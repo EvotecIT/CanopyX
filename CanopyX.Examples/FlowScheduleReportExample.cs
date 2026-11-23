@@ -31,9 +31,9 @@ internal static class FlowScheduleReportExample {
             .Time("at", "Time of day", f => f.Required().Default("07:00").Half().Help("In the service's time zone.").Path("schedule.at"))
             .Date("starts", "First run", f => f.Half().Path("schedule.starts")));
         flow.Step("delivery", "Where does it go?", step => step
-            .List("recipients", "Recipients", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 50).Placeholder("For example: name@example.com").Path("delivery.recipients"))
+            .List("recipients", "Recipients", f => f.Required().ItemRule(CanopyFlowItemRule.Email).Count(1, 50).Placeholder("For example: name@example.com").Path("delivery.recipients"))
             .Text("subject", "Subject", f => f.Default("Scheduled report").Length(null, 120).Path("delivery.subject"))
-            .Duration("keep", "Keep each report for", f => f.Default(TimeSpan.FromDays(30)).Units(CanopyFlowDurationUnit.Days).Range(TimeSpan.FromDays(1), TimeSpan.FromDays(365))
+            .Duration("keep", "Keep each report for", f => f.Default(TimeSpan.FromDays(30)).Unit(CanopyFlowDurationUnit.Days).Range(TimeSpan.FromDays(1), TimeSpan.FromDays(365))
                 .Help("Older reports are removed from the archive.").Path("delivery.keep"))
             .TextArea("note", "Note in the message", f => f.Rows(3).Length(null, 500).Path("delivery.note")));
         flow.Review();

@@ -109,7 +109,7 @@ public sealed class UiBuilderTests {
     [Fact]
     public void Tabs_EncodeTextAndAttributeValuesButPreserveExplicitlyTrustedContent() {
         const string hostile = "\"<&'";
-        var tabs = new CanopyTabs("set" + hostile, "Sections " + hostile, new CanopyTabsOptions { Variant = "product." + hostile });
+        var tabs = new CanopyTabs("set" + hostile, "Sections " + hostile);
         tabs.Tabs.Add(new CanopyTab("one" + hostile, "Label " + hostile) { Badge = hostile, Icon = Icon.Named("tab-icon"), ContentHtml = "<strong>Trusted body</strong>" });
         var html = tabs.ToHtmlFragment();
         var root = Parse(html);
@@ -117,7 +117,6 @@ public sealed class UiBuilderTests {
         Assert.Equal("set" + hostile + "-tab-one" + hostile, Attr(tab, "id"));
         Assert.Equal("tab-icon", Attr(tab.Descendants("span").First(e => e.Attribute("data-icon") != null), "data-icon"));
         Assert.Equal("Label " + hostile, tab.Elements("span").Single(e => Attr(e, "class") == "cx-tab-label").Value);
-        Assert.Equal("product." + hostile, Attr(root.Element("div")!, "data-cx-variant"));
         Assert.Contains(WebUtility.HtmlEncode("Label " + hostile), html);
         Assert.Single(root.Descendants("strong"));
         AssertReferences(root);
@@ -281,7 +280,7 @@ public sealed class UiBuilderTests {
     [Fact]
     public void Stepper_EncodesLabelsDescriptionsAndIdentityReferencesButKeepsTrustedSections() {
         const string hostile = "\"<&'";
-        var stepper = new CanopyStepper("wizard" + hostile, "Setup " + hostile, new CanopyStepperOptions { Variant = hostile });
+        var stepper = new CanopyStepper("wizard" + hostile, "Setup " + hostile);
         stepper.Steps.Add(new CanopyStep("one" + hostile, "Label " + hostile) {
             Description = "Description " + hostile, ContentHtml = "<strong>Trusted step</strong>"
         });
@@ -289,7 +288,6 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         Assert.Equal("wizard" + hostile, Attr(document.Element("div")!, "id"));
         Assert.Equal("Setup " + hostile, Attr(document.Descendants("ol").Single(), "aria-label"));
-        Assert.Equal(hostile, Attr(document.Element("div")!, "data-cx-variant"));
         Assert.Equal("Label " + hostile, document.Descendants("h3").Single().Value);
         Assert.Contains(document.Descendants("span"), s => s.Value == "Description " + hostile);
         Assert.Equal("Trusted step", document.Descendants("strong").Single().Value);
@@ -340,7 +338,7 @@ public sealed class UiBuilderTests {
     [Fact]
     public void Dialog_RendersNativeModalWithEncodedTitleDescriptionAndMatchingTrigger() {
         var dialog = new CanopyDialog("inspect\"&", "Inspect <item>", new CanopyDialogOptions {
-            Size = CanopyOverlaySize.Large, Variant = "product.\"&", TriggerId = "launch\"&"
+            Size = CanopyOverlaySize.Large, TriggerId = "launch\"&"
         }) { Description = "Read & review", ContentHtml = "<strong>Trusted details</strong>", FooterHtml = "<button>Cancel</button>" };
         var html = dialog.ToTriggerHtmlFragment("Open <details>") + dialog.ToHtmlFragment();
         var document = Parse(html);

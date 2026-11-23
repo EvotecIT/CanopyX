@@ -11,7 +11,7 @@ internal static class ServiceStatusExample {
 
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
-            Create().SaveHtmlPage(Path.Combine(output, "service-status" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
+            Create().Save(Path.Combine(output, "service-status" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Service status", Theme = theme });
     }
 

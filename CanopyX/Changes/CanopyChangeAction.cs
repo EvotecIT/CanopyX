@@ -26,8 +26,11 @@ public sealed class CanopyChangeAction {
     /// <summary>Gets the label.</summary>
     public string Label { get; }
 
-    /// <summary>Gets or sets the icon; with an icon the row shows the icon and the label is its accessible name and tooltip.</summary>
-    public CanopyChangeActionIcon Icon { get; set; }
+    /// <summary>
+    /// Gets or sets the icon: <see cref="CanopyActionIcons.Copy"/>, <c>Diff</c>, <c>Check</c>, <c>Open</c>, <c>Download</c>,
+    /// <c>Compare</c> or <c>Flag</c>. With an icon the row shows the icon and the label is its accessible name and tooltip.
+    /// </summary>
+    public Icon Icon { get; set; }
 
     /// <summary>
     /// Gets or sets what a copy action copies: <c>path</c>, <c>previousPath</c>, or the key of one of the item's

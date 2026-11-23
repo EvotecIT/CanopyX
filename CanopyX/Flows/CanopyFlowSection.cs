@@ -27,7 +27,7 @@ public sealed class CanopyFlowSection : CanopyFlowFieldContainer<CanopyFlowSecti
     public string? Description { get; set; }
 
     /// <summary>Gets or sets the condition under which the section shows; null always shows it.</summary>
-    public CanopyFlowCondition? Condition { get; set; }
+    public CanopyFlowCondition? When { get; set; }
 
     /// <summary>
     /// Gets or sets whether the host supplies the section's fields: its <c>fields</c> hook (or an endpoint route) answers field
@@ -37,33 +37,14 @@ public sealed class CanopyFlowSection : CanopyFlowFieldContainer<CanopyFlowSecti
     public bool IsFromHost { get; set; }
 
     /// <summary>Gets the ids of the fields whose change reloads a host section's fields (at most 16, never secrets).</summary>
+    [PowerForge.Fluent.Child("DependsOn")]
     public System.Collections.Generic.IList<string> DependsOnIds { get; } = new System.Collections.Generic.List<string>();
-
-    /// <summary>Lets the host supply the section's fields (<see cref="IsFromHost"/>), reloaded when the named fields change.</summary>
-    /// <param name="dependsOn">The ids of the fields whose change reloads them.</param>
-    /// <returns>The section.</returns>
-    public CanopyFlowSection FromHost(params string[] dependsOn) {
-        IsFromHost = true;
-        foreach (var id in dependsOn ?? new string[0]) DependsOnIds.Add(id);
-        return this;
-    }
-
-    /// <summary>Sets the line under the heading (<see cref="Description"/>).</summary>
-    /// <param name="text">Plain text.</param>
-    /// <returns>The section.</returns>
-    public CanopyFlowSection Describe(string text) { Description = text; return this; }
-
-    /// <summary>Shows the section only while a condition holds (<see cref="Condition"/>).</summary>
-    /// <param name="condition">The condition.</param>
-    /// <returns>The section.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="condition"/> is null.</exception>
-    public CanopyFlowSection When(CanopyFlowCondition condition) { Condition = condition ?? throw new ArgumentNullException(nameof(condition)); return this; }
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", Label).OptionalProperty("description", Description);
-        if (Condition != null) {
+        if (When != null) {
             writer.Name("when");
-            Condition.WriteJson(writer);
+            When.WriteJson(writer);
         }
 
         if (IsFromHost) {
@@ -97,7 +78,7 @@ public sealed class CanopyFlowSection : CanopyFlowFieldContainer<CanopyFlowSecti
         if (!CanopyFlowValues.IsIdentifier(id)) throw new InvalidOperationException("A section has an invalid id.");
         var what = "Section " + id;
         var section = new CanopyFlowSection(id, CanopyFlowContract.RequiredText(map, "label", what)) { Description = CanopyFlowContract.Text(map, "description", what) };
-        if (map.TryGetValue("when", out var when)) section.Condition = CanopyFlowCondition.Read(when, what + " (when)");
+        if (map.TryGetValue("when", out var when)) section.When = CanopyFlowCondition.Read(when, what + " (when)");
         var source = CanopyFlowContract.Text(map, "source", what);
         if (source != null) section.IsFromHost = CanopyFlowContract.Choose(source, what, "source", ("host", true));
         foreach (var item in CanopyFlowContract.Items(map, "dependsOn", what, 16)) section.DependsOnIds.Add(item as string ?? throw new InvalidOperationException(what + " depends on a field id that is not text."));

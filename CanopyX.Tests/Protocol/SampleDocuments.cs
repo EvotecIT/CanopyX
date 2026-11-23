@@ -37,7 +37,7 @@ internal static class SampleDocuments {
         share.Badges.Add(new CanopyBadge("3 changed", Tone.Warning) { Title = "Changed in the last 7 days" });
         share.Flags.Add("changed-below");
 
-        var plans = new CanopyNode("share/plans", "plans") { Icon = Icon.Named("folder"), ClassName = "host-highlight" };
+        var plans = new CanopyNode("share/plans", "plans") { Icon = Icon.Named("folder") };
         plans.Cells["modified"] = new DateTime(2026, 9, 27, 10, 15, 0, DateTimeKind.Utc);
         plans.Cells["size"] = new CanopyCell(1_048_576L) { Badges = { new CanopyBadge("large", Tone.Danger) } };
         plans.Flags.Add("changed");
@@ -50,12 +50,12 @@ internal static class SampleDocuments {
         plans.Children.Add(history);
 
         var diff = new CanopyNode("share/plans/diff", "Changed settings") {
-            Detail = new CanopyTableDetail("Revision 12").AddColumns("Setting", "Before", "After")
+            Detail = new CanopyTableDetail("Revision 12").Column("Setting", "Before", "After")
         };
-        ((CanopyTableDetail)diff.Detail).AddRow("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, new CanopyCell("90 days") { Tone = Tone.Success });
+        ((CanopyTableDetail)diff.Detail).Row("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, new CanopyCell("90 days") { Tone = Tone.Success });
         plans.Children.Add(diff);
 
-        var props = new CanopyNode("share/props", "Properties") { Detail = new CanopyPropertiesDetail { Height = 3 }.Add("Owner", "Engineering").Add("Quota", 10_000) };
+        var props = new CanopyNode("share/props", "Properties") { Detail = new CanopyPropertiesDetail { Height = 3 }.Item("Owner", "Engineering").Item("Quota", 10_000) };
         share.Children.Add(props);
 
         var widget = new CanopyNode("share/widget", "Usage") { Detail = new CanopyHtmlDetail("<div class=\"host-widget\">42%</div>") };

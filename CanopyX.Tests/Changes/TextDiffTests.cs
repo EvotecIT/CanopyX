@@ -53,7 +53,7 @@ public sealed class TextDiffTests {
 
     [Fact]
     public void AddLines_SplitsHunksAtGapsAndInfersTheStartsOfInsertions() {
-        var diff = new CanopyTextDiff("d", "D").AddLines(new[] {
+        var diff = new CanopyTextDiff("d", "D").Lines(new[] {
             new CanopyDiffLine(CanopyDiffLineKind.Context, "a", 4, 4),
             new CanopyDiffLine(CanopyDiffLineKind.Removed, "b", 5),
             new CanopyDiffLine(CanopyDiffLineKind.Added, "B", afterNumber: 5),
@@ -65,8 +65,8 @@ public sealed class TextDiffTests {
         // The second hunk inserts after line 19 on both sides: the unchanged run between hunks is as long on both sides.
         Assert.Equal((20, 20), (diff.Hunks[1].BeforeStart, diff.Hunks[1].AfterStart));
         diff.Validate();
-        Assert.Throws<ArgumentException>(() => new CanopyTextDiff("x", "X").AddLines(new[] { new CanopyDiffLine(CanopyDiffLineKind.Context, "a") }));
-        Assert.Throws<ArgumentException>(() => new CanopyTextDiff("x", "X").AddLines(new[] {
+        Assert.Throws<ArgumentException>(() => new CanopyTextDiff("x", "X").Lines(new[] { new CanopyDiffLine(CanopyDiffLineKind.Context, "a") }));
+        Assert.Throws<ArgumentException>(() => new CanopyTextDiff("x", "X").Lines(new[] {
             new CanopyDiffLine(CanopyDiffLineKind.Context, "a", 9, 9), new CanopyDiffLine(CanopyDiffLineKind.Context, "b", 3, 3) }));
     }
 

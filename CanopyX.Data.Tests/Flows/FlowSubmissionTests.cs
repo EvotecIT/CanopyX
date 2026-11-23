@@ -126,7 +126,7 @@ public sealed class FlowSubmissionTests {
     [Fact]
     public void Parse_StoredSecretLeftBlankWithoutKeep_IsCleared() {
         var flow = FlowServerSamples.Mail(edit: true);
-        foreach (var field in flow.Steps[0].Fields) if (field.Id == "password") { field.KeepsWhenBlank = false; field.IsRequired = false; }
+        foreach (var field in flow.Steps[0].Fields) if (field.Id == "password") { field.KeepWhenBlank = false; field.IsRequired = false; }
         const string values = "{\"host\":\"old.example.com\",\"port\":25,\"auth\":true,\"user\":\"svc\",\"to\":[\"ops@example.com\"],\"retry\":null,\"rules\":[]}";
         var submission = CanopyFlowSubmission.Parse(flow, "{\"kind\":\"flowSubmission\",\"flow\":\"mail\",\"version\":1,\"mode\":\"edit\",\"baseline\":\"r1\",\"values\":" + values + "}");
         Assert.Equal(CanopyFlowSecretState.Clear, submission.Secrets["password"]);

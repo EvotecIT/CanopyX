@@ -28,7 +28,7 @@ public sealed class CanopyFlowAnswer {
     public IDictionary<string, string> StepErrors { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>Gets the result panel's rows (at most 50 show).</summary>
-    public IList<CanopyFlowResultRow> Result { get; } = new List<CanopyFlowResultRow>();
+    public IList<CanopyFlowResultRow> Results { get; } = new List<CanopyFlowResultRow>();
 
     /// <summary>Gets the result panel's links (at most 10 show).</summary>
     public IList<CanopyFlowLink> Links { get; } = new List<CanopyFlowLink>();
@@ -70,13 +70,13 @@ public sealed class CanopyFlowAnswer {
     /// <param name="value">The value.</param>
     /// <param name="once">Whether the value is shown once only.</param>
     /// <returns>The answer.</returns>
-    public CanopyFlowAnswer AddResult(string label, string value, bool once = false) { Result.Add(new CanopyFlowResultRow(label, value, once)); return this; }
+    public CanopyFlowAnswer Result(string label, string value, bool once = false) { Results.Add(new CanopyFlowResultRow(label, value, once)); return this; }
 
     /// <summary>Adds a link to the result panel.</summary>
     /// <param name="label">The text.</param>
     /// <param name="href">The address.</param>
     /// <returns>The answer.</returns>
-    public CanopyFlowAnswer AddLink(string label, string href) { Links.Add(new CanopyFlowLink(label, href)); return this; }
+    public CanopyFlowAnswer Link(string label, string href) { Links.Add(new CanopyFlowLink(label, href)); return this; }
 
     /// <summary>Writes the answer as the browser reads it.</summary>
     /// <returns>Compact JSON.</returns>
@@ -90,9 +90,9 @@ public sealed class CanopyFlowAnswer {
         }).OptionalProperty("message", Message);
         CanopyFlowJson.Messages(writer, "fieldErrors", FieldErrors);
         CanopyFlowJson.Messages(writer, "stepErrors", StepErrors);
-        if (Result.Count > 0) {
+        if (Results.Count > 0) {
             writer.Name("result").BeginArray();
-            foreach (var row in Result) {
+            foreach (var row in Results) {
                 writer.BeginObject().Property("label", row.Label).Property("value", row.Value);
                 if (row.IsShownOnce) writer.Property("once", true);
                 writer.EndObject();

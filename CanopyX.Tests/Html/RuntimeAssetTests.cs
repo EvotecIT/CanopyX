@@ -235,7 +235,7 @@ public sealed class RuntimeAssetTests {
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain };
 
             var files = CanopyHtmlAssets.WriteTo(directory, options.AssetNaming);
-            var page = view.ToHtmlPage(options);
+            var page = view.ToHtml(options);
 
             Assert.Equal(new[] { "canopyx.js", "canopyx.css" }, files.Select(Path.GetFileName));
             Assert.Contains("<link rel=\"stylesheet\" href=\"assets/canopyx.css\">", page);
@@ -266,7 +266,7 @@ public sealed class RuntimeAssetTests {
         var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
         if (runtime == CanopyRuntime.Flow) {
             files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
-                "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
+                "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js", "canopyx.source/85-ui.js",
                 "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
                 .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
         } else if (runtime == CanopyRuntime.Ui) {

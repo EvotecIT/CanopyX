@@ -28,6 +28,4 @@ public sealed class CanopyAccordionOptions {
     public bool CopyTitle { get; set; }
     /// <summary>Gets or sets whether all sections print, rather than only the open ones.</summary>
     public bool PrintAll { get; set; } = true;
-    /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
-    public string? Variant { get; set; }
 }

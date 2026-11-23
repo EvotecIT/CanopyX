@@ -17,8 +17,8 @@ public sealed class FlowFormatTests {
         Assert.Equal("AAA-0000", fields[1].GetProperty("mask").GetString());
         Assert.Equal("signature", fields[2].GetProperty("type").GetString());
         var read = CanopyFlow.FromContract(json).Steps[0].Fields;
-        Assert.Equal(CanopyFlowTextFormat.Mac, read[0].TextFormat);
-        Assert.Equal("AAA-0000", read[1].InputMask);
+        Assert.Equal(CanopyFlowTextFormat.Mac, read[0].Format);
+        Assert.Equal("AAA-0000", read[1].Mask);
         Assert.Equal(CanopyFlowFieldKind.Signature, read[2].Kind);
         Assert.Equal(json, CanopyFlow.FromContract(json).ToContract());
     }
@@ -30,7 +30,7 @@ public sealed class FlowFormatTests {
         Assert.Contains("format and a mask apply to text fields", Problem(step => step.Number("n", "N", f => f.Format(CanopyFlowTextFormat.Guid))));
         Assert.Contains("format and a mask apply to text fields", Problem(step => step.TextArea("n", "N", f => f.Mask("AAA"))));
         Assert.Contains("mask", Problem(step => step.Text("n", "N", f => f.Mask(new string('A', 65)))));
-        Assert.Contains("unknown format", Problem(step => step.Text("n", "N", f => f.TextFormat = (CanopyFlowTextFormat)99)));
+        Assert.Contains("unknown format", Problem(step => step.Text("n", "N", f => f.Format = (CanopyFlowTextFormat)99)));
         Assert.Contains("no parameter and no default", Problem(step => step.Signature("n", "N", f => f.Parameter("Signature"))));
         Assert.Throws<InvalidOperationException>(() => CanopyFlow.FromContract("{\"kind\":\"flow\",\"version\":1,\"id\":\"f\",\"title\":\"F\",\"steps\":[{\"id\":\"s\",\"title\":\"S\",\"fields\":[{\"id\":\"a\",\"type\":\"text\",\"label\":\"A\",\"validation\":{\"format\":\"zip\"}}]}]}"));
     }

@@ -378,7 +378,7 @@
                 "Meta": {
                   "thumb": "delivery",
                   "group": "Ship",
-                  "api": "SaveHtmlPage, SaveHtmlBundle"
+                  "api": "Save, SaveBundle"
                 }
               },
               {

@@ -27,7 +27,7 @@ public sealed class CanopyCalendarCapacity {
     /// <returns>This capacity.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> is less than 1.</exception>
     /// <exception cref="ArgumentException"><paramref name="tone"/> is <see cref="Tone.None"/>.</exception>
-    public CanopyCalendarCapacity Add(int at, Tone tone) {
+    public CanopyCalendarCapacity Threshold(int at, Tone tone) {
         Thresholds.Add(new CanopyCalendarThreshold(at, tone));
         return this;
     }

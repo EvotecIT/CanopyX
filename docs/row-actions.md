@@ -14,14 +14,14 @@ var running = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, 
 grid.RowActions.Inline = 1;
 grid.RowActions.LockedWhen = CanopyFormatCondition.Where("owner", CanopyFormatOperator.Equal, "System");
 grid.RowActions
-    .Add(new CanopyRowAction("run", "Run now", CanopyRowActionIcon.Play) {
-        Tone = CanopyRowActionTone.Primary,
+    .Add(new CanopyRowAction("run", "Run now", CanopyActionIcons.Play) {
+        Tone = CanopyRowAction.PrimaryTone,
         When = CanopyFormatCondition.Where("status", CanopyFormatOperator.NotEqual, "Running")
     })
-    .Add(new CanopyRowAction("pause", "Pause", CanopyRowActionIcon.Pause) { When = running })
-    .Add(new CanopyRowAction("edit", "Edit", CanopyRowActionIcon.Edit))
-    .Add(new CanopyRowAction("delete", "Delete", CanopyRowActionIcon.Delete) {
-        Tone = CanopyRowActionTone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it."
+    .Add(new CanopyRowAction("pause", "Pause", CanopyActionIcons.Pause) { When = running })
+    .Add(new CanopyRowAction("edit", "Edit", CanopyActionIcons.Edit))
+    .Add(new CanopyRowAction("delete", "Delete", CanopyActionIcons.Delete) {
+        Tone = Tone.Danger, DisabledWhen = running, DisabledReason = "Pause the job before deleting it."
     });
 ```
 

@@ -16,7 +16,7 @@ internal static class BucketFilterExample {
             for (var index = 0; index < 4; index++) {
                 var row = new CanopyGridRow(index + 1); row.Cells["amount"] = index * 5; view.Rows.Add(row);
             }
-            File.WriteAllText(Path.Combine(output, "analysis-bucket-filter-" + shape + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Title = view.Label }));
+            File.WriteAllText(Path.Combine(output, "analysis-bucket-filter-" + shape + ".html"), view.ToHtml(new CanopyHtmlOptions { Title = view.Label }));
         }
     }
 }

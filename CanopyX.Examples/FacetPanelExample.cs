@@ -19,11 +19,11 @@ internal static class FacetPanelExample {
     internal static void Write(string output) {
         foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
-            Create(CanopyFacetPosition.Side).SaveHtmlPage(Path.Combine(output, "facets" + suffix + ".html"),
+            Create(CanopyFacetPosition.Side).Save(Path.Combine(output, "facets" + suffix + ".html"),
                 new CanopyHtmlOptions { Title = "Requests with a facet panel", Theme = theme, Height = "640px" });
-            Create(CanopyFacetPosition.Top).SaveHtmlPage(Path.Combine(output, "facets-top" + suffix + ".html"),
+            Create(CanopyFacetPosition.Top).Save(Path.Combine(output, "facets-top" + suffix + ".html"),
                 new CanopyHtmlOptions { Title = "Requests with facets above", Theme = theme, Height = "560px" });
-            Create(CanopyFacetPosition.Toolbar).SaveHtmlPage(Path.Combine(output, "facets-toolbar" + suffix + ".html"),
+            Create(CanopyFacetPosition.Toolbar).Save(Path.Combine(output, "facets-toolbar" + suffix + ".html"),
                 new CanopyHtmlOptions { Title = "Requests with toolbar facets", Theme = theme, Height = "640px" });
         }
     }
@@ -44,7 +44,7 @@ internal static class FacetPanelExample {
         view.Columns.Add(new CanopyColumn("opened", "Opened") { Kind = CanopyColumnKind.DateTime, Sortable = true, ResponsivePriority = 6 });
         view.Columns.Add(new CanopyColumn("age", "Age (days)") { Kind = CanopyColumnKind.Number, Sortable = true, ResponsivePriority = 2 });
         view.FacetPanel = new CanopyFacetPanel { Position = position }
-            .Add("category").Add("priority").Add("team").Add("region").Add("opened").Add("age");
+            .Facet("category").Facet("priority").Facet("team").Facet("region").Facet("opened").Facet("age");
         view.FacetPanel.Facets[1].Sort = CanopyFacetSort.Value;
         var start = new DateTime(2026, 7, 1, 8, 0, 0, DateTimeKind.Utc);
         for (var i = 0; i < 240; i++) {

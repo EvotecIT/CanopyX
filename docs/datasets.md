@@ -36,7 +36,7 @@ var html = orders.ToHtmlFragment(options) + list.ToHtmlFragment(options) + pivot
 `ToHtmlFragment` writes a hidden `div.cx-dataset` element that the runtime reads when the first view queries and never
 mounts. Above `CanopyRowDataOptions.CompactAboveRows` rows it writes [compact row data](large-data.md), as a grid does with
 its own rows; `CanopyHtmlOptions.RowData` chooses the format. With inline assets the fragment carries the part that
-decodes compact rows. Bundles (`SaveHtmlBundle`) write a grid's own rows into sidecar files; a dataset always travels inside
+decodes compact rows. Bundles (`SaveBundle`) write a grid's own rows into sidecar files; a dataset always travels inside
 the page.
 
 `Columns` declares each cell's id and kind, and the rows are validated against them once. A view's columns must be dataset

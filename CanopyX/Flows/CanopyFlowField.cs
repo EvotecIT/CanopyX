@@ -8,7 +8,7 @@ namespace CanopyX;
 /// the checks its answer passes. The browser draws it with the editor of its <see cref="Kind"/> (see "Fields" in docs/flow.md).
 /// </summary>
 /// <remarks>
-/// Properties are named as nouns and the fluent methods that set them as verbs, so a field reads as a sentence:
+/// Each property has a generated fluent method of the same name, so a field reads as a sentence:
 /// <c>f =&gt; f.Required().Help("A host name, such as mail.example.com").Path("mail.host")</c>. The flow checks every setting when it is
 /// written, and throws <see cref="InvalidOperationException"/> for a setting that does not fit the field's kind.
 /// </remarks>
@@ -49,14 +49,14 @@ public sealed partial class CanopyFlowField {
     public bool IsReadOnly { get; set; }
 
     /// <summary>Gets or sets a line under the label, before the input. Plain text of at most 1,000 characters.</summary>
-    public string? HelpText { get; set; }
+    public string? Help { get; set; }
 
     /// <summary>Gets or sets the empty input's hint (text, number, lookup, text area and list fields). At most 256 characters.</summary>
     /// <remarks>
     /// A placeholder is drawn fainter and in italics, and disappears as soon as the user types. Keep it a short hint about the expected format, such as
-    /// "For example: name@example.com"; a sample answer the user has to read while typing belongs in <see cref="HelpText"/>.
+    /// "For example: name@example.com"; a sample answer the user has to read while typing belongs in <see cref="Help"/>.
     /// </remarks>
-    public string? PlaceholderText { get; set; }
+    public string? Placeholder { get; set; }
 
     /// <summary>
     /// Gets or sets the starting value in create mode, of the field's kind: text, a number, true or false, a date
@@ -64,20 +64,21 @@ public sealed partial class CanopyFlowField {
     /// (<see cref="DateTimeOffset"/>, <see cref="DateTime"/> or ISO 8601), a duration (<see cref="TimeSpan"/> or ISO 8601), an
     /// option value, or a sequence of option values or texts. Null omits the default. A secret field has none.
     /// </summary>
-    public object? DefaultValue { get; set; }
+    public object? Default { get; set; }
 
     /// <summary>Gets or sets the condition under which the field shows; null always shows it.</summary>
-    public CanopyFlowCondition? Condition { get; set; }
+    public CanopyFlowCondition? When { get; set; }
 
-    /// <summary>Gets or sets the field's width on wide forms.</summary>
+    /// <summary>Gets or sets the field's width on wide forms; <c>Half()</c> lets two half fields share a row.</summary>
+    [PowerForge.Fluent.FluentPreset("Half", CanopyFlowFieldWidth.Half)]
     public CanopyFlowFieldWidth Width { get; set; }
 
     /// <summary>Gets or sets the parameter name in an equivalent command, for hosts that show one: an id-like name.</summary>
-    public string? ParameterName { get; set; }
+    public string? Parameter { get; set; }
 
     /// <summary>Gets or sets the setting the field writes, as dot-separated names (<c>mail.smtp.host</c>); the proposal's JSON patch uses it.</summary>
     /// <remarks>The host prepares any missing parent objects before applying the patch to its configuration.</remarks>
-    public string? ConfigPath { get; set; }
+    public string? Path { get; set; }
 
     /// <summary>Gets or sets whether a non-secret value stays out of the host's drafts and exports. It still shows on the review page.</summary>
     public bool IsSensitive { get; set; }
@@ -93,7 +94,9 @@ public sealed partial class CanopyFlowField {
     [PowerForge.Fluent.NoFluent]
     public IList<CanopyFlowOption> Options { get; } = new List<CanopyFlowOption>();
 
-    /// <summary>Gets or sets how a choice field draws its options.</summary>
+    /// <summary>Gets or sets how a choice field draws its options; <c>Cards()</c> and <c>AsList()</c> choose one.</summary>
+    [PowerForge.Fluent.FluentPreset("Cards", CanopyFlowChoiceDisplay.Cards)]
+    [PowerForge.Fluent.FluentPreset("AsList", CanopyFlowChoiceDisplay.List)]
     public CanopyFlowChoiceDisplay Display { get; set; }
 
     /// <summary>Gets or sets what the review page says for a toggle that is on, for example "Checked". Plain text of at most 60 characters.</summary>
@@ -104,14 +107,14 @@ public sealed partial class CanopyFlowField {
 
     /// <summary>Gets or sets the visible rows of a text area, from 2 to 20; null uses 4.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The count is outside 2 to 20.</exception>
-    public int? RowCount {
+    public int? Rows {
         get => _rowCount;
         set => _rowCount = value < 2 || value > 20 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A text area shows 2 to 20 rows.") : value;
     }
 
     /// <summary>Gets or sets the step of a number field: Up and Down move by it.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The step is not a positive finite number.</exception>
-    public double? NumberStep {
+    public double? Step {
         get => _numberStep;
         set => _numberStep = value.HasValue && (double.IsNaN(value.Value) || double.IsInfinity(value.Value) || value.Value <= 0 || value.Value > 9007199254740991d)
             ? throw new ArgumentOutOfRangeException(nameof(value), value, "A step must be a positive finite number.") : value;
@@ -119,26 +122,28 @@ public sealed partial class CanopyFlowField {
 
     /// <summary>Gets or sets the number of stars a rating field offers, 2 to 10; null offers 5.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The number is outside 2 to 10.</exception>
-    public int? RatingScale {
+    public int? Scale {
         get => _ratingScale;
         set => _ratingScale = value < 2 || value > 10 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A rating offers 2 to 10 stars.") : value;
     }
 
     /// <summary>Gets or sets the shape a text field's answer must have, such as an IP address or a GUID.</summary>
-    public CanopyFlowTextFormat TextFormat { get; set; }
+    public CanopyFlowTextFormat Format { get; set; }
 
     /// <summary>Gets or sets a short hint of a text field's expected shape, such as "AAA-0000", shown under its label. Pair it with
     /// <see cref="Pattern"/> for a custom format; the hint never changes what the reader types.</summary>
-    public string? InputMask { get; set; }
+    public string? Mask { get; set; }
 
     /// <summary>Gets or sets whether a blank secret keeps the stored value; null keeps it when <see cref="CanopyFlow.StoredSecrets"/> lists the field.</summary>
-    public bool? KeepsWhenBlank { get; set; }
+    public bool? KeepWhenBlank { get; set; }
 
     /// <summary>Gets or sets whether a secret field has a reveal button; null shows it.</summary>
-    public bool? ShowsReveal { get; set; }
+    [PowerForge.Fluent.FluentPreset("NoReveal", false)]
+    public bool? Reveal { get; set; }
 
     /// <summary>Gets the units a duration field offers, in order; empty offers minutes, hours and days.</summary>
-    public IList<CanopyFlowDurationUnit> DurationUnits { get; } = new List<CanopyFlowDurationUnit>();
+    [PowerForge.Fluent.Child("Unit")]
+    public IList<CanopyFlowDurationUnit> Units { get; } = new List<CanopyFlowDurationUnit>();
 
     /// <summary>Gets or sets the name a browser plugin or the host registers a custom field's editor under.</summary>
     public string? EditorName { get; set; }
@@ -148,12 +153,14 @@ public sealed partial class CanopyFlowField {
     /// <see cref="CanopyFlowOptionsSource.Host"/> the host's <c>options</c> hook supplies them as the reader reaches the field and
     /// again when a field in <see cref="DependsOnIds"/> changes, and <see cref="Options"/> may stay empty.
     /// </summary>
+    [PowerForge.Fluent.FluentPreset("FromHost", CanopyFlowOptionsSource.Host)]
     public CanopyFlowOptionsSource OptionsSource { get; set; }
 
     /// <summary>
     /// Gets the ids of the fields this one depends on (at most 16, never secrets): when one changes, host options load again, and a
     /// field without host options starts empty again.
     /// </summary>
+    [PowerForge.Fluent.Child("DependsOn")]
     public IList<string> DependsOnIds { get; } = new List<string>();
 
     /// <summary>Gets the columns of a records field (1 to 16).</summary>
@@ -177,61 +184,13 @@ public sealed partial class CanopyFlowField {
     public CanopyFlowItemRule ItemRule { get; set; }
 
     /// <summary>Gets or sets a pattern every row of a list field matches whole, in the syntax JavaScript and .NET share (as <see cref="CanopyCellValidation.Pattern"/>).</summary>
-    public string? ListItemPattern { get; set; }
+    public string? ItemPattern { get; set; }
 
     /// <summary>Gets or sets the shortest duration a duration field accepts.</summary>
     public TimeSpan? MinimumDuration { get; set; }
 
     /// <summary>Gets or sets the longest duration a duration field accepts.</summary>
     public TimeSpan? MaximumDuration { get; set; }
-
-    /// <summary>Makes an empty answer an error.</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Required() { IsRequired = true; return this; }
-
-    /// <summary>Shows the field without letting the reader change it.</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField ReadOnly() { IsReadOnly = true; return this; }
-
-    /// <summary>Sets the line under the label (<see cref="HelpText"/>).</summary>
-    /// <param name="text">Plain text.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Help(string text) { HelpText = text; return this; }
-
-    /// <summary>Sets the empty input's hint (<see cref="PlaceholderText"/>): a short hint such as the expected format, not a full sample answer, which belongs in <see cref="Help"/>.</summary>
-    /// <param name="text">Plain text.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Placeholder(string text) { PlaceholderText = text; return this; }
-
-    /// <summary>Sets the starting value in create mode (<see cref="DefaultValue"/>).</summary>
-    /// <param name="value">A value of the field's kind.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    public CanopyFlowField Default(object value) { DefaultValue = value ?? throw new ArgumentNullException(nameof(value)); return this; }
-
-    /// <summary>Shows the field only while a condition holds (<see cref="Condition"/>).</summary>
-    /// <param name="condition">The condition.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="condition"/> is null.</exception>
-    public CanopyFlowField When(CanopyFlowCondition condition) { Condition = condition ?? throw new ArgumentNullException(nameof(condition)); return this; }
-
-    /// <summary>Makes the field half as wide, so two half fields share a row on wide forms.</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Half() { Width = CanopyFlowFieldWidth.Half; return this; }
-
-    /// <summary>Sets the parameter name in an equivalent command (<see cref="ParameterName"/>).</summary>
-    /// <param name="name">An id-like name.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Parameter(string name) { ParameterName = name; return this; }
-
-    /// <summary>Sets the setting the field writes (<see cref="ConfigPath"/>).</summary>
-    /// <param name="dotPath">Dot-separated names, for example <c>mail.smtp.host</c>.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Path(string dotPath) { ConfigPath = dotPath; return this; }
-
-    /// <summary>Keeps a non-secret value out of the host's drafts and exports (<see cref="IsSensitive"/>).</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Sensitive() { IsSensitive = true; return this; }
 
     /// <summary>Sets the range of a number field.</summary>
     /// <param name="min">The smallest number, or null.</param>
@@ -273,28 +232,6 @@ public sealed partial class CanopyFlowField {
     /// <returns>The field.</returns>
     public CanopyFlowField Message(string text) { Validation.Message = text; return this; }
 
-    /// <summary>Sets the step of a number field (<see cref="NumberStep"/>).</summary>
-    /// <param name="step">A positive finite number.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The step is not a positive finite number.</exception>
-    public CanopyFlowField Step(double step) { NumberStep = step; return this; }
-
-    /// <summary>Sets the number of stars of a rating field (<see cref="RatingScale"/>).</summary>
-    /// <param name="stars">2 to 10.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The number is outside 2 to 10.</exception>
-    public CanopyFlowField Scale(int stars) { RatingScale = stars; return this; }
-
-    /// <summary>Sets the shape a text field's answer must have (<see cref="TextFormat"/>); its hint shows an example.</summary>
-    /// <param name="format">The format.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Format(CanopyFlowTextFormat format) { TextFormat = format; return this; }
-
-    /// <summary>Sets a hint of a text field's expected shape (<see cref="InputMask"/>), usually beside a <see cref="Pattern"/>.</summary>
-    /// <param name="mask">Up to 64 characters, such as "AAA-0000".</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Mask(string mask) { InputMask = mask; return this; }
-
     /// <summary>Adds an option.</summary>
     /// <param name="value">The value: text, a number or true or false.</param>
     /// <param name="label">The text the reader sees, or null to show the value.</param>
@@ -315,70 +252,12 @@ public sealed partial class CanopyFlowField {
         return this;
     }
 
-    /// <summary>Draws a choice field's options as cards.</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Cards() { Display = CanopyFlowChoiceDisplay.Cards; return this; }
-
-    /// <summary>Draws a choice field's options as a plain radio list.</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField AsList() { Display = CanopyFlowChoiceDisplay.List; return this; }
-
-    /// <summary>Sets the visible rows of a text area (<see cref="RowCount"/>).</summary>
-    /// <param name="count">From 2 to 20.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The count is outside 2 to 20.</exception>
-    public CanopyFlowField Rows(int count) { RowCount = count; return this; }
-
-    /// <summary>Sets the built-in check every row of a list field passes (<see cref="ItemRule"/>).</summary>
-    /// <param name="rule">The check.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField Items(CanopyFlowItemRule rule) { ItemRule = rule; return this; }
-
-    /// <summary>Sets a pattern every row of a list field matches whole (<see cref="ListItemPattern"/>).</summary>
-    /// <param name="pattern">The pattern.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField ItemPattern(string pattern) { ListItemPattern = pattern; return this; }
-
     /// <summary>Sets how many items a multiple-choice or list answer holds.</summary>
     /// <param name="min">The fewest items, or null.</param>
     /// <param name="max">The most items, or null.</param>
     /// <returns>The field.</returns>
     /// <exception cref="ArgumentOutOfRangeException">A count is outside 0 to 1,000.</exception>
     public CanopyFlowField Count(int? min, int? max) { MinItems = min; MaxItems = max; return this; }
-
-    /// <summary>Sets whether a blank secret keeps the stored value (<see cref="KeepsWhenBlank"/>).</summary>
-    /// <param name="keep">Whether a blank answer keeps the stored value.</param>
-    /// <returns>The field.</returns>
-    public CanopyFlowField KeepWhenBlank(bool keep = true) { KeepsWhenBlank = keep; return this; }
-
-    /// <summary>Leaves out a secret field's reveal button (<see cref="ShowsReveal"/>).</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField NoReveal() { ShowsReveal = false; return this; }
-
-    /// <summary>Sets the units a duration field offers, in order (<see cref="DurationUnits"/>).</summary>
-    /// <param name="units">One or more distinct units.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="units"/> is null.</exception>
-    public CanopyFlowField Units(params CanopyFlowDurationUnit[] units) {
-        if (units == null) throw new ArgumentNullException(nameof(units));
-        DurationUnits.Clear();
-        foreach (var unit in units) DurationUnits.Add(unit);
-        return this;
-    }
-
-    /// <summary>Takes the options from the host's <c>options</c> hook (<see cref="OptionsSource"/>).</summary>
-    /// <returns>The field.</returns>
-    public CanopyFlowField FromHost() { OptionsSource = CanopyFlowOptionsSource.Host; return this; }
-
-    /// <summary>Makes the field depend on other fields (<see cref="DependsOnIds"/>).</summary>
-    /// <param name="fieldIds">The ids of the fields it depends on.</param>
-    /// <returns>The field.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="fieldIds"/> is null.</exception>
-    public CanopyFlowField DependsOn(params string[] fieldIds) {
-        if (fieldIds == null) throw new ArgumentNullException(nameof(fieldIds));
-        foreach (var id in fieldIds) DependsOnIds.Add(id);
-        return this;
-    }
 
     /// <summary>Adds a column to a records field (<see cref="Columns"/>).</summary>
     /// <param name="id">The column id.</param>

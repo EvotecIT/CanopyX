@@ -33,59 +33,50 @@ public sealed class GridOptionsContractTests {
     }
 
     [Fact]
-    public void ColumnDefaults_FirstPerSettingMatchPreservesExplicitBooleansAndAuthoredSelectors() {
+    public void ColumnDefaults_FirstPerSettingMatchPreservesExplicitBooleans() {
         var view = View();
         view.Columns[0].Sortable = false; view.Columns[0].Filterable = true; view.Columns[0].Hidden = false;
-        view.Columns[1].ClassName = "money important";
-        var money = new CanopyGridColumnDefaults { Alignment = "end", Filterable = false, SortComparator = "natural" };
-        money.Targets.Add(".money"); view.ColumnDefaults.Add(money);
-        var wildcard = new CanopyGridColumnDefaults { ClassName = "derived", Alignment = "center", Hidden = true, Sortable = true, Filterable = false };
+        var money = new CanopyGridColumnDefaults { Alignment = CanopyColumnAlignment.End, Filterable = false, SortComparator = "natural" };
+        money.Targets.Add("#" + view.Columns[1].Id); view.ColumnDefaults.Add(money);
+        var wildcard = new CanopyGridColumnDefaults { Alignment = CanopyColumnAlignment.Center, Hidden = true, Sortable = true, Filterable = false };
         wildcard.Targets.Add("*"); view.ColumnDefaults.Add(wildcard);
-        var derived = new CanopyGridColumnDefaults { SortComparator = "shouldNotApply" }; derived.Targets.Add(".derived"); view.ColumnDefaults.Add(derived);
         var index = new CanopyGridColumnDefaults { OrderSequence = new List<string> { "desc", "none" } }; index.Targets.Add("index:2"); view.ColumnDefaults.Add(index);
         using var json = JsonDocument.Parse(view.ToJson());
         Assert.False(view.Columns[0].Sortable); Assert.True(view.Columns[0].Filterable); Assert.False(view.Columns[0].Hidden);
-        Assert.Equal("end", view.Columns[1].Alignment); Assert.Equal("natural", view.Columns[1].SortComparator);
-        Assert.Equal("derived", view.Columns[0].ClassName); Assert.Null(view.Columns[0].SortComparator);
+        Assert.Equal(CanopyColumnAlignment.End, view.Columns[1].Alignment); Assert.Equal("natural", view.Columns[1].SortComparator);
+        Assert.Equal(CanopyColumnAlignment.Center, view.Columns[0].Alignment); Assert.Null(view.Columns[0].SortComparator);
         Assert.Equal(new[] { "desc", "none" }, view.Columns[2].OrderSequence);
         var column = json.RootElement.GetProperty("columns")[0];
         Assert.False(column.GetProperty("sortable").GetBoolean()); Assert.True(column.GetProperty("filterable").GetBoolean()); Assert.False(column.GetProperty("hidden").GetBoolean());
         Assert.False(column.TryGetProperty("className", out _));
-        Assert.Equal("money important", json.RootElement.GetProperty("columns")[1].GetProperty("className").GetString());
-        Assert.Equal(".money", json.RootElement.GetProperty("columnDefaults")[0].GetProperty("targets")[0].GetString());
+        Assert.Equal("#" + view.Columns[1].Id, json.RootElement.GetProperty("columnDefaults")[0].GetProperty("targets")[0].GetString());
+        Assert.Throws<InvalidOperationException>(() => { var byClass = new CanopyGridColumnDefaults { Hidden = true }; byClass.Targets.Add(".money"); view.ColumnDefaults.Add(byClass); view.ToJson(); });
     }
 
     [Fact]
     public void ColumnDefaults_RevalidateMutableRulesWithoutMakingInheritedValuesExplicit() {
         var view = View();
-        var rule = new CanopyGridColumnDefaults { Alignment = "center", OrderData = new List<string> { "rank" } };
+        var rule = new CanopyGridColumnDefaults { Alignment = CanopyColumnAlignment.Center, OrderData = new List<string> { "rank" } };
         rule.Targets.Add("#name"); view.ColumnDefaults.Add(rule);
-        view.Validate(); Assert.Equal("center", view.Columns[0].Alignment); Assert.Equal(new[] { "rank" }, view.Columns[0].OrderData);
-        rule.Alignment = "end"; rule.OrderData[0] = "amount";
-        view.Validate(); Assert.Equal("end", view.Columns[0].Alignment); Assert.Equal(new[] { "amount" }, view.Columns[0].OrderData);
-        view.Columns[0].Alignment = "start"; view.Columns[0].OrderData.Add("rank");
+        view.Validate(); Assert.Equal(CanopyColumnAlignment.Center, view.Columns[0].Alignment); Assert.Equal(new[] { "rank" }, view.Columns[0].OrderData);
+        rule.Alignment = CanopyColumnAlignment.End; rule.OrderData[0] = "amount";
+        view.Validate(); Assert.Equal(CanopyColumnAlignment.End, view.Columns[0].Alignment); Assert.Equal(new[] { "amount" }, view.Columns[0].OrderData);
+        view.Columns[0].Alignment = CanopyColumnAlignment.Start; view.Columns[0].OrderData.Add("rank");
         rule.OrderData.Clear(); rule.OrderData.Add("name");
-        view.Validate(); Assert.Equal("start", view.Columns[0].Alignment); Assert.Equal(new[] { "amount", "rank" }, view.Columns[0].OrderData);
+        view.Validate(); Assert.Equal(CanopyColumnAlignment.Start, view.Columns[0].Alignment); Assert.Equal(new[] { "amount", "rank" }, view.Columns[0].OrderData);
         view.ColumnDefaults.Clear(); view.Validate(); Assert.Null(view.Columns[1].Alignment);
     }
 
-    [Theory]
-    [InlineData("money\" onclick=\"x")]
-    [InlineData("money;display:none")]
-    [InlineData("money\nother")]
-    [InlineData(" money")]
-    public void ColumnClasses_RejectUnsafeTokens(string value) => Assert.Throws<ArgumentException>(() => new CanopyColumn("c", "C") { ClassName = value });
 
     [Fact]
     public void ColumnOptions_ValidateReferencesAndWriteSafeAlignmentAndPluginNames() {
         var view = View(); var column = view.Columns[0];
-        column.ClassName = "record _primary"; column.Alignment = "center"; column.SortComparator = "natural2";
+        column.Alignment = CanopyColumnAlignment.Center; column.SortComparator = "natural2";
         column.OrderData.Add("rank"); column.OrderData.Add("amount"); column.OrderSequence.Add("desc"); column.OrderSequence.Add("none");
         using var json = JsonDocument.Parse(view.ToJson()); var wire = json.RootElement.GetProperty("columns")[0];
         Assert.Equal("center", wire.GetProperty("alignment").GetString()); Assert.Equal("natural2", wire.GetProperty("sortComparator").GetString());
         Assert.Equal(new[] { "rank", "amount" }, wire.GetProperty("orderData").EnumerateArray().Select(value => value.GetString()));
         Assert.Equal("none", wire.GetProperty("orderSequence")[1].GetString());
-        Assert.Throws<ArgumentException>(() => column.Alignment = "left;position:fixed");
         Assert.Throws<ArgumentException>(() => column.SortComparator = "not-a-function()");
         column.OrderData.Add("unknown"); Assert.Throws<InvalidOperationException>(() => view.ToJson());
         column.OrderData.Remove("unknown"); column.OrderSequence.Add("none"); Assert.Throws<InvalidOperationException>(() => view.ToJson());
@@ -135,15 +126,15 @@ public sealed class GridOptionsContractTests {
     [Fact]
     public void ExplicitNullAndEmptyColumnOverrides_SerializeToSuppressDefaults() {
         var view = View(); var rule = new CanopyGridColumnDefaults {
-            ClassName = "inherited", Alignment = "end", SortComparator = "natural", OrderData = new List<string> { "rank" }, OrderSequence = new List<string> { "desc" }
+            Alignment = CanopyColumnAlignment.End, SortComparator = "natural", OrderData = new List<string> { "rank" }, OrderSequence = new List<string> { "desc" }
         };
         rule.Targets.Add("*"); view.ColumnDefaults.Add(rule);
-        var column = view.Columns[0]; column.ClassName = null; column.Alignment = null; column.SortComparator = null;
+        var column = view.Columns[0]; column.Alignment = null; column.SortComparator = null;
         column.OrderData.Clear(); column.OrderSequence.Clear();
         using var json = JsonDocument.Parse(view.ToJson()); var wire = json.RootElement.GetProperty("columns")[0];
-        foreach (var name in new[] { "className", "alignment", "sortComparator" }) Assert.Equal(JsonValueKind.Null, wire.GetProperty(name).ValueKind);
+        foreach (var name in new[] { "alignment", "sortComparator" }) Assert.Equal(JsonValueKind.Null, wire.GetProperty(name).ValueKind);
         Assert.Empty(wire.GetProperty("orderData").EnumerateArray()); Assert.Empty(wire.GetProperty("orderSequence").EnumerateArray());
-        Assert.Null(column.ClassName); Assert.Null(column.Alignment); Assert.Null(column.SortComparator); Assert.Empty(column.OrderData); Assert.Empty(column.OrderSequence);
+        Assert.Null(column.Alignment); Assert.Null(column.SortComparator); Assert.Empty(column.OrderData); Assert.Empty(column.OrderSequence);
     }
 
     [Fact]

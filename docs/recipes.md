@@ -364,7 +364,7 @@ flow.Step("sign-in", "How does it sign in?", step => step
     .Secret("password", "Password", f => f.Required())
     .Toggle("verify", "Check the server certificate", f => f.Default(true).When(CanopyFlowCondition.NotEqual("security", "none"))));
 flow.Review();
-flow.SaveHtmlPage("mail-server.html");
+flow.Save("mail-server.html");
 ```
 
 ```js

@@ -14,6 +14,6 @@ internal static class SidecarKeysExample {
         child.Cells["__proto__"] = new CanopyCell(42) { Text = "Child ` ${value} <metadata>" };
         root.Children.Add(child);
         view.Roots.Add(root);
-        view.SaveHtmlBundle(Path.Combine(output, "sidecar-keys"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
+        view.SaveBundle(Path.Combine(output, "sidecar-keys"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External });
     }
 }

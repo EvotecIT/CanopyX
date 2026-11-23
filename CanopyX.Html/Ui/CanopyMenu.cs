@@ -65,7 +65,6 @@ public sealed class CanopyMenu {
         UiHtml.Attribute(html, "aria-labelledby", labelledBy);
         UiHtml.Attribute(html, "data-cx-trigger", labelledBy);
         UiHtml.Attribute(html, "data-placement", root ? UiHtml.Token(Options.Placement) : "right");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         html.Append('>');
         foreach (var item in items) Entry(html, item);
         html.Append("</div>");

@@ -68,7 +68,7 @@ public sealed partial class CanopyChangeList {
         writer.Name(name).BeginArray();
         foreach (var action in actions) {
             writer.BeginObject().Property("id", action.Id).Property("label", action.Label);
-            if (action.Icon != CanopyChangeActionIcon.None) writer.Property("icon", IconNames[(int)action.Icon]);
+            if (!action.Icon.IsEmpty) writer.Property("icon", action.Icon.Key);
             writer.OptionalProperty("copy", action.Copy).OptionalProperty("link", action.Link);
             if (action.Reveal != CanopyChangeReveal.None) writer.Property("reveal", RevealNames[(int)action.Reveal]);
             if (action.Reason) writer.Property("reason", true);
@@ -168,7 +168,7 @@ public sealed partial class CanopyChangeList {
             Copy = CanopyFlowContract.Text(entry, "copy", what), Link = CanopyFlowContract.Text(entry, "link", what), Reason = CanopyFlowContract.Boolean(entry, "reason", what) ?? false
         };
         var icon = CanopyFlowContract.Text(entry, "icon", what);
-        if (icon != null) action.Icon = (CanopyChangeActionIcon)Pick(IconNames, icon, what, "icon");
+        if (icon != null && icon != "none") action.Icon = Icon.Named(IconNames[Pick(IconNames, icon, what, "icon")]);
         var reveal = CanopyFlowContract.Text(entry, "reveal", what);
         if (reveal != null) action.Reveal = (CanopyChangeReveal)Pick(RevealNames, reveal, what, "reveal");
         return action;

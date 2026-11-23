@@ -57,6 +57,7 @@ public sealed class CanopyFlowPicker {
     public string? LabelColumn { get; set; }
 
     /// <summary>Gets or sets whether the tray of chosen records shows beside (or below) the view. Default true.</summary>
+    [PowerForge.Fluent.FluentPreset("NoTray", false)]
     public bool ShowsTray { get; set; } = true;
 
     /// <summary>Gets or sets the view's height in pixels, 160 to 1,200. Default 420.</summary>
@@ -65,15 +66,6 @@ public sealed class CanopyFlowPicker {
         get => _height;
         set => _height = value < 160 || value > 1200 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A picker is 160 to 1200 pixels tall.") : value;
     }
-
-    /// <summary>Sets the column whose text labels a chosen record (<see cref="LabelColumn"/>).</summary>
-    /// <param name="columnId">A column of the view.</param>
-    /// <returns>The picker.</returns>
-    public CanopyFlowPicker Label(string columnId) { LabelColumn = columnId; return this; }
-
-    /// <summary>Leaves out the tray of chosen records (<see cref="ShowsTray"/>).</summary>
-    /// <returns>The picker.</returns>
-    public CanopyFlowPicker NoTray() { ShowsTray = false; return this; }
 
     /// <summary>The view document, validated: a grid or tree view of the canopyx/2 protocol, with its column ids.</summary>
     internal (string Json, string Type, List<string> Columns) Document() {

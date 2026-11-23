@@ -17,7 +17,7 @@ public sealed class FlowRatingTests {
         Assert.Equal(3, field.GetProperty("default").GetDouble());
         var read = CanopyFlow.FromContract(json).Steps[0].Fields[0];
         Assert.Equal(CanopyFlowFieldKind.Rating, read.Kind);
-        Assert.Equal(4, read.RatingScale);
+        Assert.Equal(4, read.Scale);
         Assert.Equal(json, CanopyFlow.FromContract(json).ToContract());
         Assert.DoesNotContain("scale", Survey().ToContract());
     }
@@ -34,7 +34,7 @@ public sealed class FlowRatingTests {
 
     [Fact]
     public void Scale_AppliesOnlyToRatingsAndStaysInRange() {
-        var text = new CanopyFlow("f", "F").Step("s", "S", step => step.Text("t", "T", f => f.RatingScale = 4));
+        var text = new CanopyFlow("f", "F").Step("s", "S", step => step.Text("t", "T", f => f.Scale = 4));
         Assert.Contains("scale applies to rating fields", Assert.Throws<InvalidOperationException>(() => text.ToContract()).Message);
         Assert.Throws<ArgumentOutOfRangeException>(() => Survey(f => f.Scale(1)));
         Assert.Throws<ArgumentOutOfRangeException>(() => Survey(f => f.Scale(11)));

@@ -49,7 +49,7 @@ internal static class RichGridExample {
             foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
                 var name = "rich-grid" + (presentation == CanopyGridPresentation.Continuous ? "-continuous" : "") +
                     (theme == ThemeMode.Dark ? "-dark" : "") + ".html";
-                view.SaveHtmlPage(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX rich reporting grid", Theme = theme });
+                view.Save(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX rich reporting grid", Theme = theme });
             }
         }
         view.Reporting.Responsive = true;

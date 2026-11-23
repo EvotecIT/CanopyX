@@ -50,8 +50,8 @@ public sealed class LinkPartAssetsTests {
 
         var page = new CanopyHtmlOptions();
         page.Parts.Add("link");
-        Assert.Contains(marker, grid.ToHtmlPage(page));
-        Assert.Contains(marker, tree.ToHtmlPage(page));
+        Assert.Contains(marker, grid.ToHtml(page));
+        Assert.Contains(marker, tree.ToHtml(page));
         // External assets load the part file beside the runtime instead.
         var external = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
         external.Parts.Add("link");

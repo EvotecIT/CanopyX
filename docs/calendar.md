@@ -51,12 +51,12 @@ var calendar = new CanopyCalendar(new[] {
     new CanopyCalendarEvent("Sprint planning", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 16, 10, 30, 0, DateTimeKind.Utc)),
     new CanopyCalendarEvent("Conference trip", new DateTime(2026, 10, 20)) { AllDay = true, End = new DateTime(2026, 10, 23) }
 });
-calendar.SaveHtmlPage("team.html");
+calendar.Save("team.html");
 // Or from your own records:
 var fromItems = CanopyCalendar.From(meetings, x => x.Subject, x => x.Starts, x => x.Ends);
 ```
 
-For a page that ends at the calendar's content, pass `new CanopyHtmlOptions { Height = "auto" }` to `SaveHtmlPage`.
+For a page that ends at the calendar's content, pass `new CanopyHtmlOptions { Height = "auto" }` to `Save`.
 This is useful for a short day range such as 08:00–18:00: the resource picker, headings and time slots determine the height,
 with no empty band below them. JavaScript hosts use `height: auto` on the host element. Ordinary full pages fill the window;
 fixed heights such as `600px` apply to fragments. Time slots keep their normal height and scroll inside a bounded host.
@@ -254,17 +254,18 @@ the host element, or `CanopyX.configure(viewId, { onEventClick })` in a script t
 
 ```csharp
 var calendar = new CanopyCalendar(new[] {
-    new CanopyCalendarEvent("Network change window", starts, ends) { Color = "#0f766e", BackgroundColor = "#ccfbf1", TextColor = "#134e4a" },
+    new CanopyCalendarEvent("Network change window", starts, ends) { Tone = Tone.Success },
     new CanopyCalendarEvent("Ticket 4821", starts, ends) { Url = "https://tickets.example.test/4821" }
 }) { OpenUrlInNewWindow = true };
-// A typed grid binds members: grid.Calendar().Start(x => x.Starts).Color(x => x.Team).Url(x => x.Link, newWindow: true);
+// A typed grid binds members: grid.Calendar().Start(x => x.Starts).Url(x => x.Link, newWindow: true);
 ```
 
 ```js
 CanopyX.configure("changes", { onEventClick: ({ event, url }) => url ? true : (openTicket(event.record), false) });
 ```
 
-The example `calendar-event-looks.html` (CanopyX.Examples) shows coloured events and addresses.
+The example `calendar-event-looks.html` (CanopyX.Examples) shows toned events and addresses. From C#, an event, a source and
+the calendar take their colours from a `Tone` only (a built-in tone or one the theme names), never from colour strings.
 
 ## Keyboard and screen readers
 

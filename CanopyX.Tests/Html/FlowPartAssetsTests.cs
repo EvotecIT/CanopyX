@@ -10,9 +10,9 @@ public sealed class FlowPartAssetsTests {
     [Fact]
     public void InformationFactsLoadTheirOptionalPartOnlyWhenPresent() {
         var flow = new CanopyFlow("evidence", "Evidence").Info("record", "Record");
-        Assert.DoesNotContain("application/x-canopyx-flow-facts", flow.ToHtmlPage());
+        Assert.DoesNotContain("application/x-canopyx-flow-facts", flow.ToHtml());
         flow.Steps[0].Facts.Add(new("SHA-256", new string('a', 64)));
-        Assert.Contains("application/x-canopyx-flow-facts", flow.ToHtmlPage());
+        Assert.Contains("application/x-canopyx-flow-facts", flow.ToHtml());
     }
 
     [Fact]
@@ -71,8 +71,9 @@ public sealed class FlowPartAssetsTests {
 
     [Fact]
     public void FlowEntryPoint_IsBounded() {
-        // Measured 10,561 bytes minified with the shared controls (canopyx.source/controls.css), with about 6% headroom.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 11 * 1024);
+        // Measured 12,336 bytes minified with the shared controls (canopyx.source/controls.css) and the UI factories, with about
+        // 6% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 13 * 1024);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</style", CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
     }
@@ -90,7 +91,7 @@ public sealed class FlowPartAssetsTests {
 
     [Fact]
     public void FlowPage_EmbedsOnlyTheFormsAndFlowPayloads() {
-        var page = FlowSamples.Everything().ToHtmlPage();
+        var page = FlowSamples.Everything().ToHtml();
         var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "forms", "flow" }, embedded);
         Assert.Contains("type=\"application/x-canopyx-forms-style\"", page);

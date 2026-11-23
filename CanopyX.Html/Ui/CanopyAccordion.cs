@@ -50,7 +50,6 @@ public sealed class CanopyAccordion {
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-accordion cx-accordion--").Append(UiHtml.Token(Options.Style)).Append("\" data-cx-accordion data-cx-part=\"accordion\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-multiple", UiHtml.Bool(Options.Multiple));
         UiHtml.Attribute(html, "data-indicator", UiHtml.Token(Options.Indicator));
         UiHtml.Attribute(html, "data-indicator-position", UiHtml.Token(Options.IndicatorPosition));

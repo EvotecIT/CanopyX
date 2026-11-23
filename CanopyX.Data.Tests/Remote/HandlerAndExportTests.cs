@@ -186,11 +186,11 @@ public sealed class HandlerAndExportTests {
             .Column("memory", x => x.Memory, c => c.Cell(value => new CanopyCell(value) { Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB", Tone = value < 1 ? Tone.Warning : default }))
             .Column("cores", x => x.Cores).Column("site", x => x.Site).Column("os", x => x.Os).Column("online", x => x.Online)
             .Column("lastSeen", x => x.LastSeen).Column("owner", x => x.Owner!.Name)
-            .DecorateRows(row => row.ClassName = "fleet-row");
+            .DecorateRows(row => row.Tone = Tone.Info);
         var handler = new CanopyRemoteHandler(map.Schema, new CanopyQueryableProvider<Host>(Hosts.AsQueryable(), map));
         using var page = JsonDocument.Parse(await handler.QueryAsync("{\"filters\":[{\"column\":\"name\",\"operator\":\"eq\",\"values\":[\"GAMMA\"]}]}"));
         var row = page.RootElement.GetProperty("items")[0];
-        Assert.Equal("fleet-row", row.GetProperty("className").GetString());
+        Assert.Equal("info", row.GetProperty("tone").GetString());
         Assert.Equal("0.25 GB", row.GetProperty("cells").GetProperty("memory").GetProperty("text").GetString());
         Assert.Equal("warning", row.GetProperty("cells").GetProperty("memory").GetProperty("tone").GetString());
         Assert.Equal("live", page.RootElement.GetProperty("revision").GetString());

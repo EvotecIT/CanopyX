@@ -20,7 +20,7 @@ internal static class FlowEditSettingsExample {
             .Secret("accessKey", "Access key", f => f.When(CanopyFlowCondition.Equal("target", "bucket")))
             .Toggle("compress", "Compress archives", f => f.Path("archive.compress")));
         flow.Step("retention", "Retention", step => step
-            .Duration("keep", "Keep archives for", f => f.Required().Units(CanopyFlowDurationUnit.Days).Range(TimeSpan.FromDays(7), TimeSpan.FromDays(3650)).Path("archive.keep"))
+            .Duration("keep", "Keep archives for", f => f.Required().Unit(CanopyFlowDurationUnit.Days).Range(TimeSpan.FromDays(7), TimeSpan.FromDays(3650)).Path("archive.keep"))
             .Number("copies", "Copies to keep", f => f.Range(1, 10).Step(1).Half().Path("archive.copies"))
             .MultiChoice("include", "Include", f => f.Option("records", "Records").Option("attachments", "Attachments").Option("history", "Change history")
                 .Option("comments", "Comments").Option("audit", "Audit trail").Required().Path("archive.include")));

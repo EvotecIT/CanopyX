@@ -23,7 +23,7 @@ public sealed class CalendarResourceFeedTests {
         Assert.Equal("series", document["rows"]![1]!["cells"]!["series"]!.GetValue<string>());
         Assert.Equal("2026-10-17T09:00:00Z", document["rows"]![1]!["cells"]!["recurrenceId"]!.GetValue<string>());
         foreach (var id in new[] { "resourceIds", "series", "recurrenceId", "exceptions" }) Assert.True(calendar.Grid.GetColumn(id).Editable);
-        var html = calendar.ToHtmlPage();
+        var html = calendar.ToHtml();
         Assert.Contains("calOccurrenceForm", html);
         Assert.Contains("resourceIds", html);
     }
@@ -31,16 +31,16 @@ public sealed class CalendarResourceFeedTests {
     [Fact]
     public void JsonSource_WritesFetchParametersColourAndVisibility_AndIncludesRecurrenceRuntime() {
         var calendar = new CanopyCalendar(Array.Empty<CanopyCalendarEvent>());
-        var source = new CanopyCalendarSource("team", "Team") { Url = "feeds/team.json", Color = "#2563eb", Hidden = true };
+        var source = new CanopyCalendarSource("team", "Team") { Url = "feeds/team.json", Tone = Tone.Info, Hidden = true };
         source.FetchParams.Add("team", "design & research"); calendar.Sources.Add(source);
         var json = calendar.Grid!.ToJson();
         ProtocolSchema.AssertValid(json, "JSON-only calendar source");
         var feed = JsonNode.Parse(json)!["calendar"]!["sources"]![0]!;
         Assert.Equal("feeds/team.json", feed["url"]!.GetValue<string>());
-        Assert.Equal("#2563eb", feed["color"]!.GetValue<string>());
+        Assert.Equal("info", feed["tone"]!.GetValue<string>());
         Assert.True(feed["hidden"]!.GetValue<bool>());
         Assert.Equal("design & research", feed["fetchParams"]!["team"]!.GetValue<string>());
-        var html = calendar.ToHtmlPage();
+        var html = calendar.ToHtml();
         Assert.Contains("calLoadJson", html);
         Assert.Contains("calExpand", html);
         Assert.DoesNotContain("calOccurrenceForm", html);
@@ -58,11 +58,10 @@ public sealed class CalendarResourceFeedTests {
     }
 
     [Fact]
-    public void Sources_RefuseAmbiguousFeedsAndUnsafeColours() {
+    public void Sources_RefuseAmbiguousAndUnsafeFeeds() {
         var calendar = new CanopyCalendar(Array.Empty<CanopyCalendarEvent>());
         calendar.Sources.Add(new CanopyCalendarSource("team", "Team") { Url = "/feed", Ics = "/feed.ics" });
         Assert.Throws<InvalidOperationException>(() => calendar.Grid!.ToJson());
-        Assert.Throws<ArgumentException>(() => new CanopyCalendarSource("team", "Team") { Color = "red;display:none" });
         Assert.Throws<ArgumentException>(() => new CanopyCalendarSource("team", "Team") { Url = "javascript:alert(1)" });
     }
 

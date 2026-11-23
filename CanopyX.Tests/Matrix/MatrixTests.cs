@@ -199,7 +199,7 @@ public sealed class MatrixTests {
         Assert.Contains("data-cx-height=\"500px\"", fragment);
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(Small()));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(Small()), part => part.Name == "matrix");
-        var page = Small().ToHtmlPage(new CanopyHtmlOptions { Nonce = "abc123" });
+        var page = Small().ToHtml(new CanopyHtmlOptions { Nonce = "abc123" });
         Assert.Contains("<title>Small matrix</title>", page);
         Assert.Contains("nonce=\"abc123\"", page);
     }

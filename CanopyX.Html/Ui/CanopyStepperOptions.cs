@@ -27,6 +27,4 @@ public sealed class CanopyStepperOptions {
     public string? SkipLabel { get; set; }
     /// <summary>Gets or sets the Save draft button label. Null omits this action.</summary>
     public string? SaveDraftLabel { get; set; }
-    /// <summary>Gets or sets a product styling variant.</summary>
-    public string? Variant { get; set; }
 }

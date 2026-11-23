@@ -46,7 +46,7 @@ public sealed class ForestPartAssetsTests {
         Assert.Contains("record-panel", names);
         Assert.DoesNotContain(presentation == "path" ? "stack" : "path", names);
         Assert.DoesNotContain("time-slider", names);
-        foreach (var html in new[] { view.ToHtmlFragment(), view.ToHtmlPage() }) {
+        foreach (var html in new[] { view.ToHtmlFragment(), view.ToHtml() }) {
             AssertPayload(html, presentation, true);
             AssertPayload(html, "record-panel", true);
             AssertPayload(html, presentation == "path" ? "stack" : "path", false);
@@ -65,11 +65,11 @@ public sealed class ForestPartAssetsTests {
         if (owner == "matrix") {
             var matrix = history ? PlaybackFixtures.MatrixSlider() : PlaybackFixtures.MakeMatrix();
             names = CanopyHtmlAssets.GetRequiredParts(matrix).Select(part => part.Name).ToArray();
-            fragment = matrix.ToHtmlFragment(); page = matrix.ToHtmlPage(); basePart = "matrix";
+            fragment = matrix.ToHtmlFragment(); page = matrix.ToHtml(); basePart = "matrix";
         } else {
             var propagation = history ? PlaybackFixtures.PropagationSlider() : PlaybackFixtures.Propagation();
             names = CanopyHtmlAssets.GetRequiredParts(propagation).Select(part => part.Name).ToArray();
-            fragment = propagation.ToHtmlFragment(); page = propagation.ToHtmlPage(); basePart = "changes";
+            fragment = propagation.ToHtmlFragment(); page = propagation.ToHtml(); basePart = "changes";
         }
         Assert.Contains(basePart, names);
         Assert.Equal(history, names.Contains("time-slider"));

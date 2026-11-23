@@ -24,11 +24,11 @@ internal static class CalendarResourcesExample {
             var resources = new CanopyTreeView("rooms", "Rooms"); resources.Columns.Add(new CanopyColumn("name", "Room"));
             for (var index = 1; index <= 48; index++) resources.Roots.Add(new CanopyNode("room-" + index, "Room " + index.ToString("D2")));
             calendar.Resources = new CanopyCalendarResources(resources);
-            calendar.Sources.Add(new CanopyCalendarSource("planning", "Planning") { Color = "#2563eb" });
+            calendar.Sources.Add(new CanopyCalendarSource("planning", "Planning") { Tone = Tone.Info });
             // Serve this generated folder over HTTP to enable the optional feed; ordinary file viewing keeps it hidden.
-            var feed = new CanopyCalendarSource("visitors", "Visitors") { Url = "calendar-visitors.json", Color = "#b45309", Hidden = true };
+            var feed = new CanopyCalendarSource("visitors", "Visitors") { Url = "calendar-visitors.json", Tone = Tone.Warning, Hidden = true };
             feed.FetchParams.Add("location", "studio"); calendar.Sources.Add(feed);
-            calendar.SaveHtmlPage(Path.Combine(output, "calendar-resource-window" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
+            calendar.Save(Path.Combine(output, "calendar-resource-window" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "Room schedule", Theme = theme, Height = "auto" });
         }
         File.WriteAllText(Path.Combine(output, "calendar-visitors.json"), "[{\"id\":\"welcome\",\"title\":\"Visitor briefing\",\"start\":\"2026-10-16T14:00:00Z\",\"end\":\"2026-10-16T15:00:00Z\",\"resourceIds\":[\"room-1\",\"room-2\"]}]");

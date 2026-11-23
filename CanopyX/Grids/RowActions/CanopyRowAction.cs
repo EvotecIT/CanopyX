@@ -14,9 +14,9 @@ public sealed class CanopyRowAction {
     /// <summary>Creates an action.</summary>
     /// <param name="id">The identifier sent to the host, unique among the grid's row actions.</param>
     /// <param name="label">The button's accessible name and tooltip, and the menu entry's text.</param>
-    /// <param name="icon">The button's icon.</param>
+    /// <param name="icon">The button's icon, one of the row keys of <see cref="CanopyActionIcons"/>; none draws a check mark.</param>
     /// <exception cref="ArgumentException">The identifier is invalid or the label is blank or longer than 200 characters.</exception>
-    public CanopyRowAction(string id, string label, CanopyRowActionIcon icon = CanopyRowActionIcon.Check) {
+    public CanopyRowAction(string id, string label, Icon icon = default) {
         CanopyIdentifiers.Require(id, nameof(id));
         Id = id;
         Label = Text(label, 200, nameof(label));
@@ -29,11 +29,21 @@ public sealed class CanopyRowAction {
     /// <summary>Gets the button's accessible name and the menu entry's text.</summary>
     public string Label { get; }
 
-    /// <summary>Gets or sets the icon.</summary>
-    public CanopyRowActionIcon Icon { get; set; }
+    /// <summary>
+    /// Gets or sets the icon: <see cref="CanopyActionIcons.Check"/>, <c>Play</c>, <c>Pause</c>, <c>Stop</c>, <c>Retry</c>,
+    /// <c>Edit</c>, <c>Delete</c>, <c>Copy</c>, <c>Open</c>, <c>Close</c> or <c>Download</c>; none draws a check mark.
+    /// </summary>
+    public Icon Icon { get; set; }
 
-    /// <summary>Gets or sets the colour of the button.</summary>
-    public CanopyRowActionTone Tone { get; set; }
+    /// <summary>
+    /// Gets or sets the colour of the button: <see cref="Tone.None"/> or <see cref="Tone.Neutral"/> for the quiet default,
+    /// <see cref="Tone.Danger"/> for an action that removes or stops something, or <see cref="PrimaryTone"/> for the row's
+    /// main action.
+    /// </summary>
+    public Tone Tone { get; set; }
+
+    /// <summary>The named tone that paints a row action in the accent colour, for the row's main action.</summary>
+    public static Tone PrimaryTone { get; } = Tone.Named("primary");
 
     /// <summary>Gets or sets the rows that offer the action; null offers it on every row that is not locked.</summary>
     public CanopyFormatCondition? When { get; set; }
@@ -56,16 +66,17 @@ public sealed class CanopyRowAction {
     }
 
     internal void Validate(IDictionary<string, CanopyColumn> columns) {
-        if (!Enum.IsDefined(typeof(CanopyRowActionIcon), Icon)) throw new ArgumentOutOfRangeException(nameof(Icon), Icon, "Unknown row action icon.");
-        if (!Enum.IsDefined(typeof(CanopyRowActionTone), Tone)) throw new ArgumentOutOfRangeException(nameof(Tone), Tone, "Unknown row action tone.");
+        if (!Icon.IsEmpty && !CanopyActionIcons.RowKeys.Contains(Icon.Key)) throw new InvalidOperationException("Row action '" + Id + "' has icon '" + Icon.Key + "', which row actions do not draw; use a row key of CanopyActionIcons.");
+        if (Tone != Tone.None && Tone != Tone.Neutral && Tone != Tone.Danger && Tone != PrimaryTone)
+            throw new InvalidOperationException("Row action '" + Id + "' has tone '" + Tone.Name + "'; a row action is neutral, Tone.Danger or CanopyRowAction.PrimaryTone.");
         CanopyRowActions.ValidateCondition(When, columns);
         CanopyRowActions.ValidateCondition(DisabledWhen, columns);
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", Label);
-        if (Icon != CanopyRowActionIcon.Check) writer.Property("icon", Icon.ToString().ToLowerInvariant());
-        if (Tone != CanopyRowActionTone.Neutral) writer.Property("tone", Tone == CanopyRowActionTone.Primary ? "primary" : "danger");
+        if (!Icon.IsEmpty && Icon.Key != "check") writer.Property("icon", Icon.Key);
+        if (Tone != Tone.None && Tone != Tone.Neutral) writer.Property("tone", Tone.Name);
         if (When != null) { writer.Name("when"); When.WriteJson(writer); }
         if (DisabledWhen != null) { writer.Name("disabledWhen"); DisabledWhen.WriteJson(writer); }
         writer.OptionalProperty("disabledReason", DisabledReason);

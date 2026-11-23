@@ -14,6 +14,4 @@ public sealed class CanopyDrawerOptions {
     public string CloseLabel { get; set; } = "Close";
     /// <summary>Gets or sets an existing trigger identity; null generates one from the drawer identity.</summary>
     public string? TriggerId { get; set; }
-    /// <summary>Gets or sets a product styling variant.</summary>
-    public string? Variant { get; set; }
 }

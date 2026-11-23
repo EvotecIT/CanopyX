@@ -27,7 +27,7 @@ internal static class SharedTokensExample {
             row.Cells["count"] = (index + 1) * 12;
             view.Rows.Add(row);
         }
-        var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX shared design tokens" });
+        var page = view.ToHtml(new CanopyHtmlOptions { Title = "CanopyX shared design tokens" });
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.shared-tokens.html")!;
         using var reader = new StreamReader(stream);
         using var valuesStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.token-fallbacks.json")!;

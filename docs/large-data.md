@@ -9,7 +9,7 @@ CanopyX keeps the rendered DOM small at any size: only the rows in view, a small
 | Single file, row objects | The runtime, and each grid's rows as objects in its configuration | Small and medium grids; reports that are mailed or attached as one file |
 | Single file, compact row data | Each grid's rows as arrays in column order, in chunks inside its host element | Large grids that must stay one file: smaller, and the first rows show after the first chunk |
 | Single file, compressed row data | The same chunks, gzip-compressed and base64-encoded | The largest grids that must stay one file: several times smaller; decoding costs a little more while loading |
-| Bundle (`SaveHtmlBundle`) | A small `index.html`, the runtime as files, and the rows in sidecar files | File shares and web servers; the page opens at once and loads rows chunk by chunk, also from `file://` |
+| Bundle (`SaveBundle`) | A small `index.html`, the runtime as files, and the rows in sidecar files | File shares and web servers; the page opens at once and loads rows chunk by chunk, also from `file://` |
 | Hosted source | Only the definition; the host's endpoint answers each query | Datasets too large for the browser, or that change; the host filters, sorts and pages |
 
 Mounting when visible (`MountWhenVisible`) combines with every delivery: a page with many views mounts only those in view, and the others when they are scrolled to, their tab or panel opens, the page prints, or a script asks for them.
@@ -37,7 +37,7 @@ The HTML writer looks at each inline grid's rows when it writes a fragment or a 
 The page carries the row data part (`canopyx-data.js`) whenever a grid ends up with compact rows, in single-file fragments
 and pages, once per `CanopyHtmlDocument`. Set `Format` to choose yourself:
 
-| `CanopyRowDataOptions.Format` | Single-file fragments and pages | Bundles (`SaveHtmlBundle`) |
+| `CanopyRowDataOptions.Format` | Single-file fragments and pages | Bundles (`SaveBundle`) |
 | --- | --- | --- |
 | `Auto` (default) | By the rules above | Compact row data files, compressed above 5 MiB of JSON |
 | `Objects` | Row objects | Not available (a bundle writes its rows as files) |
@@ -45,8 +45,8 @@ and pages, once per `CanopyHtmlDocument`. Set `Format` to choose yourself:
 | `CompactGzip` | Compressed row data | Compressed row data files |
 
 ```csharp
-grid.SaveHtmlPage("inventory.html");                                   // chosen from the rows
-grid.SaveHtmlPage("inventory-objects.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } });
+grid.Save("inventory.html");                                   // chosen from the rows
+grid.Save("inventory-objects.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } });
 ```
 
 ## Mount views when they come into view
@@ -74,8 +74,8 @@ A host's script-free `<noscript>` fallback (`CanopyStaticHtml`) works as before;
 Compact row data (`rowData` in the [protocol](data-protocol.md#row-data)) writes each row as an array of its cells in column order instead of an object that repeats every column id, in chunks of 5,000 rows by default. The page carries the small row data part (`canopyx-data.js`), which decodes the chunks after the grid has drawn its toolbar and header, one chunk per task, so the page stays responsive while it loads.
 
 ```csharp
-grid.SaveHtmlPage("inventory.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact, ChunkSize = 2000 } });
-grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
+grid.Save("inventory.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact, ChunkSize = 2000 } });
+grid.Save("inventory-small.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
 ```
 
 - The writer puts the rows in identity order, which is the order the grid shows when no sort applies, and says so (`ordered`). The grid then shows the first rows as soon as the first chunk is decoded. The order of rows in the data never changes what the grid shows.
@@ -88,10 +88,10 @@ grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new 
 
 ## Grid bundles
 
-`CanopyDataGridView.SaveHtmlBundle(directory)` writes `index.html`, the runtime and its parts under `assets/`, and the rows as compact row data in sidecar scripts (`data/<view folder>/rows/<n>.js`). The page itself is a few kilobytes whatever the number of rows; the runtime loads the first chunk, paints, and loads the next chunks one after another. Script files work from `file://`, a file share, a web server or SharePoint alike, because browsers block `fetch` of local files but not scripts. Republish the page and its data together, into a folder of their own.
+`CanopyDataGridView.SaveBundle(directory)` writes `index.html`, the runtime and its parts under `assets/`, and the rows as compact row data in sidecar scripts (`data/<view folder>/rows/<n>.js`). The page itself is a few kilobytes whatever the number of rows; the runtime loads the first chunk, paints, and loads the next chunks one after another. Script files work from `file://`, a file share, a web server or SharePoint alike, because browsers block `fetch` of local files but not scripts. Republish the page and its data together, into a folder of their own.
 
 ```csharp
-var result = grid.SaveHtmlBundle(@"\\reports\inventory", new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External,
+var result = grid.SaveBundle(@"\\reports\inventory", new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External,
     RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
 Console.WriteLine($"{result.FileCount} files, {result.TotalBytes:N0} bytes, largest {result.LargestFileBytes:N0}");
 ```

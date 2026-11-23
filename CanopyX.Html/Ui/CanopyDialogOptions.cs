@@ -12,6 +12,4 @@ public sealed class CanopyDialogOptions {
     public string CloseLabel { get; set; } = "Close";
     /// <summary>Gets or sets an existing trigger identity; null uses the dialog identity followed by -trigger.</summary>
     public string? TriggerId { get; set; }
-    /// <summary>Gets or sets a product styling variant.</summary>
-    public string? Variant { get; set; }
 }

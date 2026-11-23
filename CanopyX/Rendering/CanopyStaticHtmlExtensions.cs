@@ -3,7 +3,7 @@ using System;
 namespace CanopyX.Rendering;
 
 /// <summary>
-/// Writes views as script-free tables with inline styles, named like the page writers (<c>ToHtmlPage</c>): the same output as
+/// Writes views as script-free tables with inline styles, named like the page writers (<c>ToHtml</c>): the same output as
 /// <see cref="CanopyStaticHtml.Render"/> and <see cref="CanopyStaticHtml.RenderGrid(CanopyDataGridView, CanopyGridPage, CanopyStaticHtmlOptions)"/>.
 /// </summary>
 public static class CanopyStaticHtmlExtensions {

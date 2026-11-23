@@ -78,14 +78,14 @@ public sealed class GridExportFormatTests {
         var tree = new CanopyTreeView("files", "Files") { Labels = CanopyLabels.Polish() };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
-        Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage());
-        Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
+        Assert.Contains("application/x-canopyx-export", tree.ToHtml());
+        Assert.Contains("application/x-canopyx-export", tree.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
         Assert.Contains("application/x-canopyx-export", tree.ToHtmlFragment(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
         var plain = new CanopyTreeView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage());
-        Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
-        Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
-        Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid, AssetMode = CanopyAssetMode.External }));
+        Assert.Contains("application/x-canopyx-export", plain.ToHtml());
+        Assert.Contains("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
+        Assert.Contains("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
+        Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid, AssetMode = CanopyAssetMode.External }));
     }
 }

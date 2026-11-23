@@ -75,10 +75,10 @@ if (packBench) {
             catalog.Roots.Add(region);
         }
 
-        ReportBundle("catalog", catalog.SaveHtmlBundle(Path.Combine(output, "catalog"), options, bundleOptions));
+        ReportBundle("catalog", catalog.SaveBundle(Path.Combine(output, "catalog"), options, bundleOptions));
     } else {
         // A service arrives with its own subtree inline; only the regions ask for their children.
-        ReportBundle("catalog", catalog.SaveHtmlBundle(Path.Combine(output, "catalog"), PackBenchTree.RegionNodes(services),
+        ReportBundle("catalog", catalog.SaveBundle(Path.Combine(output, "catalog"), PackBenchTree.RegionNodes(services),
             node => node.Kind == "region" ? PackBenchTree.Services(PackBenchTree.RegionNumber(node), services) : null, options, bundleOptions));
     }
 
@@ -99,7 +99,7 @@ if (args.Contains("--scheduler-console")) { SchedulerConsoleExample.Write(output
 
 var smallTree = new SyntheticFileTree();
 var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, departments: 5, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 240));
-inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
+inline.Save(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 FontDeliveryExample.Write(output);
@@ -226,7 +226,7 @@ WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
 void WriteBundle(CanopyX.CanopyTreeView view, string folder, string title) {
-    ReportBundle(folder, view.SaveHtmlBundle(Path.Combine(output, folder), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = title }, bundleOptions));
+    ReportBundle(folder, view.SaveBundle(Path.Combine(output, folder), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = title }, bundleOptions));
 }
 
 static void ReportBundle(string folder, CanopyX.Bundles.CanopyBundleResult bundle) =>

@@ -31,7 +31,7 @@ public static partial class CanopyHtmlExtensions {
     /// <param name="options">Asset mode, theme, title, language, and the filters whose switches the page hides.</param>
     /// <returns>The page markup.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or <see cref="CanopyHtmlOptions.HiddenFilterIds"/> names a filter the view does not declare.</exception>
-    public static string ToHtmlPage(this CanopyTreeView view, CanopyHtmlOptions? options = null) =>
+    public static string ToHtml(this CanopyTreeView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(view ?? throw new ArgumentNullException(nameof(view)), options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves the view as a complete HTML page, creating the folder when needed.</summary>
@@ -45,12 +45,12 @@ public static partial class CanopyHtmlExtensions {
     /// other views use <see cref="CanopyHtmlOptions.Runtime"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is null or empty.</exception>
-    public static void SaveHtmlPage(this CanopyTreeView view, string path, CanopyHtmlOptions? options = null) {
+    public static void Save(this CanopyTreeView view, string path, CanopyHtmlOptions? options = null) {
         if (string.IsNullOrEmpty(path)) {
             throw new ArgumentException("Path is required.", nameof(path));
         }
 
-        var html = view.ToHtmlPage(options);
+        var html = view.ToHtml(options);
         var directory = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(directory)) {
             Directory.CreateDirectory(directory);
@@ -80,13 +80,13 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>What the bundle writer wrote, for checking sizes against budgets.</returns>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or the tree is incomplete.</exception>
-    public static CanopyBundleResult SaveHtmlBundle(this CanopyTreeView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
+    public static CanopyBundleResult SaveBundle(this CanopyTreeView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
         SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory));
 
     /// <summary>
     /// Saves the view as a bundle from nodes the host supplies while the tree is written, so the tree never has to be
     /// in memory as a whole. The page, assets, and layout rules are those of
-    /// <see cref="SaveHtmlBundle(CanopyTreeView, string, CanopyHtmlOptions, CanopyBundleOptions)"/>; how the nodes are read
+    /// <see cref="SaveBundle(CanopyTreeView, string, CanopyHtmlOptions, CanopyBundleOptions)"/>; how the nodes are read
     /// is described at <see cref="CanopyBundleWriter.Write(CanopyTreeView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>.
     /// </summary>
     /// <param name="view">The view. Its <see cref="CanopyTreeView.Roots"/> must be empty.</param>
@@ -99,7 +99,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="view"/>, <paramref name="roots"/>, or <paramref name="children"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty, or the view has roots of its own.</exception>
     /// <exception cref="InvalidOperationException">The view or a node breaks a protocol rule.</exception>
-    public static CanopyBundleResult SaveHtmlBundle(this CanopyTreeView view, string directory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children,
+    public static CanopyBundleResult SaveBundle(this CanopyTreeView view, string directory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children,
         CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
         SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory, roots, children));
 
@@ -134,7 +134,7 @@ public static partial class CanopyHtmlExtensions {
                 CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets), pageOptions.AssetNaming, runtime);
             }
 
-            view.SaveHtmlPage(Path.Combine(directory, "index.html"), pageOptions);
+            view.Save(Path.Combine(directory, "index.html"), pageOptions);
         } catch {
             view.Source = previousSource;
             throw;

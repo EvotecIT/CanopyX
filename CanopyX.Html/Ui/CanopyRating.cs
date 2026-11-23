@@ -35,7 +35,6 @@ public sealed class CanopyRating {
         var html = new StringBuilder("<fieldset");
         UiHtml.Attribute(html, "id", Id);
         html.Append(" class=\"cx-rating\" data-cx-rating data-cx-part=\"rating\"");
-        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-max", UiHtml.Number(Options.Max));
         if (!Options.Clearable || Options.Required) UiHtml.Attribute(html, "data-clearable", "false");
         if (Options.Disabled) html.Append(" disabled");

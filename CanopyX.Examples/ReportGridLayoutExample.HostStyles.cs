@@ -12,7 +12,7 @@ internal static partial class ReportGridLayoutExample {
             ["Up"] = Tone.Info, ["Down"] = Tone.Danger
         }));
         grid.AddRows(new[] { new ReviewRecord("a", "Branch service", "", "Up", "", 0), new ReviewRecord("b", "Archive service", "", "Down", "", 0) });
-        var html = grid.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Height = "360px", Title = "Host styles and overlays",
+        var html = grid.ToHtml(new CanopyHtmlOptions { Theme = theme, Height = "360px", Title = "Host styles and overlays",
                 HeadHtml = "<style>.report-style .p-pill{font-size:11px;font-weight:500;letter-spacing:1px;padding-inline:16px;border:1px solid currentColor}</style>" })
             .Replace("</body>", """
                 <script>document.addEventListener('DOMContentLoaded',async()=>{

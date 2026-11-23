@@ -90,11 +90,11 @@ public sealed class CheckboxContractTests {
     [InlineData(CanopyAssetNaming.ContentHash)]
     public void CheckboxPage_ChoosesTheMatchingInteractiveAssets(CanopyAssetNaming naming) {
         var view = View(CanopyCheckboxMode.Hierarchical);
-        var page = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
+        var page = view.ToHtml(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
         Assert.Contains(CanopyHtmlAssets.GetScriptFileName(naming, CanopyRuntime.InteractiveTreeGrid), page);
         Assert.Contains(CanopyHtmlAssets.GetStyleFileName(naming, CanopyRuntime.InteractiveTreeGrid), page);
         Assert.Contains("class CheckIntents", ReadableAssets.Script(CanopyRuntime.InteractiveTreeGrid));
-        Assert.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid).TrimEnd('\n'), view.ToHtmlPage());
+        Assert.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid).TrimEnd('\n'), view.ToHtml());
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.OrdinalIgnoreCase);
     }
 
@@ -108,7 +108,7 @@ public sealed class CheckboxContractTests {
         if (mode != CanopyCheckboxMode.None) view.CheckIntents.Add(new CanopyCheckIntent(new[] { "a", "a0" }, true));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-checking-" + Guid.NewGuid().ToString("N"));
         try {
-            var result = view.SaveHtmlBundle(directory, new CanopyHtmlOptions {
+            var result = view.SaveBundle(directory, new CanopyHtmlOptions {
                 AssetMode = CanopyAssetMode.External, AssetNaming = naming,
                 Runtime = mode == CanopyCheckboxMode.None ? CanopyRuntime.InteractiveTreeGrid : CanopyRuntime.TreeGrid
             });

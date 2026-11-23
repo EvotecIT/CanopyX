@@ -50,7 +50,7 @@ A grid that a search or filters leave empty now says why ("No services match “
 
 ### Typed grids in one call
 
-`CanopyDataGridView.From(records, x => x.Id)` builds a grid with a typed column per public property, adjusted with `[CanopyKey]`, `[CanopyColumn]` and `[CanopyIgnore]`. It also takes a `DataTable` or dictionary rows, including PowerShell hashtables. Write the result with `ToHtmlPage`, `SaveHtmlPage` or `ToHtmlFragment`, or as a script-free table with `ToStaticHtml()`.
+`CanopyDataGridView.From(records, x => x.Id)` builds a grid with a typed column per public property, adjusted with `[CanopyKey]`, `[CanopyColumn]` and `[CanopyIgnore]`. It also takes a `DataTable` or dictionary rows, including PowerShell hashtables. Write the result with `ToHtml`, `Save` or `ToHtmlFragment`, or as a script-free table with `ToStaticHtml()`.
 
 ### New components and options
 

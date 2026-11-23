@@ -195,7 +195,7 @@ internal sealed class CanopyFlowSubmissionReader {
         foreach (var owner in _order) if (owner.Field.Kind != CanopyFlowFieldKind.Secret && IsVisible(owner.Field.Id) && _answers.TryGetValue(owner.Field.Id, out var value)) answers[owner.Field.Id] = value;
         var sections = new List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)>();
         foreach (var step in _flow.Steps) {
-            foreach (var section in step.Sections) if (section.IsFromHost && (includeHidden || Shown(step.Condition) && Shown(section.Condition))) sections.Add((section, step, answers));
+            foreach (var section in step.Sections) if (section.IsFromHost && (includeHidden || Shown(step.When) && Shown(section.When))) sections.Add((section, step, answers));
         }
 
         return sections;
@@ -208,12 +208,12 @@ internal sealed class CanopyFlowSubmissionReader {
         foreach (var field in fields ?? new CanopyFlowField[0]) {
             if (field == null || admitted.Count >= 64) throw new InvalidOperationException("Section " + section.Id + " has a null field or more than 64.");
             field.Validate();
-            if (Array.IndexOf(DynamicKinds, field.Kind) < 0 || field.ConfigPath != null || field.ParameterName != null || field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0)
+            if (Array.IndexOf(DynamicKinds, field.Kind) < 0 || field.Path != null || field.Parameter != null || field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0)
                 throw new InvalidOperationException("Field " + field.Id + " of section " + section.Id + " has a type, path, parameter, source or dependency a host section cannot supply.");
             if (_owners.ContainsKey(field.Id) || !ids.Add(field.Id)) throw new InvalidOperationException("Field " + field.Id + " of section " + section.Id + " repeats the id of another field.");
-            if (field.Condition != null) {
-                field.Condition.Validate();
-                foreach (var id in field.Condition.Fields()) {
+            if (field.When != null) {
+                field.When.Validate();
+                foreach (var id in field.When.Fields()) {
                     if (!_owners.TryGetValue(id, out var tested) || tested.Dynamic || tested.Field.Kind == CanopyFlowFieldKind.Secret) throw new InvalidOperationException("The condition of field " + field.Id + " reads " + id + ", which is not a field of the flow's own.");
                 }
             }
@@ -235,7 +235,7 @@ internal sealed class CanopyFlowSubmissionReader {
     private bool IsVisible(string id) {
         if (_visible.TryGetValue(id, out var known)) return known;
         if (!_owners.TryGetValue(id, out var owner)) return false;
-        var shown = Shown(owner.Step.Condition) && Shown(owner.Section?.Condition) && Shown(owner.Field.Condition);
+        var shown = Shown(owner.Step.When) && Shown(owner.Section?.When) && Shown(owner.Field.When);
         _visible[id] = shown;
         return shown;
     }
@@ -269,7 +269,7 @@ internal sealed class CanopyFlowSubmissionReader {
         return states;
     }
 
-    private bool Keeps(CanopyFlowField field) => _flow.StoredSecrets.Contains(field.Id) && field.KeepsWhenBlank != false;
+    private bool Keeps(CanopyFlowField field) => _flow.StoredSecrets.Contains(field.Id) && field.KeepWhenBlank != false;
 
     /// <summary>Every visible field's checks; messages by field id.</summary>
     private Dictionary<string, string> Check(Dictionary<string, CanopyFlowSecretState> secrets, Dictionary<string, string> secretValues) {
@@ -333,9 +333,9 @@ internal sealed class CanopyFlowSubmissionReader {
             var to = Normal(entry.Value);
             var from = Normal(_flow.Initial.TryGetValue(field.Id, out var initial) ? CanopyFlowValues.Canonical(field, initial, "The initial value") : null);
             var changed = !Same(from, to);
-            if (edit && changed) changes.Add(new CanopyFlowChange(field.Id, field.ConfigPath, from, to));
-            if (field.ConfigPath == null) continue;
-            var pointer = Pointer(field.ConfigPath);
+            if (edit && changed) changes.Add(new CanopyFlowChange(field.Id, field.Path, from, to));
+            if (field.Path == null) continue;
+            var pointer = Pointer(field.Path);
             if (edit) {
                 if (!changed) continue;
                 patch.Add(to == null ? new CanopyFlowPatchOperation("remove", pointer, null) : new CanopyFlowPatchOperation(from == null ? "add" : "replace", pointer, to));

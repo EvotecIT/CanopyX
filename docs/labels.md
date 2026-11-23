@@ -9,7 +9,7 @@ Each factory returns an independent editable `CanopyLabels` instance:
 ```csharp
 view.Labels = CanopyLabels.Polish(); // Also German(), Spanish(), French() and Italian().
 view.Labels.Columns = "Pola raportu";
-view.SaveHtmlPage("report.html", new CanopyHtmlOptions { Language = "pl" });
+view.Save("report.html", new CanopyHtmlOptions { Language = "pl" });
 ```
 
 The writer carries browser labels in the view's `labels` object. A tree view carries the labels the tree runtimes read, its toolbar menus' `Grid*` labels (Views, Export, More, …) among them, and leaves the other flat-grid labels out, so a tree with a complete pack stays on a tree runtime (the interactive one, for the interaction texts) with translated menus. The same pack supplies the script-free fallback's notes, boolean values and time suffixes. `CanopyStaticHtmlOptions.Culture` controls its number formatting. Cloning or editing a pack does not change another factory result.

@@ -12,7 +12,7 @@ namespace CanopyX;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Give the lines as <see cref="Hunks"/> the host computed (preferred; <see cref="AddLines"/> builds them from numbered lines,
+/// Give the lines as <see cref="Hunks"/> the host computed (preferred; <see cref="Lines"/> builds them from numbered lines,
 /// <see cref="Compare"/> computes them from the texts), or give <see cref="BeforeText"/> and <see cref="AfterText"/> alone and the
 /// browser compares texts of up to <see cref="ClientCompareLines"/> lines itself. With both texts, folded regions can be opened.
 /// A file that has no lines to compare is <see cref="CanopyDiffContent.Binary"/>, <see cref="CanopyDiffContent.Unavailable"/>
@@ -134,7 +134,7 @@ public sealed partial class CanopyTextDiff {
     /// <returns>The diff.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="lines"/> is null.</exception>
     /// <exception cref="ArgumentException">A line lacks a number its kind needs, or the numbers go backwards.</exception>
-    public CanopyTextDiff AddLines(IEnumerable<CanopyDiffLine> lines) {
+    public CanopyTextDiff Lines(IEnumerable<CanopyDiffLine> lines) {
         if (lines == null) throw new ArgumentNullException(nameof(lines));
         var current = new List<CanopyDiffLine>();
         int? expectBefore = null, expectAfter = null;

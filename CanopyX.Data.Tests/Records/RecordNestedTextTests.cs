@@ -106,7 +106,7 @@ public sealed class RecordNestedTextTests {
     [Fact]
     public async Task TableDetail_ReadOnlyRowsAreClippedByReplacingOnlyTheAffectedRow() {
         var input = Array.AsReadOnly(new CanopyCell[] { Long });
-        var table = new CanopyTableDetail().AddColumns("value");
+        var table = new CanopyTableDetail().Column("value");
         table.Rows.Add(input);
         var handler = Handler(request => new CanopyGridRecord(request.Id) { Fields = { ["parts"] = CanopyCell.Collection(new CanopyRecordList {
             Total = 1, Columns = { new CanopyColumn("name", "Name") }, Rows = { new CanopyGridRow("child") { Detail = table } }
@@ -135,8 +135,8 @@ public sealed class RecordNestedTextTests {
     }
 
     private static CanopyDetail Detail(string kind) => kind switch {
-        "properties" => new CanopyPropertiesDetail().Add(Long, new CanopyCell(Long) { Title = Long }),
-        "table" => new CanopyTableDetail(Long).AddColumns(Long).AddRow(Long),
+        "properties" => new CanopyPropertiesDetail().Item(Long, new CanopyCell(Long) { Title = Long }),
+        "table" => new CanopyTableDetail(Long).Column(Long).Row(Long),
         "grid" => new CanopyGridRowsDetail { Rows = { new CanopyGridRow("nested") { Cells = { ["name"] = Long }, Fields = { ["note"] = Long }, Detail = Detail("properties") } } },
         _ => new CanopyTreeDetail { Roots = { new CanopyNode("nested", Long) { Fields = { ["note"] = Long }, Detail = Detail("properties") } } }
     };

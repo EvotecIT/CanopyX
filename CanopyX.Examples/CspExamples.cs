@@ -17,23 +17,23 @@ internal static class CspExamples {
     internal static void Write(string output) {
         var folder = Path.Combine(output, "csp");
         Directory.CreateDirectory(folder);
-        Tree("csp-tree").SaveHtmlPage(Path.Combine(folder, "tree.html"), new CanopyHtmlOptions { Title = "CanopyX tree under a strict policy", Nonce = NoncePlaceholder });
+        Tree("csp-tree").Save(Path.Combine(folder, "tree.html"), new CanopyHtmlOptions { Title = "CanopyX tree under a strict policy", Nonce = NoncePlaceholder });
 
         var interactive = Tree("csp-interactive");
         interactive.Checkboxes = CanopyCheckboxMode.Hierarchical;
-        interactive.SaveHtmlPage(Path.Combine(folder, "interactive.html"), new CanopyHtmlOptions { Title = "CanopyX interactive tree under a strict policy", Nonce = NoncePlaceholder });
+        interactive.Save(Path.Combine(folder, "interactive.html"), new CanopyHtmlOptions { Title = "CanopyX interactive tree under a strict policy", Nonce = NoncePlaceholder });
 
         var grid = GraphiteGridExample.View();
-        grid.SaveHtmlPage(Path.Combine(folder, "grid.html"), new CanopyHtmlOptions { Title = "CanopyX grid under a strict policy", Nonce = NoncePlaceholder });
+        grid.Save(Path.Combine(folder, "grid.html"), new CanopyHtmlOptions { Title = "CanopyX grid under a strict policy", Nonce = NoncePlaceholder });
         // A matrix: its part, canvas tiles, the tooltip, the details dialog and the print table under the same policy.
-        MatrixExamples.Services(12).SaveHtmlPage(Path.Combine(folder, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX matrix under a strict policy", Nonce = NoncePlaceholder, Height = "520px" });
+        MatrixExamples.Services(12).Save(Path.Combine(folder, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX matrix under a strict policy", Nonce = NoncePlaceholder, Height = "520px" });
         // Flows: a dialog flow with a pick step (the reporting entry point and the grid it embeds), and a task list with a host section.
-        FlowActOnRowsExample.Flow().SaveHtmlPage(Path.Combine(folder, "flow.html"), new CanopyHtmlOptions { Title = "CanopyX flow under a strict policy", Nonce = NoncePlaceholder });
-        FlowSetupTasksExample.Flow().SaveHtmlPage(Path.Combine(folder, "flow-tasks.html"), new CanopyHtmlOptions { Title = "CanopyX task list under a strict policy", Nonce = NoncePlaceholder });
+        FlowActOnRowsExample.Flow().Save(Path.Combine(folder, "flow.html"), new CanopyHtmlOptions { Title = "CanopyX flow under a strict policy", Nonce = NoncePlaceholder });
+        FlowSetupTasksExample.Flow().Save(Path.Combine(folder, "flow-tasks.html"), new CanopyHtmlOptions { Title = "CanopyX task list under a strict policy", Nonce = NoncePlaceholder });
 
         var bundleTree = new SyntheticFileTree();
         ExampleViews.FileShares("csp-bundle", bundleTree.Build(shares: 4, departments: 4, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 300))
-            .SaveHtmlBundle(Path.Combine(folder, "bundle"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX bundle under a strict policy", Nonce = NoncePlaceholder });
+            .SaveBundle(Path.Combine(folder, "bundle"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX bundle under a strict policy", Nonce = NoncePlaceholder });
 
         Fragments(folder);
     }

@@ -1,16 +1,14 @@
 # Signature pad
 
 A signature anywhere on a page: drawing with a mouse, pen or finger, or a typed name for readers who cannot draw. It shares
-its pad with the [flow signature field](flow-inputs.md#signatures) and adds a pen colour, a background, PNG and SVG downloads
-and a hidden form input. It ships in the lazy `ui-signature` part.
+its pad with the [flow signature field](flow-inputs.md#signatures) and adds a pen colour choice, PNG and SVG downloads and a
+hidden form input. The pad takes its colours from the theme. It ships in the lazy `ui-signature` part.
 
 ```csharp
 using CanopyX.Html.Ui;
 
 string fragment = new CanopySignature("approval", "Signature of the change owner", new CanopySignatureOptions {
     Name = "signature",          // a hidden input with the SVG document (SubmitPng = true: the PNG data URI)
-    Ink = "#1d4ed8",             // the pen colour; null draws in the text colour and saves black ink
-    Background = "#fffbe6",      // painted in the pad and in both images; null keeps them transparent
     Colours = true,              // a pen colour button
     DownloadName = "approval"    // Download PNG and Download SVG buttons
 }).ToHtmlFragment();
