@@ -14,12 +14,23 @@
     danger: Object.freeze({ background: "FFC7CE", color: "9C0006" }),
     muted: Object.freeze({ color: "595959" })
   });
-  function treeDocument(capture, levels) {
-    // Only text is indented: a raw number or timestamp keeps its exact value so the writer can still type it.
-    const request = capture.request, first = request.columns[0].id, text = request.columns[0].kind === "text";
-    return Object.freeze({ request: Object.freeze({ ...request, revision: request.revision ?? "inline" }), rows: async function* (options) {
+  // A badge's pill has no document form, so every runtime marks a cell with badges with the "badges" diagnostic, as the
+  // reporting runtime's capture already does. The writer then reports the loss as a warning for any capture.
+  function badgeLoss(row) {
+    let cells = null;
+    for (const [id, cell] of Object.entries(row.cells)) if (cell?.badges?.length && !cell.diagnostics?.includes("badges"))
+      (cells ??= { ...row.cells })[id] = Object.freeze({ ...cell, diagnostics: Object.freeze([...(cell.diagnostics || []), "badges"]) });
+    return cells ? Object.freeze({ ...row, cells: Object.freeze(cells) }) : row;
+  }
+  // A tree's records also carry their level (1 is a root): the first column is indented by level, and only text is
+  // indented, so a raw number or timestamp keeps its exact value and the writer can still type it.
+  function documentCapture(capture, levels) {
+    const request = capture.request, tree = request.kind === "tree", first = request.columns[0].id, text = request.columns[0].kind === "text";
+    return Object.freeze({ request: tree ? Object.freeze({ ...request, revision: request.revision ?? "inline" }) : request, rows: async function* (options) {
       levels.length = 0;
-      for await (const row of capture.rows(options)) {
+      for await (const input of capture.rows(options)) {
+        const row = badgeLoss(input);
+        if (!tree) { yield row; continue; }
         levels.push(row.level);
         const indent = TREE_INDENT.repeat(Math.max(0, row.level - 1)), cell = row.cells[first];
         yield !indent || !cell ? row : Object.freeze({ ...row, cells: Object.freeze({ ...row.cells, [first]: Object.freeze({ ...cell,
@@ -32,7 +43,7 @@
     // Records stream to the worksheet in order, so a data row's index is its position in this enumeration.
     const outline = tree && context.format === "xlsx" ? { xlsx: { sheet: { outlineSummaryBelow: false, maxOutlineLevel: TREE_OUTLINE_LEVELS,
       rowOutline: ({ rowIndex }) => levels[rowIndex] > 1 ? { level: Math.min(levels[rowIndex] - 1, TREE_OUTLINE_LEVELS) } : undefined } } } : {};
-    return officeWrite(tree ? treeDocument(capture, levels) : capture, context.format, {
+    return officeWrite(documentCapture(capture, levels), context.format, {
       signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows), ...outline,
       tones: DOCUMENT_TONES,
       // Presentation a document cannot keep (badge pills, custom classes and renderers, native rules in a PDF, an unknown

@@ -27,6 +27,7 @@ const exportBoth = (page, options = {}) => page.evaluate(async ({ api, options }
     const output = await grid.exportAs(format, { scope: "all", download: false, ...options });
     result.files[format] = [...new Uint8Array(await output.blob.arrayBuffer())];
     result.diagnostics[format] = output.diagnostics.map(item => item.code);
+    result.badgeDiagnostics = JSON.parse(JSON.stringify(output.diagnostics));
   }
   return { ...result, rows };
 }, { api, options });
@@ -38,8 +39,9 @@ for (const reporting of [false, true]) test(`${reporting ? "reporting" : "plain"
   expect(result.rows[0].cells.name.badges).toEqual([{ text: "Disabled", tone: "muted" }, { text: "Stale", title: "No sign-in for 90 days" }]);
   expect(result.rows[1].cells.state.tone).toBe("danger");
   expect(result.rows[1].cells.age.tone).toBe("success");
-  // Badge pills have no document form: the reporting runtime reports that as a warning and the export still finishes.
-  for (const format of ["xlsx", "pdf"]) expect(result.diagnostics[format]).toEqual(reporting ? ["badges"] : []);
+  // Badge pills have no document form: both runtimes report that as a warning on the badge cell and the export still finishes.
+  for (const format of ["xlsx", "pdf"]) expect(result.diagnostics[format]).toEqual(["badges"]);
+  expect(result.badgeDiagnostics).toEqual([{ code: "badges", columnId: "name", rowId: "a" }]);
   const styles = zipEntry(result.files.xlsx, "xl/styles.xml");
   for (const fill of ["FFF2CC", "FFC7CE", "E2F0D9"]) expect(styles).toContain(fill);
   expect(styles).toContain("9C0006");
