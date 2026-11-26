@@ -4,6 +4,7 @@
     gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "CSV", gridCopy: "Copy", gridDetails: "Record details",
     gridDownloadXlsx: "Excel workbook (.xlsx)", gridDownloadPdf: "PDF",
     gridExportWorkbookHint: "Formatted, with groups and totals", gridExportPdfHint: "Paged report with repeating headings",
+    gridExportPdfTooLarge: "PDF export holds up to {limit} rows. Use the Excel workbook (.xlsx) for larger exports.",
     gridExportCsvHint: "Plain text values (.csv)", gridExportCopy: "Copy to clipboard",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
     gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridNoExportColumns: "No visible columns allow export."
@@ -11,7 +12,7 @@
   // The Export menu body, CSV, copy, the host export hook and format writers ship in the lazy export part. These methods
   // capture the export synchronously, so the accepted query, columns and selection are the ones at invocation, and finish
   // once the part is installed. They stay the same functions for the grid's lifetime, so reporting wrappers keep working.
-  const GRID_EXPORT_PART=definePart(DataGrid,"export","export part",()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,formatting,validateGridCursorPage,validateGridPage,gridFreeze,withNonce,exportTimeout,exportFormat,EXPORT_FORMATS,gridExportField}));
+  const GRID_EXPORT_PART=definePart(DataGrid,"export","export part",()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,columnValueTone,formatting,validateGridCursorPage,validateGridPage,gridFreeze,withNonce,exportTimeout,exportFormat,EXPORT_FORMATS,gridExportField}));
   function loadExportPart(){return loadPart(GRID_EXPORT_PART);}
   for(const name of ["toCsv","copy","exportToHost"])DataGrid.prototype[name]=function(...args){
     const capture=this.prepareExport(args.at(-1));return loadExportPart().then(()=>EXPORT_IMPL[name].call(this,capture,...args));};

@@ -10,6 +10,16 @@
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
+  // A plain record carries the cell's tone as the screen resolves it (a column value or numeric tone first, then the
+  // cell's own) and its badges, so document writers can colour and label it. The reporting runtime adds rule tones.
+  function exportCellPresentation(column, cell) {
+    const object = isCellObject(cell), tone = columnValueTone(column, cell) ?? (object ? cell.tone : undefined);
+    return { ...(tone ? { tone } : {}), ...(object && cell.badges?.length ? { badges: exportBadges(cell.badges) } : {}) };
+  }
+  function exportBadges(badges) {
+    return Object.freeze(badges.map(({ text, tone, title }) => Object.freeze({ text, ...(tone ? { tone } : {}), ...(title ? { title } : {}) })));
+  }
+
   Object.assign(EXPORT_IMPL, {
     // The capture was taken at invocation. Page reads keep their own request deadlines; the writer has the export timeout,
     // and cancellation, timeout or destruction settle the export even when a writer ignores its signal.
@@ -25,7 +35,7 @@
       const failure = () => signal.reason?.name === "TimeoutError" ? new Error("CanopyX: export timed out.") : new DOMException("Export cancelled.", "AbortError");
       // Phases and counts only advance and repeat nothing; a count a writer reports that is not a record count is ignored.
       const phases = ["reading", "generating", "ready"];
-      let phase = -1, done = 0, read = 0, inputsComplete = false, finished = false, stop;
+      let phase = -1, done = 0, read = 0, inputsComplete = false, finished = false, truncated = false, stop;
       const report = (name, completed) => {
         const next = phases.indexOf(name), count = total === null ? completed : Math.min(completed, total);
         if (signal.aborted || next < phase || !Number.isSafeInteger(completed) || completed < 0 || next === phase && count <= done) return;
@@ -43,9 +53,11 @@
             throw new Error("CanopyX: invalid export diagnostic.");
           const item = Object.freeze({ code: value.code, ...(value.columnId === undefined ? {} : { columnId: value.columnId }),
             ...(value.rowId === undefined ? {} : { rowId: value.rowId }) });
-          if (diagnostics.some(known => known.code === item.code && known.columnId === item.columnId && known.rowId === item.rowId)) return;
-          if (diagnostics.length >= 1000) throw new Error("CanopyX: too many export diagnostics.");
-          diagnostics.push(item); options.onDiagnostic?.(item);
+          // Diagnostics are warnings about presentation a format cannot keep; they never fail the export. A large export can
+          // repeat one per record, so the list keeps the first 1000 and then a single DIAGNOSTICS_TRUNCATED entry.
+          if (truncated || diagnostics.some(known => known.code === item.code && known.columnId === item.columnId && known.rowId === item.rowId)) return;
+          const kept = diagnostics.length < 1000 ? item : Object.freeze({ code: "DIAGNOSTICS_TRUNCATED" });
+          truncated = kept !== item; diagnostics.push(kept); options.onDiagnostic?.(kept);
         };
         const counted = Object.freeze({ request: capture.request, rows: async function* (more) {
           read = 0;
@@ -80,8 +92,8 @@
         if (grid.destroyed || signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
         const cells = Object.create(null);
         for (const [key, index] of columns) {
-          const column = grid.columns[index], cell = grid.cellOf(node, column, index), tone = isCellObject(cell) && cell.tone;
-          cells[key] = Object.freeze({ value: cellValue(cell) ?? null, text: cellText(cell, column, fmt), ...(tone ? { tone } : {}) });
+          const column = grid.columns[index], cell = grid.cellOf(node, column, index);
+          cells[key] = Object.freeze({ value: cellValue(cell) ?? null, text: cellText(cell, column, fmt), ...exportCellPresentation(column, cell) });
         }
         yield Object.freeze({ id, level, path: Object.freeze(path), cells: Object.freeze(cells) });
       }

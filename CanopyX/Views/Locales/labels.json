@@ -199,6 +199,13 @@
     "Rapport paginé avec en-têtes répétés",
     "Rapporto impaginato con intestazioni ripetute"
   ],
+  "GridExportPdfTooLarge": [
+    "Eksport PDF obejmuje maksymalnie {limit} wierszy. Dla większych eksportów użyj skoroszytu Excel (.xlsx).",
+    "Der PDF-Export umfasst höchstens {limit} Zeilen. Verwenden Sie für größere Exporte die Excel-Arbeitsmappe (.xlsx).",
+    "La exportación a PDF admite hasta {limit} filas. Para exportaciones mayores, use el libro de Excel (.xlsx).",
+    "L’export PDF contient au plus {limit} lignes. Pour des exports plus volumineux, utilisez le classeur Excel (.xlsx).",
+    "L’esportazione PDF contiene al massimo {limit} righe. Per esportazioni più grandi usa la cartella di lavoro Excel (.xlsx)."
+  ],
   "GridExportCsvHint": [
     "Wartości tekstowe (.csv)",
     "Textwerte (.csv)",

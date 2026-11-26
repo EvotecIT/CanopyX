@@ -251,7 +251,7 @@ test("iCalendar rejects missing or unauthorized mapped fields for captured and v
     await expect(exportText(page, scope)).rejects.toThrow("needs every mapped calendar column to allow export");
 });
 
-test("a custom ICS writer keeps its phone projection, captured query and invocation-time provider", async ({ page }) => {
+test("a custom ICS writer on a phone keeps the chosen columns, captured query and invocation-time provider", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   const other = calendarRow("other", "2021-04-15T10:00:00Z", "2021-04-15T11:00:00Z");
   const errors = await open(page, [morocco("FREQ=MONTHLY;COUNT=16"), other], { inline: true, calendar: moroccoCalendar }, false, html => html.replace("</head>", "<script>window.customIcsFormat = { id: 'ics', label: 'Custom ICS', extension: 'ics', async write(capture) { await new Promise(resolve => { window.releaseCustomIcs = resolve; }); const ids = []; for await (const row of capture.rows()) ids.push(row.id); return new Blob([JSON.stringify({ columns: capture.request.columns.map(column => column.id), query: capture.request.query.search, ids })]); } }; CanopyX.configure('calendar-contract', { exportFormats: [window.customIcsFormat] });</script></head>"));
@@ -259,11 +259,15 @@ test("a custom ICS writer keeps its phone projection, captured query and invocat
   await api(page, "api => api.setQuery({ search: 'morocco' })");
   const projectedColumns = await page.locator('.cx-hcell[data-cx-column]').evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn));
   expect(projectedColumns).toContain("title");
+  // Columns hidden only to fit the phone still export; the capture follows the column chooser.
+  const chosenColumns = await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.view.columns
+    .filter(column => !column.hidden && column.exportable !== false).map(column => column.id));
+  expect(chosenColumns.length).toBeGreaterThan(projectedColumns.length);
   await api(page, "api => { window.pendingCustomIcs = api.exportAs('ics', { scope: 'filtered', download: false }); window.customIcsFormat.write = () => new Blob(['replacement writer']); }");
   await expect.poll(() => page.evaluate(() => typeof window.releaseCustomIcs)).toBe("function");
   await api(page, "api => api.setQuery({ search: 'other' })");
   const result = await page.evaluate(async () => { window.releaseCustomIcs(); return JSON.parse(await (await window.pendingCustomIcs).blob.text()); });
-  expect(result).toEqual({ columns: projectedColumns, query: "morocco", ids: ["morocco"] });
+  expect(result).toEqual({ columns: chosenColumns, query: "morocco", ids: ["morocco"] });
   expect(errors).toEqual([]);
 });
 

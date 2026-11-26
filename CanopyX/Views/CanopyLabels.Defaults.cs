@@ -15,6 +15,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridDownloadPdf)] = "PDF",
         [nameof(GridExportWorkbookHint)] = "Formatted, with groups and totals",
         [nameof(GridExportPdfHint)] = "Paged report with repeating headings",
+        [nameof(GridExportPdfTooLarge)] = "PDF export holds up to {limit} rows. Use the Excel workbook (.xlsx) for larger exports.",
         [nameof(GridExportCsvHint)] = "Plain text values (.csv)",
         [nameof(GridExportCopy)] = "Copy to clipboard",
         [nameof(SearchPlaceholder)] = "Search",

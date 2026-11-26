@@ -9,6 +9,7 @@ public sealed partial class CanopyLabels {
         GridDownloadPdf = "PDF",
         GridExportWorkbookHint = "Mise en forme, groupes et totaux",
         GridExportPdfHint = "Rapport paginé avec en-têtes répétés",
+        GridExportPdfTooLarge = "L’export PDF contient au plus {limit} lignes. Pour des exports plus volumineux, utilisez le classeur Excel (.xlsx).",
         GridExportCsvHint = "Valeurs en texte brut (.csv)",
         GridExportCopy = "Copier dans le presse-papiers",
         SearchPlaceholder = "Rechercher",

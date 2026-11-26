@@ -26,6 +26,6 @@ Document-engine changes belong in OfficeIMO. To refresh, take the bundles from o
 
 The writer preserves the frozen pivot projection for XLSX and PDF, including hierarchical row and column outlines, totals, numeric formats and repeated print context. CanopyX passes its accepted `prepareExport({ pivot: true })` capture without regrouping or recalculating the values. The export menu uses that pivot capture while the pivot view is active.
 
-OfficeIMO owns PDF width measurement, wrapping and horizontal pagination. The bridge reports the explicit text fallback for PDF-native workbook rules and leaves other unsupported presentation as an error. XLSX retains the captured width and wrapping policy.
+OfficeIMO owns PDF width measurement, wrapping and horizontal pagination. XLSX retains the captured width and wrapping policy. The bridge passes fixed fill and text colours for the standard tones and selects the text fallback for presentation a document cannot keep (PDF-native workbook rules, badge pills, custom classes and renderers); OfficeIMO reports each case and the export passes it on as a warning diagnostic. The PDF writer refuses captures above 20,000 records and points to the workbook.
 
 OfficeIMO owns CSV quoting, line endings and formula protection. The CanopyX bridge indents a tree's first column by level and additionally protects full-width formula markers (＝ ＋ － ＠) and markers after non-ASCII leading white space, which OfficeIMO's ASCII rule leaves alone.

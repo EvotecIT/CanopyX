@@ -2990,6 +2990,7 @@
             "gridDownloadPdf": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportWorkbookHint": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportPdfHint": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExportPdfTooLarge": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportCsvHint": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportCopy": { "$ref": "#/$defs/accessibleLabel" },
             "gridCopy": { "$ref": "#/$defs/accessibleLabel" },

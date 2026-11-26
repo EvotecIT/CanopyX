@@ -2,8 +2,9 @@
   const gridExportSignal = (signal, options) => AbortSignal.any([signal, options?.signal].filter(Boolean));
 
   Object.assign(DataGrid.prototype, {
-    // The installed runtime owns this pure projection; capture and controls ask the same owner.
-    defaultExportColumns() { return this.visibleColumns().filter(column => column.exportable !== false); },
+    // The installed runtime owns this pure projection; capture and controls ask the same owner. Exports follow the column
+    // chooser, not the screen width: a column hidden only to fit a narrow viewport still exports.
+    defaultExportColumns() { return this.columns.filter(column => !column.hidden && column.exportable !== false); },
     prepareExport(options) {
       if (options?.pivot !== undefined && typeof options.pivot !== "boolean") throw new Error("CanopyX: pivot table capture requires a boolean option.");
       if (options?.pivot) throw new Error("CanopyX: pivot table capture requires the reporting export bridge.");

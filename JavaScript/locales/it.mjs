@@ -5,6 +5,7 @@ const labels = Object.freeze({
   gridDownloadPdf: "PDF",
   gridExportWorkbookHint: "Formattato, con gruppi e totali",
   gridExportPdfHint: "Rapporto impaginato con intestazioni ripetute",
+  gridExportPdfTooLarge: "L’esportazione PDF contiene al massimo {limit} righe. Per esportazioni più grandi usa la cartella di lavoro Excel (.xlsx).",
   gridExportCsvHint: "Valori di testo (.csv)",
   gridExportCopy: "Copia negli appunti",
   searchPlaceholder: "Cerca",

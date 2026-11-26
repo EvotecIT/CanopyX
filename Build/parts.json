@@ -688,6 +688,7 @@
         "cellValue",
         "cellText",
         "isCellObject",
+        "columnValueTone",
         "withNonce",
         "exportTimeout",
         "exportFormat",
