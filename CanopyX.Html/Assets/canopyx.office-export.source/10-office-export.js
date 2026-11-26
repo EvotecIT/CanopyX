@@ -4,18 +4,9 @@
   // seven levels, and both documents indent the first column's text by level, as the CSV export does. Four spaces a
   // level stay visible in a proportional document font. The writer needs a revision string; an inline tree has none.
   const TREE_INDENT = "    ", TREE_OUTLINE_LEVELS = 7;
-  // Document colours for the standard tones, fill and text, the same pairs OfficeIMO uses for native workbook rules. A
-  // stylesheet theme cannot reach a file, so row and cell tones get these fixed colours (each pair is above 4.5:1);
-  // neutral stays plain and a host's own tone name stays plain text with an UNMAPPED_TONE diagnostic.
-  const DOCUMENT_TONES = Object.freeze({
-    info: Object.freeze({ background: "DDEBF7", color: "1F4E78" }),
-    success: Object.freeze({ background: "E2F0D9", color: "375623" }),
-    warning: Object.freeze({ background: "FFF2CC", color: "7F5000" }),
-    danger: Object.freeze({ background: "FFC7CE", color: "9C0006" }),
-    muted: Object.freeze({ color: "595959" })
-  });
-  // A badge's pill has no document form, so every runtime marks a cell with badges with the "badges" diagnostic, as the
-  // reporting runtime's capture already does. The writer then reports the loss as a warning for any capture.
+  // OfficeIMO appends a cell's badge labels to its text, but a badge's pill has no document form. Every runtime therefore
+  // marks a cell with badges with the "badges" diagnostic, as the reporting runtime's capture already does, and the
+  // writer reports the lost styling as a warning for any capture.
   function badgeLoss(row) {
     let cells = null;
     for (const [id, cell] of Object.entries(row.cells)) if (cell?.badges?.length && !cell.diagnostics?.includes("badges"))
@@ -45,9 +36,9 @@
       rowOutline: ({ rowIndex }) => levels[rowIndex] > 1 ? { level: Math.min(levels[rowIndex] - 1, TREE_OUTLINE_LEVELS) } : undefined } } } : {};
     return officeWrite(documentCapture(capture, levels), context.format, {
       signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows), ...outline,
-      tones: DOCUMENT_TONES,
-      // Presentation a document cannot keep (badge pills, custom classes and renderers, native rules in a PDF, an unknown
-      // tone) falls back to the captured value and text. The writer reports each case, and the export passes it on as a
+      // OfficeIMO fills the standard tones with fixed document colours (each pair above 4.5:1), since a stylesheet theme
+      // cannot reach a file; neutral stays plain. Presentation a document cannot keep (badge pills, custom classes and
+      // renderers, native rules in a PDF, a host's own tone name) falls back to the captured value and text. The writer reports each case, and the export passes it on as a
       // warning in onDiagnostic and the result's diagnostics instead of failing. Invalid captures still throw.
       unsupportedPresentation: "text",
       onDiagnostic: value => context.diagnostic(value)

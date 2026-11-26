@@ -45,7 +45,10 @@ for (const reporting of [false, true]) test(`${reporting ? "reporting" : "plain"
   const styles = zipEntry(result.files.xlsx, "xl/styles.xml");
   for (const fill of ["FFF2CC", "FFC7CE", "E2F0D9"]) expect(styles).toContain(fill);
   expect(styles).toContain("9C0006");
-  expect(pdfRuns(result.files.pdf).map(run => run.text)).toContain("Alice");
+  // The badge labels follow the cell's text in both documents.
+  const label = "Alice · Disabled · Stale";
+  expect(zipEntry(result.files.xlsx, "xl/worksheets/sheet1.xml")).toContain(label);
+  expect(pdfRuns(result.files.pdf).map(run => run.text).join(" ")).toContain(label);
   // Fill colours as PDF paints them: warning FFF2CC, danger FFC7CE and success E2F0D9.
   expect(pdfFillColours(result.files.pdf)).toEqual(expect.arrayContaining(["1 0.949 0.8", "1 0.7804 0.8078", "0.8863 0.9412 0.851"]));
 });
