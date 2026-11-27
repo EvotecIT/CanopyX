@@ -24,14 +24,18 @@
   // part: the one the loader linked from a file, or else the runtime's own copy in document.head of the page's stylesheet for
   // the accepted registration's version, when it is this build's, so a host that removes its fragment's nodes keeps the rules.
   // Copies of other versions are removed; copies of this build's version wait while an older registration holds the name.
-  const PART_SHEETS = new Map();
+  const PART_SHEETS = new Map(), LOST_SHEETS = new Set();
   function settlePartSheets(name) {
     const code = PART_CODE.get(name);
     if (!code || typeof document === "undefined") return;
     const wanted = partVersion(name, code), sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name);
     if (code.version !== wanted) { sheets.forEach(style => style.dataset.cxVersion === wanted || style.remove()); return; }
     let kept = PART_SHEETS.get(name);
-    if (kept && (!kept.isConnected || kept.dataset.cxVersion !== code.version)) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
+    if (kept && (!kept.isConnected || kept.dataset.cxVersion !== code.version)) {
+      // The kept stylesheet left the page (a host cleared it): adopt a page copy below, or load the file again.
+      if (!kept.isConnected) LOST_SHEETS.add(name);
+      kept.remove(); kept = undefined; PART_SHEETS.delete(name);
+    }
     if (!kept) {
       // Only a copy the browser applied (a policy leaves a refused one without a sheet): the registering script's own
       // stylesheet first (the element before it), then one with the page nonce, then any; never a refused look-alike.
@@ -47,6 +51,7 @@
         if (copy.sheet) kept = copy;
         else { copy.remove(); kept = source; if (source.getRootNode() === document) document.head.appendChild(source); }
         PART_SHEETS.set(name, kept);
+        LOST_SHEETS.delete(name);
       }
     }
     sheets.forEach(style => style === kept || style.remove());
@@ -58,24 +63,45 @@
     return parts[name] = { name, label, context, parts };
   }
   // Build/Sync-Assets.ps1 refuses requires that name no part of the same view kind or that form a cycle.
+  /** Loads a part file beside the runtime into an element: the plain names, or the content-hashed ones beside a hashed runtime. */
+  function partFile(part, element, attribute, hashedFile, kind) {
+    const base = global.CanopyXFilterEditorBase, runtime = PART_URL || typeof base === "string" && base || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
+    const file = hashed ? hashedFile : "canopyx-" + part.name + (attribute === "src" ? ".js" : ".css");
+    return new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
+      element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
+  }
+  /** Links a part's stylesheet file, which becomes the part's one stylesheet: page copies that arrive later give way to it. */
+  function linkPartSheet(part, version, styleFile) {
+    const link = h("link"); link.rel = "stylesheet";
+    Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version });
+    return part.styleReady ||= partFile(part, link, "href", styleFile, "stylesheet")
+      .then(() => { PART_SHEETS.get(part.name)?.remove(); PART_SHEETS.set(part.name, link); LOST_SHEETS.delete(part.name); settlePartSheets(part.name); })
+      .catch(error => { part.styleReady = null; throw error; });
+  }
   function loadPart(part) {
     // A fragment set through innerHTML brings its stylesheet but never runs its script: settle the page's copies again.
     settlePartSheets(part.name);
+    const [, , manifestStyle] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
+    if (part.ready && manifestStyle && LOST_SHEETS.has(part.name)) {
+      // The kept stylesheet of an installed part left the page and no copy replaced it: link the file again. The part stays
+      // installed; a failed link is tried again by the next view.
+      const installed = part.ready;
+      part.styleReady = undefined;
+      part.ready = installed.then(() => linkPartSheet(part, part.version, manifestStyle)).catch(error => { part.ready = installed; throw error; });
+    }
     return part.ready ||= Promise.resolve().then(async () => {
       const [version, scriptFile, styleFile] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
       part.version = version;
       if (!version) throw new Error("CanopyX: no " + part.label + ".");
-      if (PART_CODE.get(part.name)?.version !== part.version || part.styleReady === null) {
-        const base = global.CanopyXFilterEditorBase, runtime = PART_URL || typeof base === "string" && base || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
-        const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
-          element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
-        const link = h("link"), script = h("script"); link.rel = "stylesheet";
-        // The linked stylesheet is the part's one stylesheet; page copies that arrive later give way to it.
-        Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version });
-        const style = styleFile && (part.styleReady ||= load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet")
-          .then(() => { PART_SHEETS.get(part.name)?.remove(); PART_SHEETS.set(part.name, link); settlePartSheets(part.name); })
-          .catch(error => { part.styleReady = null; throw error; }));
-        const code = PART_CODE.get(part.name)?.version === part.version || (part.scriptReady ||= load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")
+      // A stylesheet file that failed earlier needs no retry once the page supplied this version's stylesheet; one whose
+      // kept stylesheet left the page loads from its file again.
+      if (part.styleReady === null && PART_SHEETS.get(part.name)?.dataset.cxVersion === version) part.styleReady = undefined;
+      const lost = styleFile && LOST_SHEETS.has(part.name);
+      if (lost) part.styleReady = undefined;
+      if (PART_CODE.get(part.name)?.version !== part.version || part.styleReady === null || lost) {
+        const script = h("script");
+        const style = styleFile && linkPartSheet(part, version, styleFile);
+        const code = PART_CODE.get(part.name)?.version === part.version || (part.scriptReady ||= partFile(part, script, "src", scriptFile, "script")
           .finally(() => script.remove()).catch(error => { part.scriptReady = null; throw error; }));
         await Promise.all([style, code]);
       }

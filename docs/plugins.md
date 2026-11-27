@@ -157,6 +157,26 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 
+### Part stylesheets
+
+A page keeps exactly one applied stylesheet per part. For each part name the runtime holds the accepted registration (this build's version when the page offers it) and one **kept** stylesheet: the file it linked, or its own copy in `document.head` of a page stylesheet the browser applied (a clone with that element's nonce). Page copies are the `<style data-canopyx-part>` elements fragments carry. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition.
+
+| Transition | Result |
+| --- | --- |
+| A part registers with its own stylesheet (parsed or `createContextualFragment` markup) | The runtime copies the stylesheet into the head and removes the page copies of the part. |
+| The fragment that carried it is removed, by element or node by node | Nothing changes: the kept copy is the runtime's. |
+| A second copy of the same version arrives with a script that runs | Its script changes nothing; its stylesheet is removed. |
+| A copy arrives through `innerHTML` (its script never runs) | Its stylesheet applies until the next view loads the part, which removes it. |
+| A host re-inserts nodes it removed earlier | As `innerHTML`: settled when the next view loads the part. |
+| A script registers without a stylesheet (a host preload) | The first page copy of that version becomes the kept one. |
+| A copy from another build registers first, alone or before this build's | It holds the name until this build's copy registers; copies of other versions are removed, this build's wait. With no copy of this build, the part loads from its files. |
+| A copy from another build registers after this build's | Ignored; its stylesheet is removed. |
+| The part loads from its files | The linked stylesheet is the kept one; later page copies give way to it. |
+| The stylesheet file fails, then a fragment brings this version's stylesheet | The page copy is kept and the part installs without the file. |
+| A policy refused a page copy (hash or nonce) | It is never kept; a copy the browser applied is. |
+| The kept stylesheet leaves the page (a host clears the head) | The next view adopts a page copy, or loads the file again. |
+| A view is destroyed | Nothing changes: stylesheets stay for the page's other and later views. |
+
 ### Serving parts
 
 C# hosts that write whole pages or parse fragments into them need nothing new. A host that inserts inline fragments later through `innerHTML` does: the browser never runs a script set that way, so those fragments' embedded parts stay inert. Write such fragments with `AssetMode = CanopyAssetMode.External` and serve the matching part files beside the runtime, or insert them with `Range.createContextualFragment`. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the `<style>` and `<script>` elements of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
