@@ -7,7 +7,7 @@ public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
         nameof(GridDownloadXlsx), nameof(GridDownloadPdf),
-        nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportCsvHint), nameof(GridExportCopy),
+        nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportPdfTooLarge), nameof(GridExportCsvHint), nameof(GridExportCopy),
         nameof(GridRegexSearch),
         nameof(PathEmpty), nameof(PathSource), nameof(PathTarget), nameof(PathStep), nameof(PathCycle), nameof(PathForeign), nameof(PathDisabled), nameof(PathKeys), nameof(PathPartial), nameof(StackWinner), nameof(StackEnforced), nameof(StackFiltered), nameof(StackEmpty), nameof(StackOrder), nameof(StackTruncated),
         nameof(BoardLane), nameof(BoardUnassigned), nameof(BoardEmpty), nameof(BoardWip), nameof(BoardWipFull), nameof(BoardMove), nameof(BoardMoved), nameof(BoardRejected), nameof(BoardPending), nameof(BoardPartial), nameof(BoardKeys),

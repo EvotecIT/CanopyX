@@ -62,7 +62,9 @@
       const mark = matches.get(column.id), tone = mark?.tone ?? columnValueTone(column,cell) ?? (presenter?.kind === "boolean" && value === true && presenter.inverted ? "danger" :
         presenter ? gridPresenterTone(presenter, value, object ? cell.tone : null) : object ? cell.tone : undefined);
       if (mark?.className) diagnostics.push("custom-class");
-      cells[column.id] = { value, text, ...(tone ? { tone } : {}), ...(link ? { link } : {}), ...(diagnostics.length ? { diagnostics: [...new Set(diagnostics)] } : {}) };
+      // Badges travel in the capture as labels; the "badges" diagnostic reports that their pill styling has no document form.
+      const badges = object && cell.badges?.length ? cell.badges.map(({ text, tone, title }) => ({ text, ...(tone ? { tone } : {}), ...(title ? { title } : {}) })) : null;
+      cells[column.id] = { value, text, ...(tone ? { tone } : {}), ...(badges ? { badges } : {}), ...(link ? { link } : {}), ...(diagnostics.length ? { diagnostics: [...new Set(diagnostics)] } : {}) };
     }
     const mark = matches.get(null), tone = mark?.tone ?? row.tone, diagnostics = row.className || mark?.className ? ["custom-class"] : [];
     return gridFreeze({ id: row.id, cells, ...(templateText ? { templateText } : {}), ...(tone ? { tone } : {}), ...(diagnostics.length ? { diagnostics } : {}) });

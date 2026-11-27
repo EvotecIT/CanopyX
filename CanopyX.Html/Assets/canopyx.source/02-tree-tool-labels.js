@@ -12,6 +12,7 @@
     gridRows: "rows", gridUnknownCount: "Result count unavailable",
     gridDownloadXlsx: "Excel workbook (.xlsx)", gridDownloadPdf: "PDF",
     gridExportWorkbookHint: "Formatted, with groups and totals", gridExportPdfHint: "Paged report with repeating headings",
+    gridExportPdfTooLarge: "PDF export holds up to {limit} rows. Use the Excel workbook (.xlsx) for larger exports.",
     gridExportCsvHint: "Plain text values (.csv)", gridExportCopy: "Copy to clipboard",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
     gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print", gridDetails: "Record details", gridDetailsSection: "Details",

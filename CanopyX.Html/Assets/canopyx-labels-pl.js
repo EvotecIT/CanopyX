@@ -6,6 +6,7 @@ const labels = Object.freeze({
   gridDownloadPdf: "PDF",
   gridExportWorkbookHint: "Formatowanie, grupy i sumy",
   gridExportPdfHint: "Raport stronicowany z powtarzanymi nagłówkami",
+  gridExportPdfTooLarge: "Eksport PDF obejmuje maksymalnie {limit} wierszy. Dla większych eksportów użyj skoroszytu Excel (.xlsx).",
   gridExportCsvHint: "Wartości tekstowe (.csv)",
   gridExportCopy: "Kopiuj do schowka",
   searchPlaceholder: "Szukaj",

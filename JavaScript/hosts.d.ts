@@ -1,6 +1,6 @@
 import type { GridBuiltinFilter } from "./grid.js";
 import type {
-  CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
+  CanopyBadge, CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
   CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
 import type { CanopyPlugin } from "./plugins.js";
@@ -77,8 +77,8 @@ export interface CellContext {
 }
 export interface LoadInfo { node: CanopyNode | null; count: number; total: number | null; ms: number; }
 
-/** One exported cell: the typed value, the display text formatted at capture, and a semantic tone where the data declares one. */
-export interface ExportCell { readonly value: CellValue; readonly text: string; readonly tone?: string; }
+/** One exported cell: the typed value, the display text formatted at capture, a semantic tone and badges where the data declares them. */
+export interface ExportCell { readonly value: CellValue; readonly text: string; readonly tone?: string; readonly badges?: readonly Readonly<CanopyBadge>[]; }
 /** What every export capture offers a format writer. Tree captures (request.kind "tree") and flat-grid captures add their own fields. */
 export interface ExportRequest {
   readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];

@@ -3352,6 +3352,7 @@ CanopyX.CanopyLabels.System.String GridExportCancelled { get; set; }
 CanopyX.CanopyLabels.System.String GridExportCopy { get; set; }
 CanopyX.CanopyLabels.System.String GridExportCsvHint { get; set; }
 CanopyX.CanopyLabels.System.String GridExportPdfHint { get; set; }
+CanopyX.CanopyLabels.System.String GridExportPdfTooLarge { get; set; }
 CanopyX.CanopyLabels.System.String GridExportProgress { get; set; }
 CanopyX.CanopyLabels.System.String GridExportReading { get; set; }
 CanopyX.CanopyLabels.System.String GridExportWorkbookHint { get; set; }
@@ -4424,6 +4425,7 @@ CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportCancelled(Canop
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportCopy(CanopyX.CanopyLabels canopyLabels, System.String value)
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportCsvHint(CanopyX.CanopyLabels canopyLabels, System.String value)
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportPdfHint(CanopyX.CanopyLabels canopyLabels, System.String value)
+CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportPdfTooLarge(CanopyX.CanopyLabels canopyLabels, System.String value)
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportProgress(CanopyX.CanopyLabels canopyLabels, System.String value)
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportReading(CanopyX.CanopyLabels canopyLabels, System.String value)
 CanopyX.CanopyLabelsFluent.static CanopyX.CanopyLabels GridExportWorkbookHint(CanopyX.CanopyLabels canopyLabels, System.String value)

@@ -17,7 +17,7 @@
       // Each source request owns its deadline and linked grid/caller cancellation in runGridHook.
       // The iterator checks the same lifetime between records and owns no background request at a yield.
       gridOperationActive(this, signal);
-      const remaining = new Set(request.selection), seen = new Set();
+      const remaining = new Set(request.selection), seen = new Set(), declared = new Map(this.columns.map(column => [column.id, column]));
       if (scope === "selected" && !remaining.size) return;
       const expected = { revision: request.revision, total: request.total,
         matched: scope === "filtered" ? request.matched : this.cursor ? undefined : request.total };
@@ -36,8 +36,9 @@
             seen.add(row.id);
             if (scope !== "selected" || remaining.delete(row.id)) {
               const record = GRID_REPORTING.exportRecord ? GRID_REPORTING.exportRecord(this, request, row) : gridFreeze({ id: row.id,
-                cells: Object.fromEntries(request.columns.map(column => [column.id,
-                  { value: cellValue(row.cells[column.id]) ?? null, text: cellText(row.cells[column.id], column, fmt) }])) });
+                cells: Object.fromEntries(request.columns.map(column => [column.id, { value: cellValue(row.cells[column.id]) ?? null,
+                  text: cellText(row.cells[column.id], column, fmt), ...exportCellPresentation(declared.get(column.id), row.cells[column.id]) }])),
+                ...(row.tone ? { tone: row.tone } : {}) });
               // The formatting part adds each cell's resolved format (canopyx-formatting.js).
               yield GRID_REPORTING.formatRecord ? GRID_REPORTING.formatRecord(this, row, record, request) : record;
             }

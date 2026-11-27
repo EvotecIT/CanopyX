@@ -13,7 +13,7 @@ export * from "./plan.js";
 import type { GridViewIntentApi } from "./view-intents.js";
 export type { GridViewIntent, GridViewIntentPreview, GridViewIntentApi } from "./view-intents.js";
 import type { TreeGrid } from "./index.js";
-import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, LayoutChange, ViewModeMethods } from "./protocol.js";
+import type { CanopyBadge, CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, LayoutChange, ViewModeMethods } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, ExportMenuOptions, LinkedView } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
@@ -64,6 +64,8 @@ export interface GridExportCell {
   readonly mode?: GridShowAs;
   readonly numberFormat?: string;
   readonly tone?: string;
+  /** The cell's badges as labels, each with its tone and title. */
+  readonly badges?: readonly Readonly<CanopyBadge>[];
   readonly link?: { readonly target: string; readonly tooltip?: string };
   /** The cell's conditional formatting, present when the grid has rules that format it. CSV reads only value and text. */
   readonly format?: GridExportFormat;

@@ -5,6 +5,8 @@ public sealed partial class CanopyLabels {
     public string GridExportWorkbookHint { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the paged PDF hint in the Export menu.</summary>
     public string GridExportPdfHint { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the Export menu status when a PDF would exceed its row limit; <c>{limit}</c> is the limit.</summary>
+    public string GridExportPdfTooLarge { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the plain text CSV hint in the Export menu.</summary>
     public string GridExportCsvHint { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the clipboard action in the Export menu.</summary>

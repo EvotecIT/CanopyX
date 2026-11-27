@@ -246,7 +246,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "7f5d2cd00dff0af7",
+      "version": "584848afb78dd40e",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -295,7 +295,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "ff0b4ae1bb8b6229",
+      "version": "e8ba323753992882",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -312,7 +312,7 @@
     {
       "name": "office-export",
       "label": "Office export writers",
-      "version": "122b3646b9e59dc5",
+      "version": "475b5de152097572",
       "script": "canopyx-office-export.js",
       "runtimes": [
         "tree",
