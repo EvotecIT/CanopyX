@@ -121,10 +121,9 @@ In TypeScript the types are `CanopyPlugin`, `CanopyPluginContext`, `CanopyCellRe
 
 A part is runtime code that loads when a view needs it. The runtime's build manifest names each part it knows with its version and content-hashed file names. When a view first needs a part, the loader:
 
-1. uses the part's code if a script of the same version already registered it (a host that preloads part scripts);
-2. otherwise runs the inert payload a single-file page carries (`<script type="application/x-canopyx-<name>" data-cx-version="…">`, and `<name>-style` for the stylesheet), found anywhere in the document;
-3. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
-4. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
+1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<style>` and `<script>` elements (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs, and a host may preload part scripts the same way;
+2. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
+3. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
 
 | Part | Loads when | Content |
 | --- | --- | --- |
@@ -160,7 +159,7 @@ A part script registers itself whether it runs before or after the runtime: it p
 
 ### Serving parts
 
-C# hosts need nothing new. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the payloads of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
+C# hosts need nothing new. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the `<style>` and `<script>` elements of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
 
 - `CanopyHtmlAssets.Parts`, `GetPart(name)` and `GetParts(runtime)` list them as `CanopyHtmlPart` objects with `Script`, `Style`, `Version`, the plain and content-hashed file names and `Markup`.
 - `CanopyHtmlAssets.GetRequiredParts(view)` names the parts a tree or flat grid loads, for a host that assembles single-file pages itself; `CanopyHtmlDocument.EmbedOnce(part)` returns a part's markup the first time a document asks for it.
@@ -187,7 +186,7 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 
 | Field | Meaning |
 | --- | --- |
-| `name`, `label` | The part's name (file `canopyx-<name>.js`, payload type `application/x-canopyx-<name>`) and the words its errors use. |
+| `name`, `label` | The part's name (file `canopyx-<name>.js`, page marker `data-canopyx-part="<name>"`) and the words its errors use. |
 | `runtimes` | `tree` (the two tree entry points) and/or `grid` (the two grid entry points): which manifests name the part and beside which entry points `WriteTo` writes it. |
 | `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds), `deepLink` and `features` narrow that further. |
 | `key`, `context` | The object that marks the part as installed for one runtime context, and the names `install` destructures from the context the runtime hands it. |

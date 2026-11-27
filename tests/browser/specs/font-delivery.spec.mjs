@@ -31,7 +31,9 @@ for (const mode of ['inline', 'plain', 'hashed', 'hosted']) test(`${mode} grids 
     window.parent.__printedFonts = {
       family: getComputedStyle(document.body).fontFamily,
       faces: [...document.fonts].map(face => ({ family: face.family.replaceAll('"', ''), status: face.status })),
-      sources: document.head.querySelectorAll('[data-font-source]').length,
+      // A linked font stylesheet is linked again; an inline one's rules join the paper's constructed stylesheets.
+      sources: document.head.querySelectorAll('[data-font-source]').length +
+        document.adoptedStyleSheets.filter(sheet => [...sheet.cssRules].some(rule => rule.constructor.name === 'CSSFontFaceRule')).length,
       numeric: getComputedStyle(document.querySelector('.cx-print-number')).fontVariantNumeric
     };
   }; });

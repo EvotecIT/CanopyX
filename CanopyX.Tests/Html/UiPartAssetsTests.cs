@@ -38,14 +38,14 @@ public sealed class UiPartAssetsTests {
         var treeFragment = tree.ToHtmlFragment();
         var gridFragment = grid.ToHtmlFragment();
         Assert.True(grid.Toolbar.ColumnMenus);
-        Assert.DoesNotContain("application/x-canopyx-ui-menu", treeFragment);
+        Assert.DoesNotContain("data-canopyx-part=\"ui-menu\"", treeFragment);
         Assert.Contains(CanopyHtmlAssets.GetPart("ui-menu").Markup, gridFragment);
-        Assert.Contains("<script type=\"application/x-canopyx-ui-menu\"", gridFragment);
+        Assert.Contains("<script data-canopyx-part=\"ui-menu\"", gridFragment);
         foreach (var fragment in new[] { treeFragment, gridFragment }) {
             Assert.Contains(CanopyHtmlAssets.GetPart("ui-overlays").Markup, fragment);
             foreach (var name in new[] { "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper" }) {
                 // Payload markers cover both script and stylesheet; ordinary views must not embed optional components.
-                Assert.DoesNotContain("application/x-canopyx-" + name, fragment);
+                Assert.DoesNotContain("data-canopyx-part=\"" + name + "\"", fragment);
             }
         }
     }
@@ -61,7 +61,7 @@ public sealed class UiPartAssetsTests {
             CanopyHtmlAssets.GetRequiredParts(grid).Select(part => part.Name));
         var fragment = grid.ToHtmlFragment();
         Assert.Contains(CanopyHtmlAssets.GetPart("ui-overlays").Markup, fragment);
-        Assert.DoesNotContain("application/x-canopyx-ui-menu", fragment);
+        Assert.DoesNotContain("data-canopyx-part=\"ui-menu\"", fragment);
     }
 
     [Theory]
@@ -89,9 +89,9 @@ public sealed class UiPartAssetsTests {
         Assert.True(fragment.IndexOf(overlays, StringComparison.Ordinal) < fragment.IndexOf(menu, StringComparison.Ordinal),
             "The menu's overlay dependency must be embedded first.");
         foreach (var name in new[] { "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper" }) {
-            Assert.DoesNotContain("application/x-canopyx-" + name, fragment);
+            Assert.DoesNotContain("data-canopyx-part=\"" + name + "\"", fragment);
         }
-        Assert.DoesNotContain("application/x-canopyx-ui-", tree.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.DoesNotContain("data-canopyx-part=\"ui-\"", tree.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class UiPartAssetsTests {
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export" },
             CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name));
-        Assert.DoesNotContain("application/x-canopyx-ui-menu", tree.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"ui-menu\"", tree.ToHtmlFragment());
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public sealed class UiPartAssetsTests {
         var fragment = flow.ToHtmlFragment();
         Assert.Contains(CanopyHtmlAssets.GetPart("forms").Markup, fragment);
         Assert.Contains(CanopyHtmlAssets.GetPart("flow").Markup, fragment);
-        Assert.DoesNotContain("application/x-canopyx-ui-", fragment);
+        Assert.DoesNotContain("data-canopyx-part=\"ui-\"", fragment);
         // The slim flow entry point carries the UI factories and knows the UI parts, so a page with menus, selects or toasts
         // beside its flow needs no data view entry point; a flow that uses none of them embeds none.
         Assert.Contains(CanopyHtmlAssets.GetParts(CanopyRuntime.Flow), part => part.Name == "ui-select");

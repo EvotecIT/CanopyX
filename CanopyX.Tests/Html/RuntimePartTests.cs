@@ -101,13 +101,13 @@ public sealed class RuntimePartTests {
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         var single = tree.ToHtmlFragment();
         foreach (var part in CanopyHtmlAssets.GetRequiredParts(tree)) Assert.Contains(part.Markup, single);
-        Assert.DoesNotContain("application/x-canopyx-search", single);
+        Assert.DoesNotContain("data-canopyx-part=\"search\"", single);
 
         var document = new CanopyHtmlDocument();
         var first = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         var second = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
-        Assert.Contains("application/x-canopyx-links", first);
-        Assert.DoesNotContain("application/x-canopyx-", second.Replace("application/json", ""));
+        Assert.Contains("data-canopyx-part=\"links\"", first);
+        Assert.DoesNotContain("data-canopyx-part=", second);
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, document.EmbeddedParts.Select(marker => marker.Substring(0, marker.IndexOf('@'))));
         Assert.Equal(string.Empty, document.EmbedOnce(CanopyHtmlAssets.GetPart("links")));
         Assert.Equal(CanopyHtmlAssets.GetPart("search").Markup, document.EmbedOnce(CanopyHtmlAssets.GetPart("search")));
@@ -115,12 +115,12 @@ public sealed class RuntimePartTests {
     }
 
     [Fact]
-    public void Markup_MarksThePayloadWithItsTypeAndVersion() {
+    public void Markup_WritesThePartAsStyleAndScriptElementsMarkedWithItsNameAndVersion() {
         var part = CanopyHtmlAssets.GetPart("tree-tools");
-        Assert.Equal("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + part.Version + "\">" + part.Style + "</script>"
-            + "<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Script + "</script>", part.Markup);
+        Assert.Equal("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Style + "</style>"
+            + "<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Script + "</script>", part.Markup);
         var links = CanopyHtmlAssets.GetPart("links");
-        Assert.Equal("<script type=\"application/x-canopyx-links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);
+        Assert.Equal("<script data-canopyx-part=\"links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);
     }
 
     [Theory]

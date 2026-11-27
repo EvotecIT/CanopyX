@@ -2,11 +2,17 @@
 
 This page describes how CanopyX behaves under a strict Content Security Policy and Trusted Types, how it keeps host strings from becoming markup, what a host is responsible for when it hands CanopyX markup of its own, how exports avoid spreadsheet formula injection, and how the .NET remote endpoints keep a caller's commits inside what it may read.
 
-The browser tests `tests/browser/specs/csp.spec.mjs` and `tests/browser/specs/xss.spec.mjs` cover each section, and `CanopyX.Tests/Html/ContentSecurityTests.cs` covers the C# writers.
+The browser tests `tests/browser/specs/csp.spec.mjs`, `tests/browser/specs/csp-pages.spec.mjs` and `tests/browser/specs/xss.spec.mjs` cover each section, and `CanopyX.Tests/Html/ContentSecurityTests.cs` covers the C# writers.
 
 ## Content Security Policy
 
-CanopyX works under a policy without `'unsafe-inline'` or `'unsafe-eval'`:
+CanopyX works under a policy without `'unsafe-inline'` or `'unsafe-eval'`, in three ways:
+
+| Page | Policy | What it takes |
+| --- | --- | --- |
+| External assets (`CanopyAssetMode.External`, `SaveBundle`, or a host that serves the runtime files) | `script-src 'self'; style-src 'self'` | Nothing: every script and stylesheet is a file, the runtime loads the parts and sidecar files beside it, and nothing in the page is inline. |
+| Any page served with a nonce | `script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'` | `CanopyHtmlOptions.Nonce`, new for every response. |
+| A single file with inline assets, without a nonce | `script-src 'sha256-…'; style-src 'sha256-…'` | The hashes of the page's inline `<script>` and `<style>` elements, which the host computes from the written file. |
 
 ```text
 Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'
@@ -14,7 +20,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; 
 
 Standalone pages bundle Archivo and JetBrains Mono. External assets load fonts from the same origin; single-file pages embed the font bytes as data URLs, so their policy includes `font-src data:`. Hosted fragments use the host's font faces and do not add font declarations.
 
-The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
+The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It never turns page text into a script or a stylesheet either: data blocks are only parsed, and the only `<script>` and `<link>` elements it inserts load files. The print view's own rules are a constructed stylesheet (`adoptedStyleSheets`), which a policy allows without a nonce. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
 
 These elements need the nonce, because a policy checks them:
 
@@ -23,9 +29,10 @@ These elements need the nonce, because a policy checks them:
 | The runtime `<script>` and `<style>` of a page with inline assets, or the `<script src>` and `<link rel="stylesheet">` of a page with external assets | `ToHtml`, `Save`, `SaveBundle` | `CanopyHtmlOptions.Nonce` |
 | The `<style>` rule that gives a fragment its `Height` before the runtime runs | `ToHtmlFragment` | `CanopyHtmlOptions.Nonce` (without a nonce the runtime applies the `data-cx-height` value through the style object; the writer never emits a `style` attribute) |
 | The remote grid's endpoint configuration script | `CanopyRemoteScript.ElementWithNonce` | Pass the response's nonce as its third argument |
-| The scripts and stylesheets of the optional parts (tree tools, export, filter editor, history, search, links), and a bundle's sidecar scripts | The runtime, when it loads them | The page nonce (below) |
+| The `<style>` and `<script>` elements of the optional parts a single-file page carries (tree tools, export, filter editor, history, search, links and the rest) | `ToHtmlFragment`, `ToHtml`, `Save`, `CanopyHtmlPart.GetMarkup`, `CanopyHtmlDocument.EmbedOnce` | `CanopyHtmlOptions.Nonce`, or the nonce argument |
+| The part files and a bundle's sidecar scripts the runtime loads | The runtime, when it loads them | The page nonce (below); `'self'` allows them without one |
 
-The view document is a `<script type="application/json">` data block, and a part's inert payload is a `<script type="application/x-canopyx-…">` data block. A policy does not run or block data blocks, so they work under any policy.
+The view document is a `<script type="application/json">` data block, and compact rows are `<script type="application/x-canopyx-rows">` data blocks. A policy does not run or block data blocks, and the runtime only parses them, so they work under any policy. A part a page carries is not a data block: its script registers the part when it runs, and the part installs when a view first needs it.
 
 ### The page nonce
 
@@ -35,11 +42,15 @@ When the runtime loads a part from a file beside it, or a bundle's sidecar scrip
 2. the nonce of the `<script>` element that loaded the runtime (a classic script; a module has no current script);
 3. the nonce of a nonced `<script>` already on the page.
 
-A part embedded in the page runs with the nonce of its own payload, which the C# writers mark with `CanopyHtmlOptions.Nonce`. When the page nonce is known (1 or 2), the runtime only takes a payload that carries it: a payload injected into the page without the response's nonce is never run, even under `'strict-dynamic'` or Trusted Types, and the runtime then loads the part from its file instead. Mark every payload with the response's nonce (`CanopyHtmlPart.GetMarkup(nonce)`), or the part does not load from the page.
-
-So a page whose runtime script carries the nonce needs nothing else. A host that loads the ES module, or that inserts the runtime from its own code, calls `CanopyX.setNonce` before the first view mounts.
+So a page whose runtime script carries the nonce needs nothing else. A host that loads the ES module, or that inserts the runtime from its own code, calls `CanopyX.setNonce` before the first view mounts. A part the page carries runs only if the browser allows its own `<script>` element, so markup injected into the page without the response's nonce never registers a part.
 
 A nonce lets a script in whatever its address, so the addresses the runtime loads scripts from are part of what the host vouches for: the part files beside the runtime script (or below the page's base URL when the runtime is inline), and the `base` of a sidecar source in the view document. Keep `base-uri 'none'` (or `'self'`) in the policy, so injected markup cannot move the base URL.
+
+### Without a nonce
+
+A page with external assets has no inline script or style, so `script-src 'self'; style-src 'self'` allows all of it: the runtime script and stylesheet, the fonts, the part files and a bundle's sidecar files. A fragment's `Height` is applied by the runtime through the style object, and the print view uses a constructed stylesheet. Write such pages with `AssetMode = CanopyAssetMode.External` and the runtime files with `CanopyHtmlAssets.WriteTo`, or with `SaveBundle`.
+
+A single file has to carry its code inline. Its inline elements are the runtime's `<script>` and `<style>`, the font `<style>`, and each part's `<style>` and `<script>`: all written as they are, never created from text at run time, so a policy of their SHA-256 hashes allows them. `tests/browser/specs/csp-pages.spec.mjs` loads single files under such a policy.
 
 ### C# hosts
 
@@ -54,7 +65,7 @@ var html = view.ToHtml(new CanopyHtmlOptions { Nonce = nonce });
 
 A host that caches the markup writes it once with a placeholder nonce, such as `Nonce = "CANOPYXNONCE"`, and replaces the placeholder per response; the example pages in `CanopyX.Examples/CspExamples.cs` work that way, and the browser test's server replaces the placeholder. `Nonce` accepts the CSP nonce grammar only (base64 or base64url characters with up to two trailing `=`), so a value can never break out of its attribute.
 
-Fragments that share a `CanopyHtmlDocument` carry each part once; pass the same nonce to every fragment of the response. A host that assembles its own pages calls `CanopyHtmlPart.GetMarkup(nonce)` or `CanopyHtmlDocument.EmbedOnce(part, nonce)`, and puts the nonce on its own `<script>` and `<link>` elements for the runtime files.
+Fragments that share a `CanopyHtmlDocument` carry each part once; pass the same nonce to every fragment of the response. A host that assembles its own pages calls `CanopyHtmlPart.GetMarkup(nonce)` or `CanopyHtmlDocument.EmbedOnce(part, nonce)`, and puts the nonce on its own `<script>` and `<link>` elements for the runtime files. A host that serves the runtime files instead writes no part markup at all: the runtime loads the parts it needs from the files `CanopyHtmlAssets.WriteTo` writes beside it.
 
 For a hosted grid, give its endpoint configuration script the same nonce before the grid mounts:
 
@@ -97,7 +108,6 @@ The runtime creates one policy, named `canopyx`, on first use, and hands sinks v
 
 | Sink | Value | Where it comes from |
 | --- | --- | --- |
-| `script.textContent` | A part's script | The inert payload in the page for the part's version, and, when the page nonce is known, only a payload that carries it |
 | `script.src` | A part file or a sidecar file | A file name beside the runtime or the bundle, resolved by the runtime |
 | `innerHTML` | Host-trusted markup (below) | An `html` detail or a view icon, after the host's `sanitizeHtml` when there is one |
 

@@ -137,11 +137,10 @@ export function runtimeFiles(runtime) {
   const stem = runtime === "grid" ? "canopyx-grid" : runtime === "reporting" ? "canopyx-reporting" : "canopyx";
   return { script: stem + ".js", style: stem + ".css" };
 }
-/** The inert payload markup of a part (CanopyHtmlPart.Markup). */
+/** The markup of a part (CanopyHtmlPart.Markup): its style and script elements. */
 export function partMarkup(name) {
-  const part = PARTS.find((item) => item.name === name);
-  return (part.style ? "<script type=\"application/x-canopyx-" + name + "-style\" data-cx-version=\"" + part.version + "\">" + read(part.style) + "</script>" : "")
-    + "<script type=\"application/x-canopyx-" + name + "\" data-cx-version=\"" + part.version + "\">" + read(part.script) + "</script>";
+  const part = PARTS.find((item) => item.name === name), marker = " data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.version + "\">";
+  return (part.style ? "<style" + marker + read(part.style) + "</style>" : "") + "<script" + marker + read(part.script) + "</script>";
 }
 /** The parts a single-file fragment of a view kind carries (CanopyHtmlAssets.GetRequiredParts). */
 export const viewParts = (kind) => kind === "grid" ? ["filter-editor", "export"] : ["tree-tools", "export"];

@@ -9,8 +9,8 @@ const asset = name => fs.readFileSync(path.join(repo, 'CanopyX.Html/Assets', nam
 export async function openFieldFlow(page, fields, { parts = [], extra = {} } = {}) {
   const manifest = JSON.parse(asset('canopyx-parts.json')).parts;
   const payloads = (Array.isArray(manifest) ? manifest : Object.values(manifest)).filter(part => ['forms', 'flow', ...parts].includes(part.name)).map(part =>
-    (part.style ? `<script type="application/x-canopyx-${part.name}-style" data-cx-version="${part.version}">${asset(part.style)}</script>` : '') +
-    `<script type="application/x-canopyx-${part.name}" data-cx-version="${part.version}">${asset(part.script)}</script>`).join('');
+    (part.style ? `<style data-canopyx-part="${part.name}" data-cx-version="${part.version}">${asset(part.style)}</style>` : '') +
+    `<script data-canopyx-part="${part.name}" data-cx-version="${part.version}">${asset(part.script)}</script>`).join('');
   const doc = Object.assign({ kind: 'flow', version: 1, id: 'fields', title: 'Fields', steps: [
     { id: 'answers', title: 'Answers', fields }, { id: 'review', type: 'review' }] }, extra);
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fields</title><style>${asset('canopyx-flow-entry.css')}</style>

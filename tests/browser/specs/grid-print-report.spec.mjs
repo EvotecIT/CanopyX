@@ -7,7 +7,12 @@ test.beforeAll(async () => { server = await serveExamples(examples); });
 test.afterAll(async () => { await server?.close(); });
 
 test("print retains frozen query context, group subtotals and query totals with neutral complete values", async ({ page }) => {
-  await page.addInitScript(() => { window.print = () => { window.parent.printedHtml = document.documentElement.outerHTML; }; });
+  // The paper's rules are constructed stylesheets; the captured copy carries them as a style element.
+  await page.addInitScript(() => { window.print = () => {
+    const rules = [...document.adoptedStyleSheets].flatMap(sheet => [...sheet.cssRules].map(rule => rule.cssText)).join("\n");
+    document.head.append(Object.assign(document.createElement("style"), { textContent: rules }));
+    window.parent.printedHtml = document.documentElement.outerHTML;
+  }; });
   await page.goto(server.url + "office-export.html"); await page.waitForSelector("[data-cx-ready]");
   const result = await page.evaluate(async () => {
     const api = document.querySelector("[data-canopyx-host]").canopyx;

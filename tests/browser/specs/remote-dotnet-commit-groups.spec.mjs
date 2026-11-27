@@ -15,8 +15,8 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   ({ base, stop } = await startFleetSample({ rows, prefix: "canopyx-commit-groups-e2e-", readyPath: "/api/machines-edit/view" }));
   // Single-file pages carry the parts their grids need; a runtime without the editing or grouping part has none to carry.
-  parts = { editing: (await (await fetch(base + "/edit")).text()).includes("application/x-canopyx-editing"),
-    grouping: (await (await fetch(base + "/by-site-os")).text()).includes("application/x-canopyx-grouping") };
+  parts = { editing: (await (await fetch(base + "/edit")).text()).includes('data-canopyx-part="editing"'),
+    grouping: (await (await fetch(base + "/by-site-os")).text()).includes('data-canopyx-part="grouping"') };
 });
 
 test.afterAll(async () => { await stop?.(); });

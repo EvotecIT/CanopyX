@@ -102,7 +102,7 @@ public sealed class GridFacetPanelTests {
         var faceted = Grid();
         faceted.FacetPanel = new CanopyFacetPanel().Facet("site");
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(faceted), item => item.Name == "facets");
-        Assert.Contains("<script type=\"application/x-canopyx-facets\" data-cx-version=\"" + part.Version + "\">", faceted.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"facets\" data-cx-version=\"" + part.Version + "\">", faceted.ToHtmlFragment());
     }
 
     [Fact]

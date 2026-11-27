@@ -9,11 +9,11 @@ const tabs = `<div id="late" data-cx-tabs><div role="tablist" aria-label="Late s
   <section id="late-panel-a" role="tabpanel" aria-labelledby="late-a"><h3>First</h3><p>First content</p></section>
   <section id="late-panel-b" role="tabpanel" aria-labelledby="late-b"><h3>Second</h3><p>Second content</p></section></div>`;
 
-test('UI payloads remain inert until a component is requested', async ({ page }) => {
+test('UI parts the page carries install only when a component is requested, and the runtime adds no style or script', async ({ page }) => {
   await openUi(page, '<h1>Report</h1><p>No interactive controls yet.</p>');
   expect(await page.evaluate(() => CanopyX.mountUi(document).length)).toBe(0);
   expect(await page.locator('head style').count()).toBe(1);
-  expect(await page.locator('script[type="application/x-canopyx-ui-tabs"]').count()).toBe(1);
+  expect(await page.locator('script[data-canopyx-part="ui-tabs"]').count()).toBe(1);
   await page.evaluate(markup => {
     document.querySelector('main').insertAdjacentHTML('beforeend', markup);
     window.late = CanopyX.tabs('#late');
@@ -21,7 +21,8 @@ test('UI payloads remain inert until a component is requested', async ({ page })
   await page.evaluate(() => window.late.ready);
   await page.getByRole('tab', { name: 'Second', exact: true }).click();
   await expect(page.getByRole('tabpanel', { name: 'Second', exact: true })).toBeVisible();
-  expect(await page.locator('head style').count()).toBeGreaterThan(1);
+  expect(await page.locator('head style').count()).toBe(1);
+  expect(await page.locator('head link, head script[src]').count()).toBe(0);
 });
 
 test('destroying a controller before lazy initialization releases its marker and permits a fresh instance', async ({ page }) => {
@@ -42,9 +43,8 @@ test('a component whose part failed to load is not kept, so a later call loads t
   let fail = true;
   await page.route('http://canopyx.test/canopyx-ui-tabs.*', route => fail ? route.fulfill({ status: 404, body: '' }) :
     route.fulfill({ path: path.join(repo, 'CanopyX.Html/Assets', new URL(route.request().url()).pathname.slice(1)) }));
-  await openUi(page, '<h1>Report</h1>');
+  await openUi(page, '<h1>Report</h1>', '', { without: ['ui-tabs'] });
   const first = await page.evaluate(markup => {
-    document.querySelectorAll('script[type^="application/x-canopyx-ui-tabs"]').forEach(script => script.remove());
     document.querySelector('main').insertAdjacentHTML('beforeend', markup);
     window.first = CanopyX.tabs('#late');
     return window.first.ready.then(() => 'ready', error => error.message);

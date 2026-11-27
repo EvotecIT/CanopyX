@@ -18,7 +18,7 @@ public sealed class EditingAuthoringTests {
         Assert.Contains("\"validation\":{\"min\":\"2015-01-01T00:00:00Z\"}", json);
         Assert.Contains("\"validation\":{\"required\":true,\"pattern\":\"[A-Z]{2}-\\\\d{4}\"}", json);
         Assert.Contains("\"editing\":{\"mode\":\"row\"}", json);
-        Assert.Contains("application/x-canopyx-editing", view.ToHtmlFragment());
+        Assert.Contains("data-canopyx-part=\"editing\"", view.ToHtmlFragment());
         view.Columns[2].Validation!.Pattern = "(";
         Assert.Throws<InvalidOperationException>(() => view.Validate());
         Assert.Equal("Colonnes", CanopyLabels.French().Columns);

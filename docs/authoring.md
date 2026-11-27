@@ -279,8 +279,8 @@ The document engines stay outside the base runtimes. They load from `canopyx-off
 and its CanopyX adapter) on the first Office export. CSV uses OfficeIMO's smaller CSV writer from `canopyx-csv-export.js`, which
 every grid and tree page carries beside the export part. Menu exports stream records into the file, so CSV, Excel and PDF have no
 client row limit; `toCsv` keeps its 50,000-row default because it returns a string.
-The C# writers include an inert payload only for views that opt in, so single-file exports work offline. JavaScript hosts serve
-that companion beside the runtime, or embed the matching payload. A host or page registration with the same format id takes
+The C# writers include the part's markup only for views that opt in, so single-file exports work offline. JavaScript hosts serve
+that companion beside the runtime, or embed the matching markup. A host or page registration with the same format id takes
 precedence over the built-in writer.
 
 Every flat grid also has `await api.print({ scope: "filtered" })`. It reads the complete captured record scope into a bounded,

@@ -51,7 +51,7 @@ public sealed class RecordPanelPartAssetsTests {
         var chain = new CanopyRecordList(); chain.Columns.Add(new CanopyColumn("name", "Name")); chain.Roots.Add(new CanopyNode("n", "Node"));
         row.Fields["chain"] = CanopyCell.Collection(chain);
         Assert.Contains("tree-tools", Names(grid));
-        Assert.Contains("application/x-canopyx-record-panel", grid.ToHtmlFragment());
+        Assert.Contains("data-canopyx-part=\"record-panel\"", grid.ToHtmlFragment());
 
         var tree = new CanopyTreeView("tree", "Tree");
         tree.Columns.Add(new CanopyColumn("name", "Name"));

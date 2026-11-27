@@ -191,8 +191,8 @@ test("the inline example embeds every record's fields, the sidecar page none", a
   expect(sidecar).not.toContain("\"thumbprint\":");
   expect(sidecar).toContain("\"source\":{\"kind\":\"sidecar\",\"base\":\"records/\",\"shards\":16}");
   // Pages carry the record panel part only when a view uses it.
-  expect(inline).toContain("application/x-canopyx-record-panel");
-  expect(fs.readFileSync(new URL(exampleUrl("orders-by-region.html")), "utf8")).not.toContain("application/x-canopyx-record-panel");
+  expect(inline).toContain('data-canopyx-part="record-panel"');
+  expect(fs.readFileSync(new URL(exampleUrl("orders-by-region.html")), "utf8")).not.toContain('data-canopyx-part="record-panel"');
 });
 
 test("certificate() fixtures stay consistent", () => {

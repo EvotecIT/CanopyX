@@ -78,14 +78,14 @@ public sealed class GridExportFormatTests {
         var tree = new CanopyTreeView("files", "Files") { Labels = CanopyLabels.Polish() };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
-        Assert.Contains("application/x-canopyx-export", tree.ToHtml());
-        Assert.Contains("application/x-canopyx-export", tree.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
-        Assert.Contains("application/x-canopyx-export", tree.ToHtmlFragment(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
+        Assert.Contains("data-canopyx-part=\"export\"", tree.ToHtml());
+        Assert.Contains("data-canopyx-part=\"export\"", tree.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
+        Assert.Contains("data-canopyx-part=\"export\"", tree.ToHtmlFragment(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
         var plain = new CanopyTreeView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Contains("application/x-canopyx-export", plain.ToHtml());
-        Assert.Contains("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
-        Assert.Contains("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
-        Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid, AssetMode = CanopyAssetMode.External }));
+        Assert.Contains("data-canopyx-part=\"export\"", plain.ToHtml());
+        Assert.Contains("data-canopyx-part=\"export\"", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
+        Assert.Contains("data-canopyx-part=\"export\"", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
+        Assert.DoesNotContain("data-canopyx-part=\"export\"", plain.ToHtml(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid, AssetMode = CanopyAssetMode.External }));
     }
 }

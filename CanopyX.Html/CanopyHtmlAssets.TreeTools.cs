@@ -23,7 +23,7 @@ public static partial class CanopyHtmlAssets {
     public static string HashedTreeToolsScriptFileName => GetPart("tree-tools").HashedScriptFileName;
     /// <summary>Gets the content-hashed tree tools stylesheet file name.</summary>
     public static string HashedTreeToolsStyleFileName => GetPart("tree-tools").HashedStyleFileName!;
-    /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
+    /// <summary>Gets the part's markup (its script and stylesheet elements) for hosts embedding the runtime into a single-file page.</summary>
     /// <remarks>
     /// Tree fragments written with inline assets already carry this markup. Custom JavaScript hosts can include it once
     /// outside a mounted host, or serve <see cref="TreeToolsScriptFileName"/> and <see cref="TreeToolsStyleFileName"/> beside the runtime.

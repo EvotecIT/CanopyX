@@ -33,7 +33,7 @@ public sealed class GridPagerTests {
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "pager");
         var fragment = view.ToHtmlFragment();
         Assert.Contains(CanopyHtmlAssets.GetPart("pager").Markup, fragment);
-        Assert.DoesNotContain("application/x-canopyx-enhance", fragment);
+        Assert.DoesNotContain("data-canopyx-part=\"enhance\"", fragment);
     }
 
     [Fact]

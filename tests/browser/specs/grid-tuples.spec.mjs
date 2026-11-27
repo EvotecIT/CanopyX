@@ -70,16 +70,16 @@ test("date tuple fields compare normalized instants while retaining the original
 test("numeric and calendar tuple buckets trigger lazy loading on both initial and replacement queries", async ({ page }) => {
   const bucketSource = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-buckets.js"), "utf8");
   const version = bucketSource.match(/version\s*:\s*"([a-f0-9]{16})"/)[1];
-  const inert = `const part=document.createElement('script');part.type='application/x-canopyx-buckets';part.dataset.cxVersion='${version}';part.textContent=${JSON.stringify(bucketSource)};document.head.appendChild(part);`;
+  const embedded = `const part=document.createElement('script');part.dataset.canopyxPart='buckets';part.dataset.cxVersion='${version}';part.textContent=${JSON.stringify(bucketSource)};document.head.appendChild(part);`;
   const month = tuple([{ column: "date", bucket: { kind: "month" } }, "b"], [[24300, "Open"]]);
-  await open(page, definition({ rows: [...rows, { id: "missing", cells: { date: null, b: "Open", amount: null } }] }), inert);
+  await open(page, definition({ rows: [...rows, { id: "missing", cells: { date: null, b: "Open", amount: null } }] }), embedded);
   await set(page, { tupleFilters: [month] });
   expect((await exported(page)).ids).toEqual(["r0", "r2", "r4", "r6"]);
   expect((await page.evaluate(api + ".getQuery()")).tupleFilters[0].columns[0].bucket).toEqual({ kind: "month", timeZone: "UTC", firstWeekday: 1 });
   await set(page, { tupleFilters: [tuple(month.columns, [[null, "Open"]])] });
   expect((await exported(page)).ids).toEqual(["missing"]);
   const interval = tuple([{ column: "amount", bucket: { kind: "width", width: 20 } }, "b"], [[0, "Open"], [1, "Closed"]]);
-  await open(page, definition({ query: { tupleFilters: [interval] } }), inert);
+  await open(page, definition({ query: { tupleFilters: [interval] } }), embedded);
   expect((await exported(page)).ids).toEqual(["r0", "r3"]);
 });
 

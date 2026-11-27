@@ -34,11 +34,11 @@ public sealed class FlowHtmlTests {
         Assert.DoesNotContain("data-cx-height", html);
         foreach (var name in new[] { "forms", "flow" }) {
             var part = CanopyHtmlAssets.GetPart(name);
-            Assert.Contains("<script type=\"application/x-canopyx-" + name + "\" data-cx-version=\"" + part.Version + "\" nonce=\"abc123\">", html);
+            Assert.Contains("<script data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.Version + "\" nonce=\"abc123\">", html);
         }
 
-        Assert.DoesNotContain("application/x-canopyx-filter-editor", html);
-        Assert.DoesNotContain("application/x-canopyx-editing\"", html);
+        Assert.DoesNotContain("data-canopyx-part=\"filter-editor\"", html);
+        Assert.DoesNotContain("data-canopyx-part=\"editing\"", html);
     }
 
     [Fact]
@@ -53,8 +53,8 @@ public sealed class FlowHtmlTests {
         var document = new CanopyHtmlDocument();
         var first = FlowSamples.MailServer().ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         var second = FlowSamples.Everything().ToHtmlFragment(new CanopyHtmlOptions { Document = document });
-        Assert.Contains("application/x-canopyx-flow\"", first);
-        Assert.DoesNotContain("application/x-canopyx-flow\"", second);
+        Assert.Contains("data-canopyx-part=\"flow\"", first);
+        Assert.DoesNotContain("data-canopyx-part=\"flow\"", second);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class FlowHtmlTests {
         Assert.Contains("<style nonce=\"n0nce\">", page);
         Assert.Contains("<script nonce=\"n0nce\">", page);
         Assert.Contains("class=\"cx-host cx-flow-host\"", page);
-        Assert.Contains("application/x-canopyx-flow\" data-cx-version=", page);
+        Assert.Contains("data-canopyx-part=\"flow\" data-cx-version=", page);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class FlowHtmlTests {
         Assert.Contains("<script src=\"assets/" + CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.Flow) + "\" defer></script>", page);
         Assert.Contains("<link rel=\"stylesheet\" href=\"assets/" + CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.Flow) + "\">", page);
         Assert.Contains("<title>Setup</title>", page);
-        Assert.DoesNotContain("application/x-canopyx-", page);
+        Assert.DoesNotContain("data-canopyx-part=", page);
         Assert.DoesNotContain("createDataGrid", page);
     }
 

@@ -42,7 +42,7 @@ public sealed class ContentSecurityTests {
         Assert.Contains("<style nonce=\"" + Nonce + "\">", html);
         Assert.Contains("<script nonce=\"" + Nonce + "\">", html);
         // The parts' payloads carry the nonce, which the runtime gives the elements it inserts when a part loads.
-        Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" nonce=\"" + Nonce + "\">", html);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" nonce=\"" + Nonce + "\">", html);
     }
 
     [Fact]

@@ -58,7 +58,7 @@ public sealed class GridRowActionsTests {
         var view = View();
         Assert.False(JsonDocument.Parse(view.ToJson()).RootElement.TryGetProperty("rowActions", out _));
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "row-actions");
-        Assert.DoesNotContain("application/x-canopyx-row-actions", view.ToHtml(), StringComparison.Ordinal);
+        Assert.DoesNotContain("data-canopyx-part=\"row-actions\"", view.ToHtml(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class GridRowActionsTests {
         var view = View();
         view.RowActions.Action(new CanopyRowAction("run", "Run"));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), item => item.Name == "row-actions");
-        Assert.Contains("application/x-canopyx-row-actions", view.ToHtml(), StringComparison.Ordinal);
+        Assert.Contains("data-canopyx-part=\"row-actions\"", view.ToHtml(), StringComparison.Ordinal);
     }
 
     private static long Gzip(string value) {

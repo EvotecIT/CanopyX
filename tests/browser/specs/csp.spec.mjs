@@ -3,95 +3,15 @@
 // the policy as a header, as a real server would. A test fails on any securitypolicyviolation event, any console report of
 // a refused script or style, and any page error, while it loads each page and the lazy parts: the tree tools, export,
 // filter editor, history, search and links parts, sidecar files, html details, icons and the print outline.
-import fs from "node:fs";
-import path from "node:path";
-import crypto from "node:crypto";
 import { test, expect } from "@playwright/test";
-import { examples, nextFrames, settleGrid } from "./support.mjs";
-
-const ORIGIN = "http://canopyx.test";
-const PLACEHOLDER = "CANOPYXNONCE";
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json" };
-// The policy in the brief, and a stricter one without 'self', under which every inserted element needs the nonce.
-const POLICIES = {
-  "self and nonce": nonce => `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'`,
-  "nonce only": nonce => `default-src 'self'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'`
-};
-const TRUSTED_TYPES = nonce => POLICIES["nonce only"](nonce) + "; require-trusted-types-for 'script'; trusted-types canopyx";
-
-/** Serves the examples folder at ORIGIN with the policy; returns what the page reported. */
-async function serve(page, policy, { nonceInMarkup = true, transform = html => html } = {}) {
-  const report = { console: [], errors: [] };
-  await page.route(ORIGIN + "/**", async route => {
-    const url = new URL(route.request().url());
-    const file = path.normalize(path.join(examples, decodeURIComponent(url.pathname)));
-    if (!file.startsWith(path.normalize(examples)) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return route.fulfill({ status: 404, body: "" });
-    const extension = path.extname(file);
-    const headers = { "content-type": TYPES[extension] || "application/octet-stream" };
-    let body = fs.readFileSync(file);
-    if (extension === ".html") {
-      const nonce = crypto.randomBytes(18).toString("base64");
-      body = transform(body.toString("utf8").replaceAll(PLACEHOLDER, nonceInMarkup ? nonce : crypto.randomBytes(18).toString("base64")));
-      headers["content-security-policy"] = policy(nonce);
-    }
-    return route.fulfill({ status: 200, headers, body });
-  });
-  await page.addInitScript(() => {
-    window.__cspViolations = [];
-    document.addEventListener("securitypolicyviolation", event => window.__cspViolations.push(
-      event.effectiveDirective + " " + (event.blockedURI || "") + " " + (event.sample || "").slice(0, 60)));
-  });
-  page.on("console", message => { if (/Content Security Policy|Trusted Type|Refused to/i.test(message.text())) report.console.push(message.text()); });
-  page.on("pageerror", error => report.errors.push(error.message));
-  report.violations = () => page.evaluate(() => window.__cspViolations);
-  return report;
-}
-
-async function open(page, name) {
-  await page.goto(ORIGIN + "/csp/" + name);
-  await page.waitForSelector("[data-cx-ready]");
-  await nextFrames(page);
-}
-
-async function expectClean(page, report) {
-  await nextFrames(page);
-  expect(await report.violations()).toEqual([]);
-  expect(report.console).toEqual([]);
-  expect(report.errors).toEqual([]);
-}
-
-/** The tree page's parts: tree tools on mount, deep links, the Export menu, icons, the html detail and the print outline. */
-async function exerciseTree(page) {
-  const host = page.locator(".cx-host").first();
-  await expect(host.locator(".cx-icon svg").first()).toBeAttached();
-  await expect(host.locator(".csp-note strong")).toHaveText("host");
-  await host.locator('.cx-row[data-cx-id="notes/readme"]').click();
-  await expect.poll(() => page.evaluate(() => location.hash)).not.toBe("");
-  await host.getByText("Export", { exact: true }).click();
-  await expect(page.getByRole("menuitem").or(page.getByRole("button", { name: /CSV/ })).first()).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
-  await expect(host.locator(".cx-outline table.cx-outline-table")).toBeAttached();
-  expect(await host.locator(".cx-outline td").first().evaluate(td => td.style.paddingLeft)).toBe("4px");
-}
-
-/** The grid page's parts: history presenters on load, the column menu and Filters (filter editor), the Export menu and CSV. */
-async function exerciseGrid(page, root = page.locator(".cx-data-grid").first()) {
-  await expect(root.locator(".cx-row[data-cx-id] svg").first()).toBeAttached();
-  await root.scrollIntoViewIfNeeded();
-  await settleGrid(page);
-  await root.locator(".cx-grid-column-menu").first().click();
-  await expect(page.locator(".cx-column-menu [role=menuitem]").first()).toBeVisible();
-  await page.keyboard.press("Escape");
-  const csv = await root.evaluate(element => element.closest("[data-canopyx-host]").canopyx.toCsv({ scope: "filtered" }));
-  expect(csv.split("\r\n")[0]).toContain("Record");
-}
+import { ORIGIN, POLICIES, TRUSTED_TYPES, serve, open, expectClean, exerciseTree, exerciseGrid } from "./csp-support.mjs";
 
 for (const nonceOwner of ['runtime', 'setNonce']) test(`grid print applies its stylesheet with an unnonced font link and ${nonceOwner}`, async ({ page }) => {
   const nonce = 'canopy-print-nonce';
   await page.addInitScript(() => { window.print = () => {
     window.parent.printedStyle = {
-      nonce: document.querySelector('style').nonce,
+      styles: document.querySelectorAll('style').length,
+      sheets: document.adoptedStyleSheets.length,
       display: getComputedStyle(document.querySelector('.cx-print-cards')).display,
       fontNonce: document.querySelector('link[data-font-source]').nonce
     };
@@ -108,7 +28,8 @@ for (const nonceOwner of ['runtime', 'setNonce']) test(`grid print applies its s
     const grid = CanopyX.createDataGrid(host, { view }); await grid.ready;
     await grid.print({ scope: 'all' });
   });
-  expect(await page.evaluate(() => window.printedStyle)).toEqual({ nonce, display: 'grid', fontNonce: '' });
+  // The paper's rules are a constructed stylesheet, which needs no nonce; the font stylesheet is linked again.
+  expect(await page.evaluate(() => window.printedStyle)).toEqual({ styles: 0, sheets: 1, display: 'grid', fontNonce: '' });
   await expect(page.locator('iframe')).toHaveCount(0);
   await expectClean(page, report);
 });
@@ -225,10 +146,10 @@ test("a part file inserted with a wrong page nonce is refused, so the runtime's 
   await expect.poll(async () => (await report.violations()).join("\n")).toContain("canopyx-tree-tools");
 });
 
-test("a part payload injected into the page without the nonce never runs, also under 'strict-dynamic'", async ({ page }) => {
-  // The injected payload comes first in the document and has the export part's real version.
+test("a data block shaped like a part never runs, also under 'strict-dynamic'", async ({ page }) => {
+  // The injected block comes first in the document, in the inert form older pages used, with the export part's real version.
   const inject = html => html.replace('<main class="cx-main">', '<main class="cx-main"><script type="application/x-canopyx-export" data-cx-version="' +
-    (html.match(/type="application\/x-canopyx-export" data-cx-version="([a-f0-9]{16})"/) || [])[1] + '">window.__injected = true;</script>');
+    (html.match(/<script data-canopyx-part="export" data-cx-version="([a-f0-9]{16})"/) || [])[1] + '">window.__injected = true;</script>');
   const report = await serve(page, nonce => POLICIES["nonce only"](nonce).replace("script-src", "script-src 'strict-dynamic'"), { transform: inject });
   await open(page, "tree.html");
   await page.locator(".cx-host").getByText("Export", { exact: true }).click();

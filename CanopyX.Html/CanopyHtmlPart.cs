@@ -6,19 +6,19 @@ namespace CanopyX.Html;
 
 /// <summary>
 /// A part of the browser runtime that loads when a view needs it: its script, optional stylesheet, version, file names and
-/// inert payload markup. The parts come from <c>Build/parts.json</c>; <see cref="CanopyHtmlAssets.Parts"/> lists them.
+/// markup for a single-file page. The parts come from <c>Build/parts.json</c>; <see cref="CanopyHtmlAssets.Parts"/> lists them.
 /// </summary>
 /// <remarks>
 /// <para>
 /// An entry point knows the parts of its build by name and version. A part installs only when its version is that build's:
-/// from an inert payload in the page (<see cref="Markup"/>), or from the file beside the runtime, under the naming of the
+/// from its markup in the page (<see cref="Markup"/>), or from the file beside the runtime, under the naming of the
 /// runtime file (<see cref="GetScriptFileName"/>). <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming, CanopyRuntime)"/>
-/// writes every part an entry point knows, and fragments written with inline assets carry the payloads of the parts their view
+/// writes every part an entry point knows, and fragments written with inline assets carry the markup of the parts their view
 /// needs (<see cref="CanopyHtmlAssets.GetRequiredParts(CanopyTreeView)"/>), once per <see cref="CanopyHtmlDocument"/>.
 /// </para>
 /// <para>
 /// A host that writes its own pages handles every part the same way, so a new part needs no host code: it serves the files
-/// of <see cref="CanopyHtmlAssets.GetParts(CanopyRuntime)"/> beside the runtime, or embeds the payloads a view needs.
+/// of <see cref="CanopyHtmlAssets.GetParts(CanopyRuntime)"/> beside the runtime, or embeds the markup of the parts a view needs.
 /// </para>
 /// </remarks>
 public sealed class CanopyHtmlPart {
@@ -92,24 +92,24 @@ public sealed class CanopyHtmlPart {
     public IReadOnlyList<string> Requires { get; }
 
     /// <summary>
-    /// Gets inert payload markup for a single-file page: the stylesheet (type <c>application/x-canopyx-&lt;name&gt;-style</c>)
-    /// and the script (type <c>application/x-canopyx-&lt;name&gt;</c>), marked with the version. The runtime finds the payload
-    /// anywhere in the document and runs it on first use.
+    /// Gets the part's markup for a single-file page: its stylesheet as a <c>&lt;style&gt;</c> element and its script as a
+    /// <c>&lt;script&gt;</c> element, both marked <c>data-canopyx-part</c> and <c>data-cx-version</c>. The script only registers the part,
+    /// before or after the runtime, and the part installs when a view first needs it.
     /// </summary>
     public string Markup => GetMarkup(null);
 
     /// <summary>
-    /// Returns the inert payload markup (<see cref="Markup"/>) marked with a Content Security Policy nonce. The payloads are
-    /// data blocks, which a policy does not run; the runtime inserts the stylesheet and the script with the payload's nonce
-    /// when the part loads, so a strict policy (<c>script-src 'nonce-…'; style-src 'nonce-…'</c>) allows them.
+    /// Returns the part's markup (<see cref="Markup"/>) marked with a Content Security Policy nonce, so a strict policy
+    /// (<c>script-src 'nonce-…'; style-src 'nonce-…'</c>) runs the script and applies the stylesheet. Without a nonce, a policy
+    /// allows them by their hashes or not at all; serve the part files beside the runtime
+    /// (<see cref="CanopyAssetMode.External"/>) to need neither. The runtime never turns page text into script or style.
     /// </summary>
     /// <param name="nonce">The response's nonce, or null for none (the same as <see cref="Markup"/>).</param>
-    /// <returns>The payload markup.</returns>
+    /// <returns>The part's markup.</returns>
     /// <exception cref="ArgumentException"><paramref name="nonce"/> is not a valid nonce.</exception>
     public string GetMarkup(string? nonce) {
-        var attribute = CanopyContentSecurity.Attribute(nonce);
-        return (Style == null ? string.Empty : "<script type=\"application/x-canopyx-" + Name + "-style\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Style + "</script>")
-            + "<script type=\"application/x-canopyx-" + Name + "\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Script + "</script>";
+        var attributes = " data-canopyx-part=\"" + Name + "\" data-cx-version=\"" + Version + "\"" + CanopyContentSecurity.Attribute(nonce) + ">";
+        return (Style == null ? string.Empty : "<style" + attributes + Style + "</style>") + "<script" + attributes + Script + "</script>";
     }
 
     /// <summary>Returns the script file name under a naming.</summary>

@@ -58,14 +58,14 @@ public sealed class OfficeExportPartAssetsTests {
     [Fact]
     public void SingleFilePages_CarryOfficePayloadOnlyAfterOptIn() {
         var grid = new CanopyDataGridView("costs", "Costs"); grid.Columns.Add(new CanopyColumn("name", "Resource"));
-        Assert.DoesNotContain("application/x-canopyx-office-export", grid.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment());
         grid.ExportFormats = CanopyExportFormats.Office();
-        Assert.Contains("application/x-canopyx-office-export", grid.ToHtmlFragment());
-        Assert.DoesNotContain("application/x-canopyx-office-export", grid.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.Contains("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
         var tree = new CanopyTreeView("outline", "Outline"); tree.Columns.Add(new CanopyColumn("name", "Resource"));
-        Assert.DoesNotContain("application/x-canopyx-office-export", tree.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"office-export\"", tree.ToHtmlFragment());
         tree.ExportFormats = CanopyExportFormats.Office();
-        Assert.Contains("application/x-canopyx-office-export", tree.ToHtmlFragment());
+        Assert.Contains("data-canopyx-part=\"office-export\"", tree.ToHtmlFragment());
     }
 
     private static long Gzip(string script) {

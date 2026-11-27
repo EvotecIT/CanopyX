@@ -15,7 +15,7 @@ public sealed class CalculationPartAssetsTests {
         }
         view.CalculatedColumnsEditable = true;
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "calculations");
-        Assert.Contains("application/x-canopyx-calculations", view.ToHtmlFragment());
+        Assert.Contains("data-canopyx-part=\"calculations\"", view.ToHtmlFragment());
         view.CalculatedColumnsEditable = false;
         view.Columns.Add(new CanopyColumn("total", "Total") { Kind = CanopyColumnKind.Number, Calculation = CanopyCalculation.Parse("[quantity] * 3") });
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "calculations");

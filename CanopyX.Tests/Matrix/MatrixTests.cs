@@ -195,7 +195,7 @@ public sealed class MatrixTests {
     public void Html_WritesAFragmentWithTheMatrixPartAndAGridPage() {
         var fragment = Small().ToHtmlFragment(new CanopyHtmlOptions { Height = "500px" });
         Assert.Contains("class=\"cx-host cx-matrix-host\" data-canopyx-host", fragment);
-        Assert.Contains("application/x-canopyx-matrix", fragment);
+        Assert.Contains("data-canopyx-part=\"matrix\"", fragment);
         Assert.Contains("data-cx-height=\"500px\"", fragment);
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(Small()));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(Small()), part => part.Name == "matrix");

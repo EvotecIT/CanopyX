@@ -21,9 +21,9 @@ public sealed class DataViewPartAssetsTests {
         Assert.Contains(required, part => part.Name == "presenters");
         Assert.DoesNotContain(required, part => part.Name == "view-intents");
         var html = view.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-compare", html);
-        Assert.Contains("application/x-canopyx-presenters", html);
-        Assert.DoesNotContain("application/x-canopyx-view-intents", html);
+        Assert.Contains("data-canopyx-part=\"compare\"", html);
+        Assert.Contains("data-canopyx-part=\"presenters\"", html);
+        Assert.DoesNotContain("data-canopyx-part=\"view-intents\"", html);
     }
 
     [Fact]
@@ -32,10 +32,10 @@ public sealed class DataViewPartAssetsTests {
         view.Columns.Add(new CanopyColumn("name", "Name"));
         ProtocolSchema.AssertValid(view.ToJson(), "Opt-in view intents");
         var html = view.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-view-intents", html);
-        Assert.Contains("application/x-canopyx-view-intents-style", html);
+        Assert.Contains("data-canopyx-part=\"view-intents\"", html);
+        Assert.Contains("<style data-canopyx-part=\"view-intents\"", html);
         view.ViewIntents = false;
-        Assert.DoesNotContain("application/x-canopyx-view-intents", view.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"view-intents\"", view.ToHtmlFragment());
     }
 
     [Theory]

@@ -25,7 +25,7 @@ Include the runtime and its base stylesheet once in the page that contains `frag
 
 The builders encode identities, labels, badges and accessibility references. Properties named `ContentHtml` or `FooterHtml` contain trusted host HTML; encode or sanitize untrusted content before assigning them. Without JavaScript, tab and step panels remain readable with headings. Overlay builders emit their closed content and a separate `ToTriggerHtmlFragment(label)` button.
 
-For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds the UI parts as inert payloads; they execute only when loaded by the runtime. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy.
+For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds the UI parts this way; each part registers as its script runs and installs when a component first needs it. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy, or serve the part files beside the runtime for a policy of `script-src 'self'; style-src 'self'` (see [security](security.md#content-security-policy)).
 
 ## Configure behavior in JavaScript
 

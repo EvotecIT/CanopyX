@@ -87,7 +87,7 @@ Selecting every matching record (a query, not a set of keys) and repeating the s
 
 ## Single-file pages and bundles
 
-The runtime loads the part like every other part (see [Plugins and Parts](plugins.md#parts)): from an inert payload in the page, or from `canopyx-link.js` and `canopyx-link.css` beside the runtime. `CanopyHtmlAssets.WriteTo` and `SaveBundle` write the files. No view needs the part by itself, so a single-file page asks for it:
+The runtime loads the part like every other part (see [Plugins and Parts](plugins.md#parts)): from its markup in the page, or from `canopyx-link.js` and `canopyx-link.css` beside the runtime. `CanopyHtmlAssets.WriteTo` and `SaveBundle` write the files. No view needs the part by itself, so a single-file page asks for it:
 
 ```csharp
 var options = new CanopyHtmlOptions { Document = document };

@@ -83,14 +83,14 @@ public sealed class ForestPartAssetsTests {
 
     private static void AssertPayload(string html, string name, bool present) {
         var part = CanopyHtmlAssets.GetPart(name);
-        var script = "type=\"application/x-canopyx-" + name + "\" data-cx-version=\"" + part.Version + "\"";
-        var style = "type=\"application/x-canopyx-" + name + "-style\" data-cx-version=\"" + part.Version + "\"";
+        var script = "<script data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.Version + "\"";
+        var style = "<style data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.Version + "\"";
         if (present) {
             Assert.Contains(script, html);
             if (part.Style != null) Assert.Contains(style, html);
         } else {
-            Assert.DoesNotContain("type=\"application/x-canopyx-" + name + "\"", html);
-            Assert.DoesNotContain("type=\"application/x-canopyx-" + name + "-style\"", html);
+            Assert.DoesNotContain("<script data-canopyx-part=\"" + name + "\"", html);
+            Assert.DoesNotContain("<style data-canopyx-part=\"" + name + "\"", html);
         }
     }
 

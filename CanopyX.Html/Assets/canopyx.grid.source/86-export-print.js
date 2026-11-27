@@ -40,12 +40,19 @@
       for (const name of theme) if (/^--hfx-(?:font|type|weight)-/.test(name)) doc.documentElement.style.setProperty(name, theme.getPropertyValue(name));
       const add = (tag, parent, text, css) => {
         const element = doc.createElement(tag);
-        if (tag === "style") { element.nonce = fontSources[0]?.nonce || ""; withNonce(element); }
         if (text !== undefined) element.textContent = String(text);
         if (css) element.style.cssText = css;
         parent.appendChild(element); return element;
       };
-      add("style", doc.head, "@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text-muted)}}' +
+      // The paper's rules go in a constructed stylesheet, which a strict policy allows without a nonce. A browser without
+      // constructable stylesheets gets a style element with the page nonce.
+      const sheet = (text, constructedOnly) => {
+        const Sheet = frame.contentWindow?.CSSStyleSheet;
+        try { const rules = new Sheet(); rules.replaceSync(text); doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, rules]; return true; } catch (_) { if (constructedOnly) return false; }
+        const element = doc.createElement("style"); element.nonce = fontSources[0]?.nonce || ""; withNonce(element); element.textContent = text; doc.head.appendChild(element);
+        return true;
+      };
+      sheet("@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text-muted)}}' +
         "thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}a{color:inherit;text-decoration:none}" +
         "@media screen{body{padding:40px}main{max-width:1100px;margin:auto}}@media screen and (max-width:600px){body{padding:20px}}" +
         "@media (max-width:600px){body{font-size:10px!important}td,th{padding:6px 4px!important;white-space:normal!important}td.cx-print-number{white-space:nowrap!important}col.cx-print-date{width:80px!important}}" +
@@ -62,6 +69,8 @@
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
       for (const source of fontSources) {
+        // An inline font stylesheet's rules are copied into the paper's own constructed stylesheet; a linked one is linked again.
+        if (source.tagName === "STYLE" && source.sheet && sheet([...source.sheet.cssRules].map(rule => rule.cssText).join("\n"), true)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
         if (source.tagName === "LINK") {
           copy.href = source.href;

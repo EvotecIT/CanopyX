@@ -86,7 +86,7 @@ async function timeOwner(page, kind, missingPart = false) {
   const origin = "https://canopyx-forest-errors.test";
   let html = fs.readFileSync(path.join(examples, "time-" + kind + ".html"), "utf8")
     .replace("data-canopyx-host data-cx-theme=", 'data-canopyx-host data-cx-mount="manual" data-cx-theme=');
-  if (missingPart) html = html.replace(/<script\b[^>]*type="application\/x-canopyx-time-slider(?:-style)?"[^>]*>[\s\S]*?<\/script>/g, "");
+  if (missingPart) html = html.replace(/<(script|style)\b[^>]*data-canopyx-part="time-slider"[^>]*>[\s\S]*?<\/\1>/g, "");
   await page.route(origin + "/**", route => new URL(route.request().url()).pathname === "/" ? route.fulfill({ contentType: "text/html", body: html }) : route.abort());
   await page.goto(origin + "/");
   await page.evaluate(async () => {

@@ -26,12 +26,12 @@ public sealed class HistoryPartAssetsTests {
     public void GridFragments_CarryThePayloadOnlyWhenTheyDrawHistory() {
         var plain = new CanopyDataGridView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.DoesNotContain("x-canopyx-history", plain.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"history\"", plain.ToHtmlFragment());
         var trend = new CanopyDataGridView("trend", "Trend");
         trend.Columns.Add(new CanopyColumn("name", "Name"));
         trend.Columns.Add(new CanopyColumn("load", "Load") { Presenter = CanopyGridPresenter.StatusStrip() });
-        Assert.Contains("<script type=\"application/x-canopyx-history\" data-cx-version=\"" + CanopyHtmlAssets.HistoryVersion + "\">", trend.ToHtmlFragment());
-        Assert.DoesNotContain("x-canopyx-history", trend.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.Contains("<script data-canopyx-part=\"history\" data-cx-version=\"" + CanopyHtmlAssets.HistoryVersion + "\">", trend.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"history\"", trend.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 
     [Theory]

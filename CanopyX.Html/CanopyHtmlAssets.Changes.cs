@@ -23,19 +23,19 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static CanopyRuntime GetRuntime(CanopyPropagation view) => view == null ? throw new ArgumentNullException(nameof(view)) : CanopyRuntime.DataGrid;
 
-    /// <summary>Gets the parts a text diff loads, whose payloads a single-file page carries: the changes part.</summary>
+    /// <summary>Gets the parts a text diff loads, whose markup a single-file page carries: the changes part.</summary>
     /// <param name="diff">The diff.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="diff"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyTextDiff diff) => diff == null ? throw new ArgumentNullException(nameof(diff)) : GetChangeViewParts();
 
-    /// <summary>Gets the parts a change list loads, whose payloads a single-file page carries: the changes part.</summary>
+    /// <summary>Gets the parts a change list loads, whose markup a single-file page carries: the changes part.</summary>
     /// <param name="list">The list.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="list"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyChangeList list) => list == null ? throw new ArgumentNullException(nameof(list)) : GetChangeViewParts();
 
-    /// <summary>Gets the parts a propagation view loads, whose payloads a single-file page carries: the changes part.</summary>
+    /// <summary>Gets the parts a propagation view loads, whose markup a single-file page carries: the changes part.</summary>
     /// <param name="view">The view.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>

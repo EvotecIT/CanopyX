@@ -52,7 +52,7 @@ public sealed class AnalystBoundaryTests {
         var view = FilterOnlyView(shape);
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "buckets");
         var html = view.ToHtml();
-        Assert.Contains("application/x-canopyx-buckets", html);
+        Assert.Contains("data-canopyx-part=\"buckets\"", html);
         Assert.DoesNotContain("<script src=", html, StringComparison.OrdinalIgnoreCase);
     }
 

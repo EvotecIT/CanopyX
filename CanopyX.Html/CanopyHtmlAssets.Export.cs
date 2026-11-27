@@ -10,7 +10,7 @@ public static partial class CanopyHtmlAssets {
     public static string ExportVersion => GetPart("export").Version;
     /// <summary>Gets the content-hashed export part file name.</summary>
     public static string HashedExportScriptFileName => GetPart("export").HashedScriptFileName;
-    /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
+    /// <summary>Gets the part's markup (its script and stylesheet elements) for hosts embedding the runtime into a single-file page.</summary>
     /// <remarks>Grid and tree fragments written with inline assets already carry this markup. Custom JavaScript hosts can include it once outside a mounted host, or load <see cref="ExportScript"/> with the runtime.</remarks>
     public static string ExportMarkup => GetPart("export").Markup;
 }

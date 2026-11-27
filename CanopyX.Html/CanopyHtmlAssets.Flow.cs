@@ -30,7 +30,7 @@ public static partial class CanopyHtmlAssets {
         return CanopyRuntime.Flow;
     }
 
-    /// <summary>Gets the parts a flow loads, whose payloads a single-file page carries: the flow part and the forms part it requires,
+    /// <summary>Gets the parts a flow loads, whose markup a single-file page carries: the flow part and the forms part it requires,
     /// and the parts of the grids and trees its pick steps embed.</summary>
     /// <param name="flow">The flow.</param>
     /// <returns>The parts, in manifest order.</returns>

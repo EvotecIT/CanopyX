@@ -23,8 +23,8 @@ public sealed class RecordTreeCollectionAssetsTests {
         var view = View(location);
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "tree-tools");
         var html = view.ToHtmlFragment();
-        Assert.Contains("type=\"application/x-canopyx-tree-tools\"", html);
-        Assert.Contains("type=\"application/x-canopyx-tree-tools-style\"", html);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", html);
+        Assert.Contains("<style data-canopyx-part=\"tree-tools\"", html);
     }
 
     [Theory]
@@ -38,7 +38,7 @@ public sealed class RecordTreeCollectionAssetsTests {
         if (kind == "event") value = Event("Alpha", "Beta");
         view.Rows[0].Fields["payload"] = value;
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "tree-tools");
-        Assert.DoesNotContain("type=\"application/x-canopyx-tree-tools\"", view.ToHtmlFragment());
+        Assert.DoesNotContain("<script data-canopyx-part=\"tree-tools\"", view.ToHtmlFragment());
     }
 
     [Theory]
@@ -56,8 +56,8 @@ public sealed class RecordTreeCollectionAssetsTests {
 
         var html = view.ToHtmlFragment();
         foreach (var name in companions) {
-            Assert.Contains("type=\"application/x-canopyx-" + name + "\"", html);
-            if (CanopyHtmlAssets.GetPart(name).Style != null) Assert.Contains("type=\"application/x-canopyx-" + name + "-style\"", html);
+            Assert.Contains("<script data-canopyx-part=\"" + name + "\"", html);
+            if (CanopyHtmlAssets.GetPart(name).Style != null) Assert.Contains("<style data-canopyx-part=\"" + name + "\"", html);
         }
     }
 
@@ -109,7 +109,7 @@ public sealed class RecordTreeCollectionAssetsTests {
         Assert.Equal(CanopyHtmlAssets.Parts.Where(part => names.Contains(part.Name)).Select(part => part.Name), names);
         var html = view.ToHtmlFragment();
         foreach (var name in new[] { "calendar", "tree-tools", "highlight", "layouts", "links" })
-            Assert.Contains("type=\"application/x-canopyx-" + name + "\"", html);
+            Assert.Contains("<script data-canopyx-part=\"" + name + "\"", html);
     }
 
     private static CanopyDataGridView View(string location) {

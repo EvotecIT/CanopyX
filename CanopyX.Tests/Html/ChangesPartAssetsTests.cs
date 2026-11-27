@@ -34,9 +34,9 @@ public sealed class ChangesPartAssetsTests {
         var view = new CanopyPropagation("p", "P");
         view.Witness("a", "A", CanopyPropagationState.Converged);
         var page = view.ToHtml();
-        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
+        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("<script data-canopyx-part=\"" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "changes" }, embedded);
-        Assert.Contains("type=\"application/x-canopyx-changes-style\"", page);
+        Assert.Contains("<style data-canopyx-part=\"changes\"", page);
     }
 
     private static long Gzip(string value) {

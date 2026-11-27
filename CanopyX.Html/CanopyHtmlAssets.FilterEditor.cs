@@ -15,7 +15,7 @@ public static partial class CanopyHtmlAssets {
     public static string HashedFilterEditorScriptFileName => GetPart("filter-editor").HashedScriptFileName;
     /// <summary>Gets the content-hashed filter stylesheet file name.</summary>
     public static string HashedFilterEditorStyleFileName => GetPart("filter-editor").HashedStyleFileName!;
-    /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
+    /// <summary>Gets the part's markup (its script and stylesheet elements) for hosts embedding the runtime into a single-file page.</summary>
     /// <remarks>Grid fragments already carry this markup. Custom JavaScript hosts can include it once outside a mounted host; it activates on first use of an editor, menu, drawer, or selected aggregate.</remarks>
     public static string FilterEditorMarkup => GetPart("filter-editor").Markup;
 }
