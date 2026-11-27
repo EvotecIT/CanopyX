@@ -91,3 +91,32 @@ for (const { name, body, remove, late, runtimeLast, hashes, head, all, links, fi
   expect(requested.length > 0).toBe(files);
   expect(errors).toEqual([]);
 });
+
+test("a host that removes a fragment's nodes by reference keeps the part's rules for the other views and later fragments", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.route("http://canopyx.test/**", route => {
+    const file = new URL(route.request().url()).pathname.slice(1);
+    if (file !== "parts") return route.fulfill({ status: 404, body: "" });
+    return route.fulfill({ contentType: "text/html", body: `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title>` +
+      `<style>${asset("canopyx.css")}</style><script>${asset("canopyx.js")}</script></head><body class="cx-page"><main></main>${requirements("ui-tabs")}</body></html>` });
+  });
+  await page.goto("http://canopyx.test/parts");
+  const insert = (markup, id) => page.evaluate(({ markup, id }) => {
+    // The host keeps the inserted nodes, as a host that tears its fragments down by reference does.
+    const fragment = document.createRange().createContextualFragment(markup), nodes = [...fragment.childNodes];
+    document.querySelector("main").append(fragment);
+    (window.fragments ||= {})[id] = nodes;
+  }, { markup, id });
+  await insert(markup("ui-tabs"), "carrier");
+  await page.locator("main").evaluate((main, markup) => main.insertAdjacentHTML("beforeend", markup), tabs("first"));
+  await page.evaluate(() => CanopyX.tabs("#first").ready);
+  await page.evaluate(() => window.fragments.carrier.forEach(node => node.remove()));
+  const applied = () => page.evaluate(() => [...document.querySelectorAll('style[data-canopyx-part="ui-tabs"]')].filter(style => style.sheet).length);
+  expect(await applied()).toBe(1);
+  await insert(markup("ui-tabs") + tabs("second"), "replacement");
+  await page.evaluate(() => CanopyX.tabs("#second").ready);
+  await page.getByRole("tab", { name: "Second second" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Second second" })).toBeVisible();
+  expect(await applied()).toBe(1);
+  expect(errors).toEqual([]);
+});

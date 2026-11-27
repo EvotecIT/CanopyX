@@ -21,9 +21,9 @@
   }
   const partVersion = (name, part) => Object.hasOwn(PARTS, name) ? PARTS[name][0] : part.version;
   // A part's stylesheet the page carries sits beside its script inside a fragment. The page keeps one stylesheet per
-  // part: the one the loader linked from a file, or else the page's copy of the accepted registration's version, when it
-  // is this build's, moved into document.head (as linked stylesheets are) so removing its fragment keeps the rules. Copies
-  // of other versions are removed; copies of this build's version wait while an older registration holds the name.
+  // part: the one the loader linked from a file, or else the runtime's own copy in document.head of the page's stylesheet for
+  // the accepted registration's version, when it is this build's, so a host that removes its fragment's nodes keeps the rules.
+  // Copies of other versions are removed; copies of this build's version wait while an older registration holds the name.
   const PART_SHEETS = new Map();
   function settlePartSheets(name) {
     const code = PART_CODE.get(name);
@@ -31,16 +31,22 @@
     const wanted = partVersion(name, code), sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name);
     if (code.version !== wanted) { sheets.forEach(style => style.dataset.cxVersion === wanted || style.remove()); return; }
     let kept = PART_SHEETS.get(name);
-    if (kept && kept.dataset.cxVersion !== code.version) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
+    if (kept && (!kept.isConnected || kept.dataset.cxVersion !== code.version)) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
     if (!kept) {
       // Only a copy the browser applied (a policy leaves a refused one without a sheet): the registering script's own
       // stylesheet first (the element before it), then one with the page nonce, then any; never a refused look-alike.
       const matching = sheets.filter(style => style.dataset.cxVersion === code.version), applied = matching.filter(style => style.sheet);
       const own = document.currentScript?.previousElementSibling;
-      kept = applied.includes(own) ? own : pageNonce && applied.find(style => style.nonce === pageNonce) || applied[0];
-      if (kept) {
+      const source = applied.includes(own) ? own : pageNonce && applied.find(style => style.nonce === pageNonce) || applied[0];
+      if (source) {
+        // A clone of a stylesheet the browser applied, with that element's nonce, so the policy that allowed the original
+        // allows the copy; should it not apply, the original itself moves into the head.
+        const copy = source.cloneNode(true);
+        copy.nonce = source.nonce;
+        document.head.appendChild(copy);
+        if (copy.sheet) kept = copy;
+        else { copy.remove(); kept = source; if (source.getRootNode() === document) document.head.appendChild(source); }
         PART_SHEETS.set(name, kept);
-        if (kept.getRootNode() === document && kept.parentNode !== document.head) document.head.appendChild(kept);
       }
     }
     sheets.forEach(style => style === kept || style.remove());
