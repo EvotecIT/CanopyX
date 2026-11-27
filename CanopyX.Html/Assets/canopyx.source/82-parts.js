@@ -12,13 +12,37 @@
   function registerPart(name, part) {
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
         part.requires !== undefined && !(Array.isArray(part.requires) && part.requires.every(partName))) throw new Error("CanopyX: invalid part.");
-    // Fragments written without a shared document each carry the parts they need, so the same part can register more than
-    // once. The first registration of a version stays; a copy changes nothing, and its stylesheet, already in the page
-    // before its script, is removed so the page applies the rules once.
-    if (PART_CODE.get(name)?.version !== part.version) { PART_CODE.set(name, part); return; }
-    if (typeof document === "undefined") return;
-    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name && style.dataset.cxVersion === part.version);
-    sheets.slice(1).forEach(style => style.remove());
+    // Fragments written without a shared document each carry the parts they need, so a part can register more than once,
+    // and a page may even hold a copy from another build. A registration of this build's version stays; any other copy
+    // changes nothing, and its stylesheet is removed so the page applies the rules once.
+    const current = PART_CODE.get(name), wanted = Object.hasOwn(PARTS, name) ? PARTS[name][0] : current?.version;
+    if (current && (current.version === part.version || current.version === wanted)) {
+      partSheets(name, part.version).forEach(style => PART_SHEETS.get(name) === style || style.remove());
+      return;
+    }
+    // A registration this one replaces takes its stylesheet with it.
+    PART_SHEETS.get(name)?.remove(); PART_SHEETS.delete(name);
+    PART_CODE.set(name, part);
+    adoptPartSheet(name, part.version);
+  }
+  // A part's stylesheet the page carries sits beside its script inside a fragment. It moves into document.head when the
+  // part registers, as the loaded stylesheets do, so removing that fragment later keeps the rules for the other views.
+  const PART_SHEETS = new Map();
+  /** The registering part's own stylesheet (the style element just before its script), else every matching one in the page. */
+  function partSheets(name, version) {
+    if (typeof document === "undefined") return [];
+    const match = style => style?.localName === "style" && style.dataset.canopyxPart === name && style.dataset.cxVersion === version;
+    const own = document.currentScript?.previousElementSibling;
+    if (match(own)) return [own];
+    // Registered later from the queue: prefer a stylesheet with the page nonce, which a policy applied.
+    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(match);
+    return pageNonce ? sheets.sort((a, b) => (b.nonce === pageNonce) - (a.nonce === pageNonce)) : sheets;
+  }
+  function adoptPartSheet(name, version) {
+    const sheet = partSheets(name, version)[0];
+    if (!sheet) return;
+    PART_SHEETS.set(name, sheet);
+    if (sheet.getRootNode() === document && sheet.parentNode !== document.head) document.head.appendChild(sheet);
   }
   // A view kind's parts by name, each with the context its code installs into: definePart(TreeGrid, "tree-tools", ...).
   function definePart(View, name, label, context) {

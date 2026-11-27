@@ -148,14 +148,32 @@ test("a part file inserted with a wrong page nonce is refused, so the runtime's 
 
 test("a data block shaped like a part never runs, also under 'strict-dynamic'", async ({ page }) => {
   // The injected block comes first in the document, in the inert form older pages used, with the export part's real version.
-  const inject = html => html.replace('<main class="cx-main">', '<main class="cx-main"><script type="application/x-canopyx-export" data-cx-version="' +
-    (html.match(/<script data-canopyx-part="export" data-cx-version="([a-f0-9]{16})"/) || [])[1] + '">window.__injected = true;</script>');
+  const inject = html => {
+    const version = html.match(/<script data-canopyx-part="export" data-cx-version="([a-f0-9]{16})"/)?.[1];
+    if (!version) throw new Error("The tree page carries no export part to imitate.");
+    return html.replace('<main class="cx-main">', '<main class="cx-main"><script type="application/x-canopyx-export" data-cx-version="' + version + '">window.__injected = true;</script>');
+  };
   const report = await serve(page, nonce => POLICIES["nonce only"](nonce).replace("script-src", "script-src 'strict-dynamic'"), { transform: inject });
   await open(page, "tree.html");
   await page.locator(".cx-host").getByText("Export", { exact: true }).click();
   await expect(page.getByRole("button", { name: /CSV/ }).first()).toBeVisible();
   expect(await page.evaluate(() => window.__injected)).toBeUndefined();
   await expectClean(page, report);
+});
+
+test("an injected stylesheet shaped like a part's is never the one the page keeps", async ({ page }) => {
+  // The policy refuses the injected element; the part adopts the nonced stylesheet beside its own script.
+  const inject = html => {
+    const version = html.match(/<style data-canopyx-part="tree-tools" data-cx-version="([a-f0-9]{16})"/)?.[1];
+    if (!version) throw new Error("The tree page carries no tree tools stylesheet to imitate.");
+    return html.replace('<main class="cx-main">', '<main class="cx-main"><style data-canopyx-part="tree-tools" data-cx-version="' + version + '">.cx-host{outline:9px solid red}</style>');
+  };
+  const report = await serve(page, POLICIES["nonce only"], { transform: inject });
+  await open(page, "tree.html");
+  await expect(page.locator(".cx-host").first()).toHaveClass(/cx-tree-tools/);
+  const kept = await page.evaluate(() => [...document.head.querySelectorAll('style[data-canopyx-part="tree-tools"]')].map(style => ({ nonce: style.nonce !== "", injected: style.textContent.includes("9px solid red") })));
+  expect(kept).toEqual([{ nonce: true, injected: false }]);
+  expect((await report.violations()).every(violation => violation.startsWith("style-src"))).toBe(true);
 });
 
 test.describe("under require-trusted-types-for 'script'", () => {

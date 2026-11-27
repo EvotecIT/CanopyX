@@ -44,8 +44,8 @@ public sealed class CanopyHtmlPart {
         ScriptFileName = Text(entry, "script") ?? throw new InvalidOperationException("The CanopyX part '" + Name + "' has no script.");
         StyleFileName = Text(entry, "style");
         var styleFile = StyleFileName;
-        _script = new Lazy<string>(() => CanopyHtmlResources.Read(ScriptFileName));
-        _style = new Lazy<string?>(() => styleFile == null ? null : CanopyHtmlResources.Read(styleFile));
+        _script = new Lazy<string>(() => Embeddable(CanopyHtmlResources.Read(ScriptFileName), ScriptFileName, "</script", "<!--"));
+        _style = new Lazy<string?>(() => styleFile == null ? null : Embeddable(CanopyHtmlResources.Read(styleFile), styleFile, "</style"));
         Runtimes = List(entry, "runtimes").SelectMany(RuntimesOf).Distinct().ToList().AsReadOnly();
         Requires = List(entry, "requires").ToList().AsReadOnly();
         _views = List(entry, "views").ToArray();
@@ -110,6 +110,16 @@ public sealed class CanopyHtmlPart {
     public string GetMarkup(string? nonce) {
         var attributes = " data-canopyx-part=\"" + Name + "\" data-cx-version=\"" + Version + "\"" + CanopyContentSecurity.Attribute(nonce) + ">";
         return (Style == null ? string.Empty : "<style" + attributes + Style + "</style>") + "<script" + attributes + Script + "</script>";
+    }
+
+    // The markup writes the text raw inside its element, so a sequence that ends the element early, or that changes how a
+    // script element is parsed, would spill the rest into the page.
+    private static string Embeddable(string text, string file, params string[] refused) {
+        foreach (var sequence in refused) {
+            if (text.IndexOf(sequence, StringComparison.OrdinalIgnoreCase) >= 0) throw new InvalidOperationException("The CanopyX part file '" + file + "' contains '" + sequence + "', which cannot be written inside its element.");
+        }
+
+        return text;
     }
 
     /// <summary>Returns the script file name under a naming.</summary>

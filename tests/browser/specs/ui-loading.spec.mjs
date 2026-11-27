@@ -12,7 +12,7 @@ const tabs = `<div id="late" data-cx-tabs><div role="tablist" aria-label="Late s
 test('UI parts the page carries install only when a component is requested, and the runtime adds no style or script', async ({ page }) => {
   await openUi(page, '<h1>Report</h1><p>No interactive controls yet.</p>');
   expect(await page.evaluate(() => CanopyX.mountUi(document).length)).toBe(0);
-  expect(await page.locator('head style').count()).toBe(1);
+  expect(await page.locator('head style:not([data-canopyx-part])').count()).toBe(1);
   expect(await page.locator('script[data-canopyx-part="ui-tabs"]').count()).toBe(1);
   await page.evaluate(markup => {
     document.querySelector('main').insertAdjacentHTML('beforeend', markup);
@@ -21,7 +21,7 @@ test('UI parts the page carries install only when a component is requested, and 
   await page.evaluate(() => window.late.ready);
   await page.getByRole('tab', { name: 'Second', exact: true }).click();
   await expect(page.getByRole('tabpanel', { name: 'Second', exact: true })).toBeVisible();
-  expect(await page.locator('head style').count()).toBe(1);
+  expect(await page.locator('head style:not([data-canopyx-part])').count()).toBe(1);
   expect(await page.locator('head link, head script[src]').count()).toBe(0);
 });
 

@@ -14,8 +14,11 @@ namespace CanopyX.Html;
 /// A part's script registers the part for the whole document when it runs, so the views of a page share one copy. Use one
 /// instance per output document, and only for markup that reaches that document: a fragment written and then discarded may
 /// hold the only copy. The fragment that carries a part must be in the page, and its script run, before a view that needs
-/// the part mounts; a host that inserts fragments later (tabs, templates, injected HTML) inserts the first one first, or
-/// gives each such fragment its own document. Without a document, every inline fragment carries its own parts and stands alone; on a page of such fragments the
+/// the part mounts; a host that inserts fragments later (tabs, templates) inserts the first one first, or gives each such
+/// fragment its own document. A part's script runs only where the browser runs scripts: markup parsed with the page or
+/// inserted through <c>Range.createContextualFragment</c>, but not markup set through <c>innerHTML</c>, after which the runtime
+/// looks for the part files instead. When a part registers, its stylesheet moves into the document's head, so removing the
+/// fragment that carried it keeps the rules for the other views. Without a document, every inline fragment carries its own parts and stands alone; on a page of such fragments the
 /// first copy of a part registers, and the runtime removes the stylesheets of the others.
 /// </para>
 /// <para>

@@ -123,6 +123,26 @@ public sealed class RuntimePartTests {
         Assert.Equal("<script data-canopyx-part=\"links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);
     }
 
+    public static TheoryData<string> PartNames() {
+        var names = new TheoryData<string>();
+        foreach (var part in CanopyHtmlAssets.Parts) names.Add(part.Name);
+        return names;
+    }
+
+    [Theory]
+    [MemberData(nameof(PartNames))]
+    public void Markup_KeepsEveryPartInsideItsOwnElements(string name) {
+        // A single file writes the text raw, so nothing in it may end its element early or change how a script is parsed.
+        var part = CanopyHtmlAssets.GetPart(name);
+        var markup = part.GetMarkup("abc123");
+        // Inside a script only "</script" and "<!--" matter; inside a stylesheet only "</style".
+        Assert.Single(Regex.Matches(markup, "</script", RegexOptions.IgnoreCase));
+        Assert.DoesNotContain("<!--", part.Script, StringComparison.Ordinal);
+        Assert.Equal(part.Style != null, markup.StartsWith("<style ", StringComparison.Ordinal));
+        if (part.Style != null) Assert.DoesNotContain("</style", part.Style, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("<script data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.Version + "\" nonce=\"abc123\">" + part.Script + "</script>", markup);
+    }
+
     [Theory]
     [InlineData(CanopyAssetNaming.Plain)]
     [InlineData(CanopyAssetNaming.ContentHash)]

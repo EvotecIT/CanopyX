@@ -121,7 +121,7 @@ In TypeScript the types are `CanopyPlugin`, `CanopyPluginContext`, `CanopyCellRe
 
 A part is runtime code that loads when a view needs it. The runtime's build manifest names each part it knows with its version and content-hashed file names. When a view first needs a part, the loader:
 
-1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<style>` and `<script>` elements (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs, and a host may preload part scripts the same way;
+1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<style>` and `<script>` elements (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs (only where the browser runs scripts: not in markup set through `innerHTML`), and a host may preload part scripts the same way. The part's stylesheet moves into the document's head as it registers, and a second copy of the same version removes its own;
 2. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
 3. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
 
