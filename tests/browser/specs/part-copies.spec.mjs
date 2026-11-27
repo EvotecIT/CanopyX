@@ -1,6 +1,7 @@
 // The parts a single-file page carries as their own style and script elements (CanopyHtmlPart.Markup, docs/plugins.md#parts):
 // each case writes a page with the tree runtime, copies of the tabs part and the parts it requires, then checks which
 // registration and stylesheet stay.
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
@@ -47,18 +48,28 @@ const CASES = [
   { name: "both builds' copies queued before the runtime keep this build's stylesheet",
     body: `${markup("ui-tabs", OTHER_BUILD)}${markup("ui-tabs")}`, runtimeLast: true, head: [VERSION], all: 1, links: 0, files: false },
   { name: "a page copy set through innerHTML gives way to the stylesheet already linked from a file",
-    body: "", late: markup("ui-tabs"), head: [], all: 0, links: 1, files: true }
+    body: "", late: markup("ui-tabs"), head: [], all: 0, links: 1, files: true },
+  { name: "under a policy of hashes, a queued part keeps the copy the policy applied, not an earlier refused one",
+    body: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">/*refused*/.cx-tabs{outline:9px solid red}</style>${markup("ui-tabs")}`,
+    runtimeLast: true, hashes: true, head: [VERSION], all: 1, links: 0, files: false }
 ];
+/** A policy of the hashes of the page's inline scripts and styles, leaving out the styles marked refused. */
+const hashPolicy = html => {
+  const hash = text => "'sha256-" + crypto.createHash("sha256").update(text, "utf8").digest("base64") + "'";
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>|<script data-canopyx-part[^>]*>([\s\S]*?)<\/script>/g)].map(match => hash(match[1] ?? match[2]));
+  const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(match => match[1]).filter(text => !text.startsWith("/*refused*/")).map(hash);
+  return `default-src 'self'; script-src ${scripts.join(" ")}; style-src ${styles.join(" ")}`;
+};
 
-for (const { name, body, remove, late, runtimeLast, head, all, links, files } of CASES) test(name, async ({ page }) => {
+for (const { name, body, remove, late, runtimeLast, hashes, head, all, links, files } of CASES) test(name, async ({ page }) => {
   const runtime = `<script>${asset("canopyx.js")}</script>`;
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await page.route("http://canopyx.test/**", route => {
     const file = new URL(route.request().url()).pathname.slice(1);
     if (file !== "parts") return route.fulfill({ path: path.join(repo, "CanopyX.Html/Assets", file) });
-    return route.fulfill({ contentType: "text/html", body:
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style>${runtimeLast ? "" : runtime}</head>` +
-      `<body class="cx-page"><main>${body}</main>${requirements("ui-tabs")}${runtimeLast ? runtime : ""}</body></html>` });
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style>${runtimeLast ? "" : runtime}</head>` +
+      `<body class="cx-page"><main>${body}</main>${requirements("ui-tabs")}${runtimeLast ? runtime : ""}</body></html>`;
+    return route.fulfill({ body: html, headers: { "content-type": "text/html; charset=utf-8", ...hashes ? { "content-security-policy": hashPolicy(html) } : {} } });
   });
   const requested = []; page.on("request", request => { if (/canopyx-ui-tabs/.test(request.url())) requested.push(request.url()); });
   await page.goto("http://canopyx.test/parts");
@@ -73,8 +84,10 @@ for (const { name, body, remove, late, runtimeLast, head, all, links, files } of
   expect(await page.evaluate(() => ({
     head: [...document.head.querySelectorAll('style[data-canopyx-part="ui-tabs"]')].map(style => style.dataset.cxVersion),
     all: document.querySelectorAll('style[data-canopyx-part="ui-tabs"]').length,
-    links: document.querySelectorAll('link[rel=stylesheet][data-canopyx-part="ui-tabs"]').length
-  }))).toEqual({ head, all, links });
+    links: document.querySelectorAll('link[rel=stylesheet][data-canopyx-part="ui-tabs"]').length,
+    // Every kept copy is one the browser applied.
+    applied: [...document.head.querySelectorAll('style[data-canopyx-part="ui-tabs"]')].filter(style => style.sheet && !style.textContent.startsWith("/*refused*/")).length
+  }))).toEqual({ head, all, links, applied: head.length });
   expect(requested.length > 0).toBe(files);
   expect(errors).toEqual([]);
 });

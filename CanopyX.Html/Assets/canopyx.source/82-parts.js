@@ -33,10 +33,11 @@
     let kept = PART_SHEETS.get(name);
     if (kept && kept.dataset.cxVersion !== code.version) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
     if (!kept) {
-      // The registering script's own stylesheet first (the element before it), then one with the page nonce, which a
-      // policy applied: never an injected look-alike placed earlier.
-      const matching = sheets.filter(style => style.dataset.cxVersion === code.version), own = document.currentScript?.previousElementSibling;
-      kept = matching.includes(own) ? own : pageNonce && matching.find(style => style.nonce === pageNonce) || matching[0];
+      // Only a copy the browser applied (a policy leaves a refused one without a sheet): the registering script's own
+      // stylesheet first (the element before it), then one with the page nonce, then any; never a refused look-alike.
+      const matching = sheets.filter(style => style.dataset.cxVersion === code.version), applied = matching.filter(style => style.sheet);
+      const own = document.currentScript?.previousElementSibling;
+      kept = applied.includes(own) ? own : pageNonce && applied.find(style => style.nonce === pageNonce) || applied[0];
       if (kept) {
         PART_SHEETS.set(name, kept);
         if (kept.getRootNode() === document && kept.parentNode !== document.head) document.head.appendChild(kept);

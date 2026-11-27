@@ -197,3 +197,35 @@ test('print keeps the media condition of an inline font stylesheet', async ({ pa
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
   expect(await page.evaluate(() => window.__mediaFonts)).toBe(0);
 });
+
+test('print keeps the page order of inline and linked font sources', async ({ page }) => {
+  // The inline source maps Archivo to the monospaced face with the same descriptors; the later linked source maps it back,
+  // so it wins on screen, and must win on paper too.
+  await page.addInitScript(() => { window.print = () => {
+    const probe = document.createElement('span'); document.body.append(probe);
+    // Letters, since the paper uses tabular numbers: a monospaced face draws both runs equally wide.
+    probe.textContent = 'iiiiii'; const narrow = probe.getBoundingClientRect().width;
+    probe.textContent = 'WWWWWW'; const wide = probe.getBoundingClientRect().width;
+    window.parent.__printedWidths = [narrow, wide];
+  }; });
+  await page.route('http://canopyx.test/**', route => {
+    const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const type = path.extname(file) === '.woff2' ? 'font/woff2' : path.extname(file) === '.css' ? 'text/css' : path.extname(file) === '.js' ? 'text/javascript' : 'text/html';
+    const body = type === 'text/html' ? fs.readFileSync(file, 'utf8').replace('<link data-font-source rel="stylesheet"',
+      '<style data-font-source>@font-face{font-family:Archivo;font-style:normal;font-weight:100 900;src:url("plain/JetBrainsMono.woff2") format("woff2")}</style>\n<link data-font-source rel="stylesheet"') : fs.readFileSync(file);
+    return route.fulfill({ contentType: type, body });
+  });
+  await page.goto('http://canopyx.test/plain.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; await document.fonts.ready; });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  const screen = await page.evaluate(() => {
+    const probe = document.createElement('span'); probe.style.font = getComputedStyle(document.body).font; probe.style.fontFamily = 'Archivo'; probe.style.fontSize = '11px'; document.body.append(probe);
+    probe.textContent = 'iiiiii'; const narrow = probe.getBoundingClientRect().width;
+    probe.textContent = 'WWWWWW'; const wide = probe.getBoundingClientRect().width;
+    probe.remove(); return [narrow, wide];
+  });
+  const paper = await page.evaluate(() => window.__printedWidths);
+  expect(screen[1] - screen[0]).toBeGreaterThan(10);
+  expect(paper[1] - paper[0]).toBeGreaterThan(10);
+});

@@ -56,13 +56,14 @@ test.describe("under script-src 'self'; style-src 'self' with external assets an
 
   test("a grid loads its history, filter editor and export parts and prints", async ({ page }) => {
     const report = await serve(page, SELF);
-    await page.addInitScript(() => { window.print = () => { window.parent.printed = getComputedStyle(document.body).margin; }; });
+    // The body's padding comes only from the paper's constructed stylesheet (its narrow-screen rule: the frame is 1px wide).
+    await page.addInitScript(() => { window.print = () => { window.parent.printed = { padding: getComputedStyle(document.body).paddingTop, sheets: document.adoptedStyleSheets.length }; }; });
     await open(page, "self/grid.html");
     await exerciseGrid(page);
     await page.locator(".cx-grid-filters > summary").click();
     await expect(page.locator(".cx-grid-filters .cx-grid-panel")).toBeVisible();
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.print({ scope: "all" }));
-    expect(await page.evaluate(() => window.printed)).toBe("0px");
+    expect(await page.evaluate(() => window.printed)).toEqual({ padding: "20px", sheets: 1 });
     await expectClean(page, report);
   });
 

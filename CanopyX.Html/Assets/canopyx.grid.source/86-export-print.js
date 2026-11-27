@@ -68,15 +68,19 @@
         "@media screen and (min-width:1200px){.cx-print-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
+      // Inline font stylesheets are copied into constructed stylesheets with the same media when every font source is inline
+      // and imports nothing, which a constructed stylesheet would drop. Otherwise every source is inserted again in page order,
+      // each with its own nonce, since constructed stylesheets would win over the linked ones and reverse their precedence.
+      const ruleList = source => source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null;
+      const imports = rules => rules?.some(rule => rule.constructor.name === "CSSImportRule");
+      const constructFonts = [...fontSources].every(source => { const rules = ruleList(source); return rules && !imports(rules); });
       for (const source of fontSources) {
-        // An inline font stylesheet's rules are copied into a constructed stylesheet with the same media, unless it imports
-        // others, which a constructed stylesheet drops: that one, like a linked one, is inserted again with its own nonce.
-        const rules = source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null, imports = rules?.some(rule => rule.constructor.name === "CSSImportRule");
-        if (rules && !imports && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;
+        const rules = ruleList(source);
+        if (constructFonts && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
         if (source.tagName === "LINK") copy.href = source.href;
         // A linked stylesheet, or an inline one's imports, load before the paper prints.
-        if (source.tagName === "LINK" || imports) {
+        if (source.tagName === "LINK" || imports(rules)) {
           fontLoads.push(new Promise((resolve, reject) => {
             copy.onload = resolve; copy.onerror = () => reject(new Error("CanopyX: print font stylesheet failed to load."));
           }));
