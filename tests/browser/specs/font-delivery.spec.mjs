@@ -180,3 +180,20 @@ test('an inline font stylesheet that imports the faces prints with them', async 
   expect(faces).toContainEqual({ family: 'Archivo', status: 'loaded' });
   await expect(page.locator('iframe')).toHaveCount(0);
 });
+
+test('print keeps the media condition of an inline font stylesheet', async ({ page }) => {
+  // A font stylesheet the page does not apply (media="not all") stays unapplied on paper too.
+  await page.addInitScript(() => { window.print = () => { window.parent.__mediaFonts = document.fonts.size; }; });
+  await page.route('http://canopyx.test/**', route => {
+    const file = path.join(examples, 'fonts', new URL(route.request().url()).pathname.slice(1));
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const html = path.extname(file) === '.html';
+    return route.fulfill({ contentType: html ? 'text/html' : 'application/octet-stream',
+      body: html ? fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source media="not all">') : fs.readFileSync(file) });
+  });
+  await page.goto('http://canopyx.test/inline.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; });
+  expect(await page.evaluate(() => document.fonts.size)).toBe(0);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  expect(await page.evaluate(() => window.__mediaFonts)).toBe(0);
+});

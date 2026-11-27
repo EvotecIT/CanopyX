@@ -20,18 +20,19 @@
     settlePartSheets(name);
   }
   const partVersion = (name, part) => Object.hasOwn(PARTS, name) ? PARTS[name][0] : part.version;
-  // A part's stylesheet the page carries sits beside its script inside a fragment. The page keeps one: that of the
-  // accepted registration's version, when it is this build's, moved into document.head (as the loaded stylesheets are),
-  // so removing its fragment keeps the rules. Every other copy, stale or repeated, is removed. A part that registered
-  // from a file keeps its linked stylesheet; one whose script was preloaded without a stylesheet adopts the page's copy.
+  // A part's stylesheet the page carries sits beside its script inside a fragment. The page keeps one stylesheet per
+  // part: the one the loader linked from a file, or else the page's copy of the accepted registration's version, when it
+  // is this build's, moved into document.head (as linked stylesheets are) so removing its fragment keeps the rules. Copies
+  // of other versions are removed; copies of this build's version wait while an older registration holds the name.
   const PART_SHEETS = new Map();
   function settlePartSheets(name) {
     const code = PART_CODE.get(name);
     if (!code || typeof document === "undefined") return;
+    const wanted = partVersion(name, code), sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name);
+    if (code.version !== wanted) { sheets.forEach(style => style.dataset.cxVersion === wanted || style.remove()); return; }
     let kept = PART_SHEETS.get(name);
     if (kept && kept.dataset.cxVersion !== code.version) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
-    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name);
-    if (!kept && code.version === partVersion(name, code)) {
+    if (!kept) {
       // The registering script's own stylesheet first (the element before it), then one with the page nonce, which a
       // policy applied: never an injected look-alike placed earlier.
       const matching = sheets.filter(style => style.dataset.cxVersion === code.version), own = document.currentScript?.previousElementSibling;
@@ -62,7 +63,10 @@
         const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
           element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
         const link = h("link"), script = h("script"); link.rel = "stylesheet";
+        // The linked stylesheet is the part's one stylesheet; page copies that arrive later give way to it.
+        Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version });
         const style = styleFile && (part.styleReady ||= load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet")
+          .then(() => { PART_SHEETS.get(part.name)?.remove(); PART_SHEETS.set(part.name, link); settlePartSheets(part.name); })
           .catch(error => { part.styleReady = null; throw error; }));
         const code = PART_CODE.get(part.name)?.version === part.version || (part.scriptReady ||= load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")
           .finally(() => script.remove()).catch(error => { part.scriptReady = null; throw error; }));

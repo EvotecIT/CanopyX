@@ -46,9 +46,9 @@
       };
       // The paper's rules go in a constructed stylesheet, which a strict policy allows without a nonce. A browser without
       // constructable stylesheets gets a style element with the page nonce.
-      const sheet = (text, constructedOnly) => {
+      const sheet = (text, constructedOnly, media) => {
         const Sheet = frame.contentWindow?.CSSStyleSheet;
-        try { const rules = new Sheet(); rules.replaceSync(text); doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, rules]; return true; } catch (_) { if (constructedOnly) return false; }
+        try { const rules = new Sheet(media ? { media } : undefined); rules.replaceSync(text); doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, rules]; return true; } catch (_) { if (constructedOnly) return false; }
         const element = doc.createElement("style"); element.nonce = fontSources[0]?.nonce || ""; withNonce(element); element.textContent = text; doc.head.appendChild(element);
         return true;
       };
@@ -69,10 +69,10 @@
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
       for (const source of fontSources) {
-        // An inline font stylesheet's rules are copied into the paper's own constructed stylesheet, unless it imports others,
-        // which a constructed stylesheet drops: that one, like a linked one, is inserted again with its own nonce.
+        // An inline font stylesheet's rules are copied into a constructed stylesheet with the same media, unless it imports
+        // others, which a constructed stylesheet drops: that one, like a linked one, is inserted again with its own nonce.
         const rules = source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null, imports = rules?.some(rule => rule.constructor.name === "CSSImportRule");
-        if (rules && !imports && sheet(rules.map(rule => rule.cssText).join("\n"), true)) continue;
+        if (rules && !imports && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
         if (source.tagName === "LINK") copy.href = source.href;
         // A linked stylesheet, or an inline one's imports, load before the paper prints.

@@ -26,33 +26,39 @@ const tabs = id => `<div id="${id}" data-cx-tabs><div role="tablist" aria-label=
 const VERSION = entries.find(entry => entry.name === "ui-tabs").version;
 const tabsScript = asset(entries.find(entry => entry.name === "ui-tabs").script);
 
-// head: the versions of the tabs stylesheets left in document.head; all: every tabs stylesheet in the page; files: whether
-// the tabs part came from its file. late: markup set through innerHTML after the first tabs are ready, then mounted.
+// head: the versions of the tabs style elements left in document.head; all: every tabs style element in the page; links: the
+// tabs stylesheets linked from files; files: whether the tabs part came from its files. late: markup set through innerHTML
+// after the first tabs are ready, then mounted. runtimeLast: the runtime script comes after every part, so they queue.
 const CASES = [
   { name: "a part's stylesheet moves into the head as it registers, so removing its fragment keeps the rules",
-    body: `<section id="carrier">${markup("ui-tabs")}</section>`, remove: "#carrier", head: [VERSION], all: 1, files: false },
+    body: `<section id="carrier">${markup("ui-tabs")}</section>`, remove: "#carrier", head: [VERSION], all: 1, links: 0, files: false },
   { name: "a second copy of the same version removes its own stylesheet",
-    body: `<section>${markup("ui-tabs")}</section><section>${markup("ui-tabs")}</section>`, head: [VERSION], all: 1, files: false },
+    body: `<section>${markup("ui-tabs")}</section><section>${markup("ui-tabs")}</section>`, head: [VERSION], all: 1, links: 0, files: false },
   { name: "a copy from another build after this build's does not replace it",
-    body: `${markup("ui-tabs")}${markup("ui-tabs", OTHER_BUILD)}`, head: [VERSION], all: 1, files: false },
+    body: `${markup("ui-tabs")}${markup("ui-tabs", OTHER_BUILD)}`, head: [VERSION], all: 1, links: 0, files: false },
   { name: "this build's copy after one from another build replaces it and its stylesheet",
-    body: `${markup("ui-tabs", OTHER_BUILD)}${markup("ui-tabs")}`, head: [VERSION], all: 1, files: false },
+    body: `${markup("ui-tabs", OTHER_BUILD)}${markup("ui-tabs")}`, head: [VERSION], all: 1, links: 0, files: false },
   { name: "a copy from another build alone is never applied, and the part loads from its files",
-    body: markup("ui-tabs", OTHER_BUILD), head: [], all: 0, files: true },
+    body: markup("ui-tabs", OTHER_BUILD), head: [], all: 0, links: 1, files: true },
   { name: "a part whose script was preloaded without a stylesheet adopts the page's copy",
-    body: `<script>${tabsScript}</script>${markup("ui-tabs")}`, head: [VERSION], all: 1, files: false },
+    body: `<script>${tabsScript}</script>${markup("ui-tabs")}`, head: [VERSION], all: 1, links: 0, files: false },
   { name: "copies set through innerHTML after the part installed are settled when the next view loads it",
-    body: markup("ui-tabs"), late: markup("ui-tabs", OTHER_BUILD) + markup("ui-tabs"), head: [VERSION], all: 1, files: false }
+    body: markup("ui-tabs"), late: markup("ui-tabs", OTHER_BUILD) + markup("ui-tabs"), head: [VERSION], all: 1, links: 0, files: false },
+  { name: "both builds' copies queued before the runtime keep this build's stylesheet",
+    body: `${markup("ui-tabs", OTHER_BUILD)}${markup("ui-tabs")}`, runtimeLast: true, head: [VERSION], all: 1, links: 0, files: false },
+  { name: "a page copy set through innerHTML gives way to the stylesheet already linked from a file",
+    body: "", late: markup("ui-tabs"), head: [], all: 0, links: 1, files: true }
 ];
 
-for (const { name, body, remove, late, head, all, files } of CASES) test(name, async ({ page }) => {
+for (const { name, body, remove, late, runtimeLast, head, all, links, files } of CASES) test(name, async ({ page }) => {
+  const runtime = `<script>${asset("canopyx.js")}</script>`;
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await page.route("http://canopyx.test/**", route => {
     const file = new URL(route.request().url()).pathname.slice(1);
     if (file !== "parts") return route.fulfill({ path: path.join(repo, "CanopyX.Html/Assets", file) });
     return route.fulfill({ contentType: "text/html", body:
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style><script>${asset("canopyx.js")}</script></head>` +
-      `<body class="cx-page"><main>${body}</main>${requirements("ui-tabs")}</body></html>` });
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style>${runtimeLast ? "" : runtime}</head>` +
+      `<body class="cx-page"><main>${body}</main>${requirements("ui-tabs")}${runtimeLast ? runtime : ""}</body></html>` });
   });
   const requested = []; page.on("request", request => { if (/canopyx-ui-tabs/.test(request.url())) requested.push(request.url()); });
   await page.goto("http://canopyx.test/parts");
@@ -66,8 +72,9 @@ for (const { name, body, remove, late, head, all, files } of CASES) test(name, a
   }
   expect(await page.evaluate(() => ({
     head: [...document.head.querySelectorAll('style[data-canopyx-part="ui-tabs"]')].map(style => style.dataset.cxVersion),
-    all: document.querySelectorAll('style[data-canopyx-part="ui-tabs"]').length
-  }))).toEqual({ head, all });
+    all: document.querySelectorAll('style[data-canopyx-part="ui-tabs"]').length,
+    links: document.querySelectorAll('link[rel=stylesheet][data-canopyx-part="ui-tabs"]').length
+  }))).toEqual({ head, all, links });
   expect(requested.length > 0).toBe(files);
   expect(errors).toEqual([]);
 });
