@@ -34,11 +34,13 @@
   EXPORT_IMPL.office = (capture, context) => {
     const tree = capture.request.kind === "tree", levels = [];
     // Records stream to the worksheet in order, so a data row's index is its position in this enumeration.
-    const outline = tree && context.format === "xlsx" ? { xlsx: { sheet: { outlineSummaryBelow: false, maxOutlineLevel: TREE_OUTLINE_LEVELS,
-      rowOutline: ({ rowIndex }) => levels[rowIndex] > 1 ? { level: Math.min(levels[rowIndex] - 1, TREE_OUTLINE_LEVELS) } : undefined } } } : {};
+    const outline = tree ? { sheet: { outlineSummaryBelow: false, maxOutlineLevel: TREE_OUTLINE_LEVELS,
+      rowOutline: ({ rowIndex }) => levels[rowIndex] > 1 ? { level: Math.min(levels[rowIndex] - 1, TREE_OUTLINE_LEVELS) } : undefined } } : {};
+    // Text over Excel's 32,767-character cell limit goes to an overflow sheet, linked from a preview in its cell.
+    const workbook = context.format === "xlsx" ? { xlsx: { oversizedText: "preserve", ...outline } } : {};
     const diagnostic = value => context.diagnostic(value);
     return officeWrite(documentCapture(capture, levels, officeLimits(context.format, diagnostic)), context.format, {
-      signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows), ...outline,
+      signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows), ...workbook,
       // OfficeIMO fills the standard tones with fixed document colours (each pair above 4.5:1), since a stylesheet theme
       // cannot reach a file; neutral stays plain. Presentation a document cannot keep (badge pills, custom classes and
       // renderers, native rules in a PDF, a host's own tone name) falls back to the captured value and text. The writer

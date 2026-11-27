@@ -184,16 +184,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "b7613354e818d4b9",
-    "output": "8258773d653ebf84"
+    "input": "b2171d15d479158f",
+    "output": "5345140bf272c924"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "0939d01d2c2a0247",
     "output": "ba04aacaa8e27768"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "2e58a96d1bac8620",
-    "output": "f844939f2680cf80"
+    "input": "c3d4e7d1fc1c1535",
+    "output": "95791dd244dc49ef"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "f99736049f32db7e",
@@ -208,8 +208,8 @@
     "output": "abcbce36dd87b5a5"
   },
   "CanopyX.Html/Assets/canopyx-interactive.js": {
-    "input": "6a45b3fc53e18f27",
-    "output": "314da9490873d94b"
+    "input": "b3fadc950dbf2603",
+    "output": "14b1a69805a56b3b"
   },
   "CanopyX.Html/Assets/canopyx-layouts.js": {
     "input": "ec2cec503e829e1c",
@@ -236,12 +236,12 @@
     "output": "2b57957eaa8a4369"
   },
   "CanopyX.Html/Assets/canopyx-module.mjs": {
-    "input": "346dc5ddbb656ba4",
-    "output": "0c8cf9cf62309e95"
+    "input": "8cc4892699a93ec7",
+    "output": "003a2c8faad7da91"
   },
   "CanopyX.Html/Assets/canopyx-office-export.js": {
-    "input": "b35ca9f1c9a87aab",
-    "output": "8d5f9083ef93a310"
+    "input": "f66c1e3eb8dc05bd",
+    "output": "67a1737e9dc29053"
   },
   "CanopyX.Html/Assets/canopyx-pager.js": {
     "input": "3f6c7bb970536d76",
@@ -268,12 +268,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "8ef03763d01af12c",
-    "output": "a3922058a517442f"
+    "input": "4df45f62de4657c3",
+    "output": "31b95a40e5df0e77"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "df6100e3a655d238",
-    "output": "66ce3af67cac0bc8"
+    "input": "a7bd679c328324b3",
+    "output": "e335b4b44bbbf7c3"
   },
   "CanopyX.Html/Assets/canopyx-rich-cells.js": {
     "input": "6bd79e413bb1ebe0",
@@ -380,7 +380,7 @@
     "output": "a0a3bd613690b6b5"
   },
   "CanopyX.Html/Assets/canopyx.js": {
-    "input": "bd65ce7211cacfce",
-    "output": "31febdb412a27ddd"
+    "input": "46ea9c4dd2d03bc7",
+    "output": "9945803269201b5e"
   }
 }

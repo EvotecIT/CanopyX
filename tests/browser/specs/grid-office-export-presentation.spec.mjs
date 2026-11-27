@@ -79,6 +79,36 @@ for (const reporting of [false, true]) test(`${reporting ? "reporting" : "plain"
   expect(pdf).not.toContain("B64");
 });
 
+// Each link limit the writers would refuse becomes a warning and the export completes. Links travel through the reporting
+// runtime's link presenter; `extra` adds plain columns so a wide PDF prints in bands.
+const linked = (rows, extra = 0) => definition({ reporting: {}, pageSize: 200,
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200, presenter: { kind: "link", hrefColumn: "url" } }, { id: "url", title: "Url", kind: "text", width: 200 },
+    ...Array.from({ length: extra }, (_, index) => ({ id: "c" + index, title: "Column " + index, kind: "text", width: 160 }))],
+  rows: rows.map((row, index) => ({ id: "r" + index, cells: { url: "https://example.com/" + index, ...Object.fromEntries(Array.from({ length: extra },
+    (_, column) => ["c" + column, "Value " + column])), ...row } })) });
+const linkLimits = [
+  { name: "XLSX text over 32,767 characters keeps its text in the overflow sheet and drops its link", format: "xlsx",
+    view: () => linked([{ name: "x".repeat(40000) }, { name: "Short" }]), expected: { code: "LINK_ON_LONG_TEXT", columnId: "name", rowId: "r0" } },
+  { name: "a PDF link without visible text is dropped", format: "pdf",
+    view: () => linked([{ name: "  " }, { name: "Shown" }]), expected: { code: "LINK_WITHOUT_TEXT", columnId: "name", rowId: "r0" } },
+  { name: "XLSX links past a worksheet's 65,530 are left out", format: "xlsx",
+    view: () => linked(Array.from({ length: 65531 }, (_, index) => ({ name: "Account " + index }))), expected: { code: "LINKS_TRUNCATED:65530" } },
+  { name: "PDF first-column links are budgeted for every band they may repeat in", format: "pdf",
+    view: () => linked(Array.from({ length: 2600 }, (_, index) => ({ name: "Account " + index })), 38), expected: { code: "LINKS_TRUNCATED:100000" } }
+];
+for (const limit of linkLimits) test(limit.name, async ({ page }) => {
+  test.setTimeout(180000);
+  await open(page, limit.view());
+  const result = await page.evaluate(async ({ api, format }) => {
+    const file = await eval(api).exportAs(format, { scope: "all", download: false });
+    return { size: file.blob.size, diagnostics: JSON.parse(JSON.stringify(file.diagnostics)),
+      ...(format === "xlsx" ? { bytes: [...new Uint8Array(await file.blob.slice(0, Math.min(file.blob.size, 4000000)).arrayBuffer())] } : {}) };
+  }, { api, format: limit.format });
+  expect(result.size).toBeGreaterThan(0);
+  expect(result.diagnostics).toContainEqual(limit.expected);
+  if (limit.expected.code === "LINK_ON_LONG_TEXT") expect(zipEntry(result.bytes, "xl/workbook.xml")).toContain("Text overflow");
+});
+
 test("presentation diagnostics stay warnings even when every record repeats one", async ({ page }) => {
   const rows = Array.from({ length: 1200 }, (_, index) => ({ id: "r" + index, className: "host-row",
     cells: { name: { value: "Account " + index, badges: [{ text: "New" }] }, state: { value: "Active", tone: "brand" }, age: index } }));
