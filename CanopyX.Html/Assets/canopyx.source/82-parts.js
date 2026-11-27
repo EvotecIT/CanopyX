@@ -12,7 +12,13 @@
   function registerPart(name, part) {
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
         part.requires !== undefined && !(Array.isArray(part.requires) && part.requires.every(partName))) throw new Error("CanopyX: invalid part.");
-    PART_CODE.set(name, part);
+    // Fragments written without a shared document each carry the parts they need, so the same part can register more than
+    // once. The first registration of a version stays; a copy changes nothing, and its stylesheet, already in the page
+    // before its script, is removed so the page applies the rules once.
+    if (PART_CODE.get(name)?.version !== part.version) { PART_CODE.set(name, part); return; }
+    if (typeof document === "undefined") return;
+    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name && style.dataset.cxVersion === part.version);
+    sheets.slice(1).forEach(style => style.remove());
   }
   // A view kind's parts by name, each with the context its code installs into: definePart(TreeGrid, "tree-tools", ...).
   function definePart(View, name, label, context) {

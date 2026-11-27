@@ -35,6 +35,18 @@ test("hidden tabs, accordion and details defer row rendering until their first s
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test("fragments written without a shared document apply each part's stylesheet once", async ({ page }) => {
+  // Each of the three grids carries its own copy of the parts; the first copy registers and the others drop their stylesheets.
+  await open(page, "contained-grids-dark.html");
+  const counts = await page.evaluate(() => {
+    const count = selector => [...document.querySelectorAll(selector)].reduce((all, element) => (all[element.dataset.canopyxPart] = (all[element.dataset.canopyxPart] || 0) + 1, all), {});
+    return { scripts: count("script[data-canopyx-part]"), styles: count("style[data-canopyx-part]") };
+  });
+  expect(Object.values(counts.scripts).every(value => value === 3)).toBe(true);
+  expect(Object.keys(counts.styles).length).toBeGreaterThan(0);
+  expect(Object.values(counts.styles).every(value => value === 1)).toBe(true);
+});
+
 for (const offset of [0, 13, 39]) test(`a hidden restored grid keeps its requested scroll position through reveal and repeated resize (offset ${offset})`, async ({ page }) => {
   await open(page, "contained-grids-dark.html");
   await page.locator("#records-panel [data-canopyx-host]").evaluate(async (host, offset) => {

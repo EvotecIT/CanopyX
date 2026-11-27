@@ -15,7 +15,8 @@ namespace CanopyX.Html;
 /// instance per output document, and only for markup that reaches that document: a fragment written and then discarded may
 /// hold the only copy. The fragment that carries a part must be in the page, and its script run, before a view that needs
 /// the part mounts; a host that inserts fragments later (tabs, templates, injected HTML) inserts the first one first, or
-/// gives each such fragment its own document. Without a document, every inline fragment carries its own parts and stands alone.
+/// gives each such fragment its own document. Without a document, every inline fragment carries its own parts and stands alone; on a page of such fragments the
+/// first copy of a part registers, and the runtime removes the stylesheets of the others.
 /// </para>
 /// <para>
 /// A host that assembles a page itself calls <see cref="EmbedOnce(CanopyHtmlPart, string)"/> for the parts of
