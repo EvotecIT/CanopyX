@@ -15,17 +15,19 @@
   }
   // A tree's records also carry their level (1 is a root): the first column is indented by level, and only text is
   // indented, so a raw number or timestamp keeps its exact value and the writer can still type it.
-  function documentCapture(capture, levels) {
-    const request = capture.request, tree = request.kind === "tree", first = request.columns[0].id, text = request.columns[0].kind === "text";
-    return Object.freeze({ request: tree ? Object.freeze({ ...request, revision: request.revision ?? "inline" }) : request, rows: async function* (options) {
+  function treeIndent(row, first, text) {
+    const indent = TREE_INDENT.repeat(Math.max(0, row.level - 1)), cell = row.cells[first];
+    return !indent || !cell ? row : Object.freeze({ ...row, cells: Object.freeze({ ...row.cells, [first]: Object.freeze({ ...cell,
+      text: indent + cell.text, ...(text && typeof cell.value === "string" ? { value: indent + cell.value } : {}) }) }) });
+  }
+  function documentCapture(capture, levels, limits) {
+    const input = capture.request, tree = input.kind === "tree", first = input.columns[0].id, text = input.columns[0].kind === "text";
+    const request = limits.request(tree ? Object.freeze({ ...input, revision: input.revision ?? "inline" }) : input);
+    return Object.freeze({ request, rows: async function* (options) {
       levels.length = 0;
-      for await (const input of capture.rows(options)) {
-        const row = badgeLoss(input);
-        if (!tree) { yield row; continue; }
-        levels.push(row.level);
-        const indent = TREE_INDENT.repeat(Math.max(0, row.level - 1)), cell = row.cells[first];
-        yield !indent || !cell ? row : Object.freeze({ ...row, cells: Object.freeze({ ...row.cells, [first]: Object.freeze({ ...cell,
-          text: indent + cell.text, ...(text && typeof cell.value === "string" ? { value: indent + cell.value } : {}) }) }) });
+      for await (const row of capture.rows(options)) {
+        if (tree) levels.push(row.level);
+        yield limits.row(badgeLoss(tree ? treeIndent(row, first, text) : row));
       }
     } });
   }
@@ -34,13 +36,15 @@
     // Records stream to the worksheet in order, so a data row's index is its position in this enumeration.
     const outline = tree && context.format === "xlsx" ? { xlsx: { sheet: { outlineSummaryBelow: false, maxOutlineLevel: TREE_OUTLINE_LEVELS,
       rowOutline: ({ rowIndex }) => levels[rowIndex] > 1 ? { level: Math.min(levels[rowIndex] - 1, TREE_OUTLINE_LEVELS) } : undefined } } } : {};
-    return officeWrite(documentCapture(capture, levels), context.format, {
+    const diagnostic = value => context.diagnostic(value);
+    return officeWrite(documentCapture(capture, levels, officeLimits(context.format, diagnostic)), context.format, {
       signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows), ...outline,
       // OfficeIMO fills the standard tones with fixed document colours (each pair above 4.5:1), since a stylesheet theme
       // cannot reach a file; neutral stays plain. Presentation a document cannot keep (badge pills, custom classes and
-      // renderers, native rules in a PDF, a host's own tone name) falls back to the captured value and text. The writer reports each case, and the export passes it on as a
-      // warning in onDiagnostic and the result's diagnostics instead of failing. Invalid captures still throw.
+      // renderers, native rules in a PDF, a host's own tone name) falls back to the captured value and text. The writer
+      // reports each case, and the export passes it on as a warning in onDiagnostic and the result's diagnostics instead
+      // of failing. Invalid captures still throw.
       unsupportedPresentation: "text",
-      onDiagnostic: value => context.diagnostic(value)
+      onDiagnostic: diagnostic
     });
   };

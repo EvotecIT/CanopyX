@@ -53,6 +53,32 @@ for (const reporting of [false, true]) test(`${reporting ? "reporting" : "plain"
   expect(pdfFillColours(result.files.pdf)).toEqual(expect.arrayContaining(["1 0.949 0.8", "1 0.7804 0.8078", "0.8863 0.9412 0.851"]));
 });
 
+for (const reporting of [false, true]) test(`${reporting ? "reporting" : "plain"} exports keep the first 64 badges of a cell, with a warning`, async ({ page }) => {
+  const badges = Array.from({ length: 70 }, (_, index) => ({ text: "B" + index }));
+  await open(page, definition({ ...(reporting ? { reporting: {} } : {}),
+    columns: [{ id: "name", title: "Name", kind: "text", width: 2000, minWidth: 2000 }, { id: "state", title: "State", kind: "text", width: 120 }],
+    rows: [{ id: "a", cells: { name: { value: "Alice", badges }, state: "Active" } }] }));
+  const result = await page.evaluate(async api => {
+    const output = {};
+    for (const format of ["xlsx", "pdf"]) {
+      const file = await eval(api).exportAs(format, { scope: "all", download: false });
+      output[format] = { bytes: [...new Uint8Array(await file.blob.arrayBuffer())], diagnostics: JSON.parse(JSON.stringify(file.diagnostics)) };
+    }
+    return output;
+  }, api);
+  const kept = badges.slice(0, 64).map(badge => badge.text).join(" · ");
+  for (const format of ["xlsx", "pdf"]) expect(result[format].diagnostics).toEqual(expect.arrayContaining([
+    { code: "BADGES_TRUNCATED:6", columnId: "name", rowId: "a" }, { code: "badges", columnId: "name", rowId: "a" }]));
+  // Only the reporting runtime captures column widths; a column wider than Excel's 255 characters is narrowed to fit.
+  if (reporting) expect(result.xlsx.diagnostics).toContainEqual({ code: "COLUMN_WIDTH_CLAMPED", columnId: "name" });
+  const sheet = zipEntry(result.xlsx.bytes, "xl/worksheets/sheet1.xml");
+  expect(sheet).toContain("Alice · " + kept + "<");
+  expect(sheet).not.toContain("B64");
+  const pdf = pdfRuns(result.pdf.bytes).map(run => run.text).join("");
+  expect(pdf).toContain("B63");
+  expect(pdf).not.toContain("B64");
+});
+
 test("presentation diagnostics stay warnings even when every record repeats one", async ({ page }) => {
   const rows = Array.from({ length: 1200 }, (_, index) => ({ id: "r" + index, className: "host-row",
     cells: { name: { value: "Account " + index, badges: [{ text: "New" }] }, state: { value: "Active", tone: "brand" }, age: index } }));
