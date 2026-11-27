@@ -27,9 +27,10 @@ public sealed class RuntimePartTests {
             Assert.Equal("canopyx-" + part.Name + ".js", part.ScriptFileName);
             Assert.Matches("^canopyx-" + part.Name + "\\.[a-f0-9]{16}\\.js$", part.HashedScriptFileName);
             Assert.Equal(part.Style == null, part.StyleFileName == null);
-            // The script registers its code under its name with its version, before or after the runtime runs.
+            // The script registers its code under its name with its version, before or after the runtime runs, with the script
+            // element it ran from, which tells the runtime where the code came from.
             Assert.Contains("={version:\"" + part.Version + "\"", part.Script);
-            Assert.Matches("\\.CanopyXParts\\|\\|=\\[\\]\\)\\.push\\(\\[\"" + Regex.Escape(part.Name) + "\",[\\w$]+\\]\\)\\}\\)\\(typeof window!==\"undefined\"\\?window:globalThis\\);\\n?$", part.Script);
+            Assert.Matches("\\.CanopyXParts\\|\\|=\\[\\]\\)\\.push\\(\\[\"" + Regex.Escape(part.Name) + "\",[\\w$]+,typeof document!==\"undefined\"\\?document\\.currentScript:null\\]\\)\\}\\)\\(typeof window!==\"undefined\"\\?window:globalThis\\);\\n?$", part.Script);
             Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain('\r', part.Script);
             foreach (var runtime in AllRuntimes) {

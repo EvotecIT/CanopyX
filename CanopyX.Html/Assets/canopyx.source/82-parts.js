@@ -15,8 +15,11 @@
   Promise.resolve().then(() => { entryRunning = false; });
   const PARTS = __CX_PARTS__, PART_CODE = new Map(), SHARED_PARTS = {}, partName = name => typeof name === "string" && /^[a-z][a-z\d-]{0,31}$/.test(name);
   const manifest = name => Object.hasOwn(PARTS, name) ? PARTS[name] : [];
-  /** Registers a part's code ({ version, requires?, install(context) }) under its name; parts of this build call it as they run. */
-  function registerPart(name, part) {
+  /**
+   * Registers a part's code ({ version, requires?, install(context) }) under its name; parts of this build call it as they run.
+   * A part file queued before the runtime passes the script element it ran from, so its origin is known when it registers.
+   */
+  function registerPart(name, part, from) {
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
         part.requires !== undefined && !(Array.isArray(part.requires) && part.requires.every(partName))) throw new Error("CanopyX: invalid part.");
     // Fragments written without a shared document each carry the parts they need, so a part can register more than once,
@@ -25,10 +28,8 @@
     const current = PART_CODE.get(name), wanted = manifest(name)[0] || part.version;
     if (!current || current.version !== part.version && current.version !== wanted) {
       PART_CODE.set(name, part);
-      const script = typeof document !== "undefined" ? document.currentScript : null;
-      const carried = () => [...document.querySelectorAll("script[data-canopyx-part]")].some(element => element.dataset.canopyxPart === name && element.dataset.cxVersion === part.version);
-      PART_SOURCE.set(name, LOADER_SCRIPTS.has(script) ? "file" : script?.dataset.canopyxPart === name ? "page"
-        : drainingParts ? (carried() ? "page" : "host") : entryRunning ? "entry" : "host");
+      const script = from !== undefined ? from : typeof document !== "undefined" ? document.currentScript : null;
+      PART_SOURCE.set(name, LOADER_SCRIPTS.has(script) ? "file" : script?.dataset?.canopyxPart === name ? "page" : entryRunning && !drainingParts ? "entry" : "host");
     }
   }
   // Part stylesheets (docs/plugins.md#part-stylesheets). The page's <style data-canopyx-part media="not all"> elements are
@@ -39,14 +40,15 @@
   // (removed, moved out of the document, disabled, given a media) is replaced, a link removed while it loads is abandoned, a
   // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
   const PART_SHEETS = new Map();
-  const live = element => element.sheet && !element.sheet.disabled;
-  const applies = owned => owned.element.getRootNode() === document && (owned.abandon || live(owned.element) && (owned.host || !owned.element.media || matchMedia(owned.element.media).matches));
+  const matches = element => !element.media || matchMedia(element.media).matches;
+  const live = element => element.sheet && !element.sheet.disabled && matches(element);
+  const applies = owned => owned.element.getRootNode() === document && (owned.abandon ? matches(owned.element) : live(owned.element));
   function partSheet(part, fallback) {
     const [version, , styleFile] = manifest(part.name);
     if (!styleFile || typeof document === "undefined") return;
     const elements = [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].filter(element => element.dataset.canopyxPart === part.name);
     const mine = element => element.dataset.cxVersion === version && !("canopyxOwned" in element.dataset);
-    const host = elements.find(element => mine(element) && element.media !== "not all" && live(element));
+    const host = elements.find(element => mine(element) && live(element));
     let owned = PART_SHEETS.get(part.name);
     // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
     if (owned && (!applies(owned) || host && owned.element !== host)) {
@@ -68,8 +70,16 @@
         const link = h("link"); link.rel = "stylesheet";
         Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version, canopyxOwned: "" });
         owned = { element: link };
+        // When the link settles, a host stylesheet that applies meanwhile, or a link that loaded but does not apply, sends the
+        // waiters to partSheet again (abandoned), which takes the host's or makes a replacement.
+        const again = () => Object.assign(new Error("CanopyX: " + part.label + " stylesheet replaced."), { abandoned: true });
+        const hostApplies = () => [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].some(element => element.dataset.canopyxPart === part.name && mine(element) && live(element));
         owned.ready = new Promise((resolve, reject) => { owned.abandon = reject; partFile(part, link, "href", styleFile, "stylesheet").then(resolve, reject); })
-          .then(() => { owned.abandon = null; }, error => { if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name); link.remove(); throw error; });
+          .then(() => { owned.abandon = null; if (hostApplies() || !live(link)) throw again(); }, error => {
+            if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name);
+            link.remove();
+            throw hostApplies() ? again() : error;
+          });
       }
       PART_SHEETS.set(part.name, owned);
     }

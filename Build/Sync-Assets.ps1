@@ -468,7 +468,7 @@ $partSources = foreach ($part in $partList) {
     $header = "(function(global) {`n`"use strict`";`nconst installed = new WeakSet();`nconst part = {version:`"$version`"$requires, install(context) {`n" +
         "if (installed.has($key)) return;`nconst {$($part.context -join ',')} = context;`n" + $(if ($part.start) { $part.start + "`n" } else { '' })
     $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
-        "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
+        "(global.CanopyXParts ||= []).push([`"$($part.name)`", part, typeof document !== `"undefined`" ? document.currentScript : null]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
     [pscustomobject]@{ Part = $part; Script = $header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"); Style = $style }
 }
 $partJobs = @($partSources | ForEach-Object { @{ Target = 'CanopyX.Html/Assets/canopyx-' + $_.Part.name + '.js'; Code = Compress-ScriptSpacing $_.Script } })

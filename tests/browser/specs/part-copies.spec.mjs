@@ -49,7 +49,9 @@ const hashPolicy = html => {
 // removes the tabs link and keeps it; ["reinsert-link", key] puts it back; ["to-shadow"] moves the tabs stylesheet into a
 // shadow root; ["mount-detached", id] starts a mount, removes its pending link, then mounts the next id: both get the replacement;
 // ["disable"] disables the runtime's stylesheet; ["inert"] gives it media="not all"; ["print-media"] gives it media="print";
-// ["host-link"] adds a host's marked stylesheet; ["mount-host-takes-over", id] adds one while the runtime's link is held.
+// ["host-link"] adds a host's marked stylesheet; ["mount-host-takes-over", id] adds one while the runtime's link is held and
+// mounts again; ["mount-host-rescues", id] adds one while the only mount waits; ["mount-pending-print", id] gives the held link
+// media="print"; ["host-print"] gives the host's marked stylesheet media="print".
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
 const TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
@@ -118,6 +120,18 @@ const ROWS = [
     steps: [["mount", "a"], ["remove-element", "#carrier"], ["clear-head"], ["mount", "b"]], ...FILES },
   { transition: "code from its file keeps waiting for its stylesheet on retries", page: "", cssMissing: true,
     steps: [["mount-fails", "a"], ["mount-fails", "b"], ["css-ok"], ["mount", "c"]], ...FILES },
+  { transition: "a host's marked stylesheet rescues the only mount waiting on a link that then fails", page: "", holdCss: true, cssMissing: true,
+    steps: [["mount-host-rescues", "a"]], styles: 0, links: 1, files: true },
+  { transition: "a pending link given a media that does not match is replaced when it loads", page: "", holdCss: true,
+    steps: [["mount-pending-print", "a"]], ...FILES },
+  { transition: "a host's marked stylesheet given a media that does not match yields to the runtime's",
+    page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">${TABS}`,
+    steps: [["mount", "a"], ["host-print"], ["mount", "b"]], styles: 1, links: 1, files: true },
+  { transition: "a page part whose fragment was removed before the runtime started keeps its origin, so the file loads", runtimeLast: true,
+    page: `<section id="gone">${TABS}</section><script>document.getElementById("gone").remove()</script>`, steps: [["mount", "a"]], ...FILES },
+  { transition: "a host preload beside an inert part marker stays a host preload", runtimeLast: true,
+    page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css"><script>${asset(part("ui-tabs").script)}</script><script type="text/plain" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}"></script>`,
+    steps: [["mount", "a"]], styles: 0, links: 0, files: true },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -136,7 +150,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
     if (file !== "parts") {
       if (file.startsWith("canopyx-ui-tabs")) requested.push(file);
       if (file === "canopyx-ui-tabs.css" && held) { held = false; await gate; }
-      return missing && file === "canopyx-ui-tabs.css" ? route.fulfill({ status: 404, body: "" }) : route.fulfill({ path: path.join(repo, "CanopyX.Html/Assets", file) });
+      return missing && file === "canopyx-ui-tabs.css" && !route.request().url().includes("?host") ? route.fulfill({ status: 404, body: "" }) : route.fulfill({ path: path.join(repo, "CanopyX.Html/Assets", file) });
     }
     return route.fulfill({ body: html, headers: { "content-type": "text/html; charset=utf-8", ...hashes ? { "content-security-policy": hashPolicy(html) } : {} } });
   });
@@ -164,6 +178,20 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
         const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css", onload: resolve });
         Object.assign(link.dataset, { canopyxPart: "ui-tabs", cxVersion: version }); document.head.append(link);
       }), VERSION);
+    } else if (step === "mount-host-rescues" || step === "mount-pending-print") {
+      // One mount waits on the runtime's held link; a host's marked stylesheet arrives, or the link is given media="print",
+      // and the link is released: the mount takes the host's stylesheet, or a replacement link.
+      await insertTabs(value);
+      await page.evaluate(id => { window.first = CanopyX.tabs("#" + id).ready.then(() => "ready", error => error.message); }, value);
+      await page.waitForSelector('link[data-canopyx-part="ui-tabs"][data-canopyx-owned]', { state: "attached" });
+      if (step === "mount-host-rescues") await page.evaluate(version => new Promise(resolve => {
+        const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css?host", onload: resolve });
+        Object.assign(link.dataset, { canopyxPart: "ui-tabs", cxVersion: version }); document.head.append(link);
+      }), VERSION);
+      else await page.evaluate(() => { document.querySelector('link[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "print"; });
+      release();
+      expect(await page.evaluate(() => window.first)).toBe("ready");
+      await works(value);
     } else if (step === "mount-host-takes-over") {
       // The runtime's link is held; a host's marked stylesheet arrives and applies, and both mounts take it.
       await insertTabs(value);
@@ -202,6 +230,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
+      else if (step === "host-print") document.querySelector('link[data-canopyx-part="ui-tabs"]:not([data-canopyx-owned])').media = "print";
       else if (step === "print-media") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "print";
       else if (step === "disable") document.head.querySelector('[data-canopyx-part="ui-tabs"][data-canopyx-owned]').sheet.disabled = true;
       else if (step === "inert") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "not all";
