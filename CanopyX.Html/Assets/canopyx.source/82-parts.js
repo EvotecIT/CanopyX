@@ -36,20 +36,22 @@
   // data-canopyx-template> elements are templates that never apply, so copies the page gains or loses (innerHTML, re-inserted nodes, other builds) change
   // nothing. Each part has one stylesheet: a host's own marked stylesheet of this version, or the runtime's, which it marks
   // data-canopyx-owned: a clone in document.head of a template the policy allowed (a refused one has no sheet), with its nonce
-  // and without the media, or, with fallback, the part's file, linked. Every load checks it again: one that stopped applying
-  // (removed, moved out of the document, disabled, given a media) is replaced, a link removed while it loads is abandoned, a
+  // and without the media, or, with fallback, the part's file, linked. Every load checks it again: one that left the document
+  // is replaced, a link removed while it loads is abandoned, a
   // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
   const PART_SHEETS = new Map();
-  const matches = element => !element.media || matchMedia(element.media).matches;
-  const live = element => element.sheet && !element.sheet.disabled && matches(element);
-  const applies = owned => owned.element.getRootNode() === document && (owned.abandon ? matches(owned.element) : live(owned.element));
+  // A host stylesheet counts while it is enabled and its media matches.
+  const live = element => element.sheet && !element.sheet.disabled && (!element.media || matchMedia(element.media).matches);
+  // The runtime's own copy applies while it is in the document; disabling it or changing its media is outside the contract.
+  const applies = owned => owned.element.getRootNode() === document && (owned.abandon || (owned.host ? live(owned.element) : owned.element.sheet));
   function partSheet(part, fallback) {
     const [version, , styleFile] = manifest(part.name);
     if (!styleFile || typeof document === "undefined") return;
     const elements = [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].filter(element => element.dataset.canopyxPart === part.name);
     const mine = element => element.dataset.cxVersion === version && !("canopyxOwned" in element.dataset);
     const again = () => Object.assign(new Error("CanopyX: " + part.label + " stylesheet replaced."), { abandoned: true });
-    const host = elements.find(element => mine(element) && !("canopyxTemplate" in element.dataset) && live(element));
+    // A template's media="not all" never matches, so it is never a host's stylesheet.
+    const host = elements.find(element => mine(element) && live(element));
     let owned = PART_SHEETS.get(part.name);
     // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
     if (owned && (!applies(owned) || host && owned.element !== host)) {
@@ -71,11 +73,11 @@
         const link = h("link"); link.rel = "stylesheet";
         Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version, canopyxOwned: "" });
         owned = { element: link };
-        // When the link settles, a host stylesheet that applies meanwhile, or a link that loaded but does not apply, sends the
-        // waiters to partSheet again (abandoned), which takes the host's or makes a replacement.
+        // When the link settles, a host stylesheet that applies meanwhile sends the waiters to partSheet again (abandoned),
+        // which takes the host's.
         const hostApplies = () => [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].some(element => element.dataset.canopyxPart === part.name && mine(element) && live(element));
         owned.ready = new Promise((resolve, reject) => { owned.abandon = reject; partFile(part, link, "href", styleFile, "stylesheet").then(resolve, reject); })
-          .then(() => { owned.abandon = null; if (hostApplies() || !live(link)) throw again(); }, error => {
+          .then(() => { owned.abandon = null; if (hostApplies()) throw again(); }, error => {
             if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name);
             link.remove();
             throw hostApplies() ? again() : error;

@@ -170,9 +170,12 @@ A single-file page carries a part's stylesheet as a template, `<style data-canop
 | An entry point registers a part itself | It takes a template when the page has one; otherwise the entry point's styles cover it. |
 | A policy refused a template (hash or nonce) | It has no sheet and is never cloned; another template, or the file, is used. |
 | The file fails to load | Every view waiting for it fails; the next load tries a template again, then the file. |
-| A link is removed while it loads, or loads without applying | The next load, or the link itself as it loads, replaces it, and the views waiting for it take the replacement. |
-| The part's stylesheet stops applying (removed, moved out of the document, disabled, given a media that does not match, or the head rewritten) | The next load replaces it and removes the runtime's other copies; a host's stylesheet is never removed, and takes over again once it applies. |
+| A link is removed while it loads | The next load replaces it, and the views waiting for it take the replacement. |
+| The runtime's stylesheet leaves the document (removed, or the head rewritten) | The next load replaces it and removes the runtime's other copies. |
+| A host's marked stylesheet stops applying (disabled, or a media that does not match) | The runtime's copy applies until the host's applies again; a host's stylesheet is never removed. |
 | A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
+
+The contract covers what hosts do with fragments and their own stylesheets: inserting, removing, replacing and re-inserting fragments, two builds on one page, host preloads and teardown. Tampering with the runtime's own stylesheets (the elements it marks `data-canopyx-owned`) is outside it: disabling them, changing their media, or editing their rules through the CSSOM leaves the part as the host left it; only an element that leaves the document is replaced.
 
 ### Serving parts
 
