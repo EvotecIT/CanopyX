@@ -92,7 +92,7 @@ public sealed class CanopyHtmlPart {
     public IReadOnlyList<string> Requires { get; }
 
     /// <summary>
-    /// Gets the part's markup for a single-file page: its stylesheet as a <c>&lt;style media="not all"&gt;</c> template and its
+    /// Gets the part's markup for a single-file page: its stylesheet as a <c>&lt;style media="not all" data-canopyx-template&gt;</c> template and its
     /// script as a <c>&lt;script&gt;</c> element, both marked <c>data-canopyx-part</c> and <c>data-cx-version</c>. The script only
     /// registers the part, before or after the runtime, and the part installs when a view first needs it. The template never
     /// applies by itself, so copies of it in the page change nothing; the runtime applies one copy of it per part.
@@ -111,7 +111,7 @@ public sealed class CanopyHtmlPart {
     public string GetMarkup(string? nonce) {
         var attributes = " data-canopyx-part=\"" + Name + "\" data-cx-version=\"" + Version + "\"" + CanopyContentSecurity.Attribute(nonce);
         // The stylesheet is a template that never applies by itself (media="not all"): the runtime applies one copy per part.
-        return (Style == null ? string.Empty : "<style" + attributes + " media=\"not all\">" + Style + "</style>") + "<script" + attributes + ">" + Script + "</script>";
+        return (Style == null ? string.Empty : "<style" + attributes + " media=\"not all\" data-canopyx-template>" + Style + "</style>") + "<script" + attributes + ">" + Script + "</script>";
     }
 
     // The markup writes the text raw inside its element, so a sequence that ends the element early, or that changes how a

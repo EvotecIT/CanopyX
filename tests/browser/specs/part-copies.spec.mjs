@@ -18,7 +18,7 @@ const VERSION = part("ui-tabs").version, OTHER_BUILD = "0123456789abcdef";
 const markup = (name, version) => {
   const entry = part(name), as = version || entry.version;
   const script = version ? asset(entry.script).replace('version:"' + entry.version + '"', 'version:"' + version + '"') : asset(entry.script);
-  return (entry.style ? `<style data-canopyx-part="${name}" data-cx-version="${as}" media="not all">${asset(entry.style)}</style>` : "") +
+  return (entry.style ? `<style data-canopyx-part="${name}" data-cx-version="${as}" media="not all" data-canopyx-template>${asset(entry.style)}</style>` : "") +
     `<script data-canopyx-part="${name}" data-cx-version="${as}">${script}</script>`;
 };
 /** The parts the tabs part requires, with theirs, each written once. */
@@ -51,7 +51,8 @@ const hashPolicy = html => {
 // ["disable"] disables the runtime's stylesheet; ["inert"] gives it media="not all"; ["print-media"] gives it media="print";
 // ["host-link"] adds a host's marked stylesheet; ["mount-host-takes-over", id] adds one while the runtime's link is held and
 // mounts again; ["mount-host-rescues", id] adds one while the only mount waits; ["mount-pending-print", id] gives the held link
-// media="print"; ["host-print"] gives the host's marked stylesheet media="print".
+// media="print"; ["host-print"] gives the host's marked stylesheet media="print"; ["host-off"] gives the host's marked style
+// media="not all".
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
 const TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
@@ -88,10 +89,10 @@ const ROWS = [
   { transition: "two mounts share one failed file load, and a later mount loads it", page: "", cssMissing: true,
     steps: [["mount-pair-fails", "a"], ["css-ok"], ["mount", "c"]], ...FILES },
   { transition: "a policy refused an earlier look-alike, parts queued before the runtime",
-    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" media="not all">/*refused*/.cx-tabs{outline:9px solid red}</style>${TABS}`,
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" media="not all" data-canopyx-template>/*refused*/.cx-tabs{outline:9px solid red}</style>${TABS}`,
     runtimeLast: true, hashes: true, steps: [["mount", "a"]], ...PAGE },
   { transition: "a policy refused the only template, so the file loads",
-    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" media="not all">/*refused*/${asset(part("ui-tabs").style)}</style><script data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">${asset(part("ui-tabs").script)}</script>`,
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" media="not all" data-canopyx-template>/*refused*/${asset(part("ui-tabs").style)}</style><script data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">${asset(part("ui-tabs").script)}</script>`,
     hashes: true, steps: [["mount", "a"]], ...FILES },
   { transition: "the applied stylesheet leaves the head, so a template applies again", page: TABS,
     steps: [["mount", "a"], ["clear-head"], ["mount", "b"]], ...PAGE },
@@ -132,6 +133,9 @@ const ROWS = [
   { transition: "a host preload beside an inert part marker stays a host preload", runtimeLast: true,
     page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css"><script>${asset(part("ui-tabs").script)}</script><script type="text/plain" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}"></script>`,
     steps: [["mount", "a"]], styles: 0, links: 0, files: true },
+  { transition: "a host's marked style given media=\"not all\" stays inactive and the runtime's copy applies",
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${asset(part("ui-tabs").style)}</style>${TABS}`,
+    steps: [["mount", "a"], ["host-off"], ["mount", "b"]], styles: 1, links: 0, files: false },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -230,6 +234,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
+      else if (step === "host-off") document.getElementById("host-style").media = "not all";
       else if (step === "host-print") document.querySelector('link[data-canopyx-part="ui-tabs"]:not([data-canopyx-owned])').media = "print";
       else if (step === "print-media") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "print";
       else if (step === "disable") document.head.querySelector('[data-canopyx-part="ui-tabs"][data-canopyx-owned]').sheet.disabled = true;

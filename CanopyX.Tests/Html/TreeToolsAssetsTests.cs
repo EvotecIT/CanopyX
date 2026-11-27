@@ -48,7 +48,7 @@ public sealed class TreeToolsAssetsTests {
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var inline = view.ToHtmlFragment();
         Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", inline);
-        Assert.Contains("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\">", inline);
+        Assert.Contains("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\" data-canopyx-template>", inline);
         Assert.DoesNotContain("data-canopyx-part=\"tree-tools\"", view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
@@ -98,7 +98,7 @@ public sealed class TreeToolsAssetsTests {
             Assert.DoesNotContain("trusted(\"Script\"", script);
             Assert.DoesNotContain("createScript:", script);
         }
-        Assert.StartsWith("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\">", CanopyHtmlAssets.TreeToolsMarkup);
+        Assert.StartsWith("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\" data-canopyx-template>", CanopyHtmlAssets.TreeToolsMarkup);
         Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
     }
 

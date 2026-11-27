@@ -140,7 +140,7 @@ export function runtimeFiles(runtime) {
 /** The markup of a part (CanopyHtmlPart.Markup): its style and script elements. */
 export function partMarkup(name) {
   const part = PARTS.find((item) => item.name === name), marker = " data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.version + "\"";
-  return (part.style ? "<style" + marker + " media=\"not all\">" + read(part.style) + "</style>" : "") + "<script" + marker + ">" + read(part.script) + "</script>";
+  return (part.style ? "<style" + marker + " media=\"not all\" data-canopyx-template>" + read(part.style) + "</style>" : "") + "<script" + marker + ">" + read(part.script) + "</script>";
 }
 /** The parts a single-file fragment of a view kind carries (CanopyHtmlAssets.GetRequiredParts). */
 export const viewParts = (kind) => kind === "grid" ? ["filter-editor", "export"] : ["tree-tools", "export"];

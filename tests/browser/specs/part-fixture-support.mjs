@@ -31,7 +31,7 @@ export function partFixture(...names) {
       const body = readAsset(file), asset = { body, contentType };
       files.set(file, asset);
       files.set(file.replace(/\.(js|css)$/, "." + assetHash(body) + ".$1"), asset);
-      payloads.push("<" + tag + ' data-canopyx-part="' + part.name + '" data-cx-version="' + part.version + '"' + (tag === "style" ? ' media="not all"' : "") + ">" + body + "</" + tag + ">");
+      payloads.push("<" + tag + ' data-canopyx-part="' + part.name + '" data-cx-version="' + part.version + '"' + (tag === "style" ? ' media="not all" data-canopyx-template' : "") + ">" + body + "</" + tag + ">");
     }
   }
   return { files, payloads: payloads.join("") };

@@ -166,7 +166,7 @@ test("an injected stylesheet shaped like a part's is never the one the page keep
   const inject = html => {
     const version = html.match(/<style data-canopyx-part="tree-tools" data-cx-version="([a-f0-9]{16})"/)?.[1];
     if (!version) throw new Error("The tree page carries no tree tools stylesheet to imitate.");
-    return html.replace('<main class="cx-main">', '<main class="cx-main"><style data-canopyx-part="tree-tools" data-cx-version="' + version + '" media="not all">.cx-host{outline:9px solid red}</style>');
+    return html.replace('<main class="cx-main">', '<main class="cx-main"><style data-canopyx-part="tree-tools" data-cx-version="' + version + '" media="not all" data-canopyx-template>.cx-host{outline:9px solid red}</style>');
   };
   const report = await serve(page, POLICIES["nonce only"], { transform: inject });
   await open(page, "tree.html");
