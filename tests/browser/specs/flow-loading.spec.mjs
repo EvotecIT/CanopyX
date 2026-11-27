@@ -29,9 +29,10 @@ test("a single-file flow page carries its parts inline and loads no grid code", 
   expect(loaded.filter(url => /canopyx-grid|canopyx-reporting|canopyx-interactive|canopyx\.(?:[0-9a-f]{16}\.)?js/.test(url))).toEqual([]);
   expect(loaded.filter(url => /\.js(\?|$)/.test(url))).toEqual([]);
   const api = await page.evaluate(() => ({ createFlow: typeof window.CanopyX.createFlow, createDataGrid: typeof window.CanopyX.createDataGrid,
-    createTreeGrid: typeof window.CanopyX.createTreeGrid, parts: [...document.querySelectorAll("[data-canopyx-part]")].map(element => element.localName + " " + element.dataset.canopyxPart).sort() }));
+    createTreeGrid: typeof window.CanopyX.createTreeGrid, parts: [...document.querySelectorAll("[data-canopyx-part]")].map(element => element.localName + (element.media === "not all" ? " template " : " ") + element.dataset.canopyxPart).sort() }));
+  // The page's scripts and templates, and the one stylesheet per part the runtime applied from a template.
   expect(api).toEqual({ createFlow: "function", createDataGrid: "undefined", createTreeGrid: "undefined",
-    parts: ["script flow", "script forms", "style flow", "style forms"] });
+    parts: ["script flow", "script forms", "style flow", "style forms", "style template flow", "style template forms"] });
 });
 
 /**

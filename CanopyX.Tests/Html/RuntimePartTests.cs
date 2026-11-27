@@ -117,7 +117,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Markup_WritesThePartAsStyleAndScriptElementsMarkedWithItsNameAndVersion() {
         var part = CanopyHtmlAssets.GetPart("tree-tools");
-        Assert.Equal("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Style + "</style>"
+        Assert.Equal("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\" media=\"not all\">" + part.Style + "</style>"
             + "<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Script + "</script>", part.Markup);
         var links = CanopyHtmlAssets.GetPart("links");
         Assert.Equal("<script data-canopyx-part=\"links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);

@@ -32,7 +32,9 @@ test("three trees written into one document share a single embedded tree tools p
   await open(page);
   // The .NET writer embedded the part with the first fragment only; the runtime found it by type and version for all three.
   expect(await page.locator('script[data-canopyx-part="tree-tools"]').count()).toBe(1);
-  expect(await page.locator('style[data-canopyx-part="tree-tools"]').count()).toBe(1);
+  // One template in the page, and the one stylesheet the runtime applies from it.
+  expect(await page.locator('style[data-canopyx-part="tree-tools"][media="not all"]').count()).toBe(1);
+  expect(await page.locator('head style[data-canopyx-part="tree-tools"]:not([media="not all"])').count()).toBe(1);
   for (const host of [org(page), files(page), groups(page)]) {
     await expect(host).toHaveClass(/cx-tree-tools/);
     await expect(host.locator(".cx-grid-columns > summary")).toBeVisible();

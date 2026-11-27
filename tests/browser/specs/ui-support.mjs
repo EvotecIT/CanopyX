@@ -9,7 +9,7 @@ export function uiPage(markup, script = '', { without = [] } = {}) {
   const parts = JSON.parse(asset('canopyx-parts.json')).parts;
   const entries = Array.isArray(parts) ? parts : Object.values(parts);
   const payloads = entries.filter(part => part.name.startsWith('ui-') && !without.includes(part.name)).map(part =>
-    (part.style ? `<style data-canopyx-part="${part.name}" data-cx-version="${part.version}">${asset(part.style)}</style>` : '') +
+    (part.style ? `<style data-canopyx-part="${part.name}" data-cx-version="${part.version}" media="not all">${asset(part.style)}</style>` : '') +
     `<script data-canopyx-part="${part.name}" data-cx-version="${part.version}">${asset(part.script)}</script>`).join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CanopyX controls</title>
     <style>${asset('canopyx.css')}</style><script>${asset('canopyx.js')}</script></head>

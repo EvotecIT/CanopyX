@@ -17,7 +17,7 @@ namespace CanopyX.Html;
 /// the part mounts; a host that inserts fragments later (tabs, templates) inserts the first one first, or gives each such
 /// fragment its own document. A part's script runs only where the browser runs scripts: markup parsed with the page or
 /// inserted through <c>Range.createContextualFragment</c>, but not markup set through <c>innerHTML</c>, after which the runtime
-/// looks for the part files instead. When a part registers, the runtime keeps its own copy of the part's stylesheet in the
+/// looks for the part files instead. A part's stylesheet is an inert template; the runtime applies one copy of it in the
 /// document's head, so removing the fragment that carried it keeps the rules for the other views. Without a document, every inline fragment carries its own parts and stands alone; on a page of such fragments the
 /// first copy of a part registers, and the runtime removes the stylesheets of the others.
 /// </para>

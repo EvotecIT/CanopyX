@@ -36,15 +36,21 @@ test("hidden tabs, accordion and details defer row rendering until their first s
 });
 
 test("fragments written without a shared document apply each part's stylesheet once", async ({ page }) => {
-  // Each of the three grids carries its own copy of the parts; the first copy registers and the others drop their stylesheets.
+  // Each of the three grids carries its own copy of the parts as inert templates; the runtime applies one stylesheet per part
+  // as the grids load them: the column menu loads the filter editor part.
   await open(page, "contained-grids-dark.html");
+  await page.locator("#records-tab").click();
+  await page.locator("#records-panel .cx-grid-column-menu").first().click();
+  await expect(page.locator(".cx-column-menu [role=menuitem]").first()).toBeVisible();
+  await page.keyboard.press("Escape");
   const counts = await page.evaluate(() => {
     const count = selector => [...document.querySelectorAll(selector)].reduce((all, element) => (all[element.dataset.canopyxPart] = (all[element.dataset.canopyxPart] || 0) + 1, all), {});
-    return { scripts: count("script[data-canopyx-part]"), styles: count("style[data-canopyx-part]") };
+    return { scripts: count("script[data-canopyx-part]"), templates: count("style[data-canopyx-part][media='not all']"), applied: count("style[data-canopyx-part]:not([media='not all'])") };
   });
   expect(Object.values(counts.scripts).every(value => value === 3)).toBe(true);
-  expect(Object.keys(counts.styles).length).toBeGreaterThan(0);
-  expect(Object.values(counts.styles).every(value => value === 1)).toBe(true);
+  expect(Object.values(counts.templates).every(value => value === 3)).toBe(true);
+  expect(counts.applied["filter-editor"]).toBe(1);
+  expect(Object.values(counts.applied).every(value => value === 1)).toBe(true);
 });
 
 for (const offset of [0, 13, 39]) test(`a hidden restored grid keeps its requested scroll position through reveal and repeated resize (offset ${offset})`, async ({ page }) => {

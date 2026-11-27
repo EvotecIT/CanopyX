@@ -20,7 +20,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; 
 
 Standalone pages bundle Archivo and JetBrains Mono. External assets load fonts from the same origin; single-file pages embed the font bytes as data URLs, so their policy includes `font-src data:`. Hosted fragments use the host's font faces and do not add font declarations.
 
-The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It never turns page text into a script or a stylesheet either: data blocks are only parsed, and the only `<script>` and `<link>` elements it inserts load files. The one element it copies is a part's stylesheet the browser already applied, cloned with that element's nonce into the document's head, so the policy that allowed the original allows the copy. The print view's own rules are a constructed stylesheet (`adoptedStyleSheets`), which a policy allows without a nonce. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
+The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It never turns page text into a script or a stylesheet either: data blocks are only parsed, and the only `<script>` and `<link>` elements it inserts load files. The one element it copies is a part's stylesheet template (`<style media="not all">`) the policy allowed, cloned with that element's nonce and without the media into the document's head, so the policy that allowed the template allows the copy. The print view's own rules are a constructed stylesheet (`adoptedStyleSheets`), which a policy allows without a nonce. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
 
 These elements need the nonce, because a policy checks them:
 
@@ -50,7 +50,7 @@ A nonce lets a script in whatever its address, so the addresses the runtime load
 
 A page with external assets has no inline script or style, so `script-src 'self'; style-src 'self'` allows all of it: the runtime script and stylesheet, the fonts, the part files and a bundle's sidecar files. A fragment's `Height` is applied by the runtime through the style object, and the print view uses a constructed stylesheet. Write such pages with `AssetMode = CanopyAssetMode.External` and the runtime files with `CanopyHtmlAssets.WriteTo`, or with `SaveBundle`.
 
-A single file has to carry its code inline. Its inline elements are the runtime's `<script>` and `<style>`, the font `<style>`, and each part's `<style>` and `<script>`: all written as they are, never created from text at run time, so a policy of their SHA-256 hashes allows them. `tests/browser/specs/csp-pages.spec.mjs` loads single files under such a policy.
+A single file has to carry its code inline. Its inline elements are the runtime's `<script>` and `<style>`, the font `<style>`, and each part's `<style>` template and `<script>`: all written as they are, and the runtime's copy of a template has the same text, so a policy of their SHA-256 hashes allows them. `tests/browser/specs/csp-pages.spec.mjs` loads single files under such a policy.
 
 ### C# hosts
 

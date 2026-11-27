@@ -89,7 +89,8 @@ public sealed class ContentSecurityTests {
         Assert.Empty(document.EmbeddedParts);
         var first = document.EmbedOnce(part, Nonce);
         Assert.Equal(part.GetMarkup(Nonce), first);
-        Assert.Equal(2, Regex.Matches(first, " nonce=\"" + Regex.Escape(Nonce) + "\">").Count);
+        // The stylesheet template and the script both carry the nonce.
+        Assert.Equal(2, Regex.Matches(first, " nonce=\"" + Regex.Escape(Nonce) + "\"[ >]").Count);
         Assert.Equal(string.Empty, document.EmbedOnce(part, Nonce));
     }
 

@@ -121,7 +121,7 @@ In TypeScript the types are `CanopyPlugin`, `CanopyPluginContext`, `CanopyCellRe
 
 A part is runtime code that loads when a view needs it. The runtime's build manifest names each part it knows with its version and content-hashed file names. When a view first needs a part, the loader:
 
-1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<style>` and `<script>` elements (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs (only where the browser runs scripts: not in markup set through `innerHTML`), and a host may preload part scripts the same way. As the part registers, the runtime keeps its own copy of the part's stylesheet in the document's head (a clone of the applied element, with its nonce), and removes the page's copies;
+1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<script>` and an inert `<style media="not all">` template (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs (only where the browser runs scripts: not in markup set through `innerHTML`), and a host may preload part scripts the same way. The stylesheet follows [Part stylesheets](#part-stylesheets);
 2. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
 3. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
 
@@ -159,23 +159,19 @@ A part script registers itself whether it runs before or after the runtime: it p
 
 ### Part stylesheets
 
-A page keeps exactly one applied stylesheet per part. For each part name the runtime holds the accepted registration (this build's version when the page offers it) and one **kept** stylesheet: the file it linked, or its own copy in `document.head` of a page stylesheet the browser applied (a clone with that element's nonce). Page copies are the `<style data-canopyx-part>` elements fragments carry. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition.
+A single-file page carries a part's stylesheet as a template, `<style data-canopyx-part="<name>" data-cx-version="…" media="not all">`, which never applies by itself. The runtime owns one stylesheet per part in `document.head`: a clone of a template of this build's version that the policy allowed (with its nonce, without the media), or else the part's file, linked. Every load of the part, by any view, checks that stylesheet and those of the parts it requires. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition and checks that exactly one stylesheet of the part, and of a part it requires, applies.
 
 | Transition | Result |
 | --- | --- |
-| A part registers with its own stylesheet (parsed or `createContextualFragment` markup) | The runtime copies the stylesheet into the head and removes the page copies of the part. |
-| The fragment that carried it is removed, by element or node by node | Nothing changes: the kept copy is the runtime's. |
-| A second copy of the same version arrives with a script that runs | Its script changes nothing; its stylesheet is removed. |
-| A copy arrives through `innerHTML` (its script never runs) | Its stylesheet applies until the next view loads the part, which removes it. |
-| A host re-inserts nodes it removed earlier | As `innerHTML`: settled when the next view loads the part. |
-| A script registers without a stylesheet (a host preload) | The first page copy of that version becomes the kept one. |
-| A copy from another build registers first, alone or before this build's | It holds the name until this build's copy registers; copies of other versions are removed, this build's wait. With no copy of this build, the part loads from its files. |
-| A copy from another build registers after this build's | Ignored; its stylesheet is removed. |
-| The part loads from its files | The linked stylesheet is the kept one; later page copies give way to it. |
-| The stylesheet file fails, then a fragment brings this version's stylesheet | The page copy is kept and the part installs without the file. |
-| A policy refused a page copy (hash or nonce) | It is never kept; a copy the browser applied is. |
-| The kept stylesheet leaves the page (a host clears the head) | The next view adopts a page copy, or loads the file again. |
-| A view is destroyed | Nothing changes: stylesheets stay for the page's other and later views. |
+| A part registers and a view loads it | The runtime clones a template the policy allowed into the head; without one, it links the file. |
+| A fragment is inserted, removed (by element or node by node), replaced through `innerHTML` or re-inserted | Nothing applies twice: its templates are inert, and the runtime's stylesheet is its own. |
+| Fragments carry repeated copies, or copies from another build | Inert. Only a template of this build's version is cloned; a registration of this build's version stays, another build's copy replaces only one that is not. |
+| A script is preloaded (or the entry point carries the part's code), with or without a template | With one, it is cloned; without one, the file is linked. Code registered before the load installs even when no stylesheet can be applied, so a host that preloads part scripts provides their stylesheets; the next load tries again. A part an entry point registers itself takes a template when the page has one, and no file otherwise. |
+| A policy refused a template (hash or nonce) | It has no sheet and is never cloned; another template, or the file, is used. |
+| The file fails to load | Every view waiting for it fails; the next load tries a template again, then the file. |
+| A link is removed while it loads | The next load replaces it, and the views waiting for the removed one take the replacement. |
+| The runtime's stylesheet leaves the head (removed, moved into a shadow root, or the head rewritten) | The next load applies a template again, or links the file, and removes any other applying copy of the part. |
+| A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
 
 ### Serving parts
 
