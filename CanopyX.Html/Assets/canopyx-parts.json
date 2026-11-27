@@ -295,7 +295,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "49630eaa5790c005",
+      "version": "d147b2afb610229a",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",

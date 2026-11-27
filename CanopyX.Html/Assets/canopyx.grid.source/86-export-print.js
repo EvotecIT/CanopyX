@@ -69,11 +69,14 @@
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
       for (const source of fontSources) {
-        // An inline font stylesheet's rules are copied into the paper's own constructed stylesheet; a linked one is linked again.
-        if (source.tagName === "STYLE" && source.sheet && sheet([...source.sheet.cssRules].map(rule => rule.cssText).join("\n"), true)) continue;
+        // An inline font stylesheet's rules are copied into the paper's own constructed stylesheet, unless it imports others,
+        // which a constructed stylesheet drops: that one, like a linked one, is inserted again with its own nonce.
+        const rules = source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null, imports = rules?.some(rule => rule.constructor.name === "CSSImportRule");
+        if (rules && !imports && sheet(rules.map(rule => rule.cssText).join("\n"), true)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
-        if (source.tagName === "LINK") {
-          copy.href = source.href;
+        if (source.tagName === "LINK") copy.href = source.href;
+        // A linked stylesheet, or an inline one's imports, load before the paper prints.
+        if (source.tagName === "LINK" || imports) {
           fontLoads.push(new Promise((resolve, reject) => {
             copy.onload = resolve; copy.onerror = () => reject(new Error("CanopyX: print font stylesheet failed to load."));
           }));

@@ -13,36 +13,35 @@
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
         part.requires !== undefined && !(Array.isArray(part.requires) && part.requires.every(partName))) throw new Error("CanopyX: invalid part.");
     // Fragments written without a shared document each carry the parts they need, so a part can register more than once,
-    // and a page may even hold a copy from another build. A registration of this build's version stays; any other copy
-    // changes nothing, and its stylesheet is removed so the page applies the rules once.
-    const current = PART_CODE.get(name), wanted = Object.hasOwn(PARTS, name) ? PARTS[name][0] : current?.version;
-    if (current && (current.version === part.version || current.version === wanted)) {
-      partSheets(name, part.version).forEach(style => PART_SHEETS.get(name) === style || style.remove());
-      return;
-    }
-    // A registration this one replaces takes its stylesheet with it.
-    PART_SHEETS.get(name)?.remove(); PART_SHEETS.delete(name);
-    PART_CODE.set(name, part);
-    adoptPartSheet(name, part.version);
+    // and a page may hold a copy from another build. A registration of this build's version stays; another copy only
+    // replaces a registration that is not this build's.
+    const current = PART_CODE.get(name), wanted = partVersion(name, part);
+    if (!current || current.version !== part.version && current.version !== wanted) PART_CODE.set(name, part);
+    settlePartSheets(name);
   }
-  // A part's stylesheet the page carries sits beside its script inside a fragment. It moves into document.head when the
-  // part registers, as the loaded stylesheets do, so removing that fragment later keeps the rules for the other views.
+  const partVersion = (name, part) => Object.hasOwn(PARTS, name) ? PARTS[name][0] : part.version;
+  // A part's stylesheet the page carries sits beside its script inside a fragment. The page keeps one: that of the
+  // accepted registration's version, when it is this build's, moved into document.head (as the loaded stylesheets are),
+  // so removing its fragment keeps the rules. Every other copy, stale or repeated, is removed. A part that registered
+  // from a file keeps its linked stylesheet; one whose script was preloaded without a stylesheet adopts the page's copy.
   const PART_SHEETS = new Map();
-  /** The registering part's own stylesheet (the style element just before its script), else every matching one in the page. */
-  function partSheets(name, version) {
-    if (typeof document === "undefined") return [];
-    const match = style => style?.localName === "style" && style.dataset.canopyxPart === name && style.dataset.cxVersion === version;
-    const own = document.currentScript?.previousElementSibling;
-    if (match(own)) return [own];
-    // Registered later from the queue: prefer a stylesheet with the page nonce, which a policy applied.
-    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(match);
-    return pageNonce ? sheets.sort((a, b) => (b.nonce === pageNonce) - (a.nonce === pageNonce)) : sheets;
-  }
-  function adoptPartSheet(name, version) {
-    const sheet = partSheets(name, version)[0];
-    if (!sheet) return;
-    PART_SHEETS.set(name, sheet);
-    if (sheet.getRootNode() === document && sheet.parentNode !== document.head) document.head.appendChild(sheet);
+  function settlePartSheets(name) {
+    const code = PART_CODE.get(name);
+    if (!code || typeof document === "undefined") return;
+    let kept = PART_SHEETS.get(name);
+    if (kept && kept.dataset.cxVersion !== code.version) { kept.remove(); kept = undefined; PART_SHEETS.delete(name); }
+    const sheets = [...document.querySelectorAll("style[data-canopyx-part]")].filter(style => style.dataset.canopyxPart === name);
+    if (!kept && code.version === partVersion(name, code)) {
+      // The registering script's own stylesheet first (the element before it), then one with the page nonce, which a
+      // policy applied: never an injected look-alike placed earlier.
+      const matching = sheets.filter(style => style.dataset.cxVersion === code.version), own = document.currentScript?.previousElementSibling;
+      kept = matching.includes(own) ? own : pageNonce && matching.find(style => style.nonce === pageNonce) || matching[0];
+      if (kept) {
+        PART_SHEETS.set(name, kept);
+        if (kept.getRootNode() === document && kept.parentNode !== document.head) document.head.appendChild(kept);
+      }
+    }
+    sheets.forEach(style => style === kept || style.remove());
   }
   // A view kind's parts by name, each with the context its code installs into: definePart(TreeGrid, "tree-tools", ...).
   function definePart(View, name, label, context) {
@@ -52,6 +51,8 @@
   }
   // Build/Sync-Assets.ps1 refuses requires that name no part of the same view kind or that form a cycle.
   function loadPart(part) {
+    // A fragment set through innerHTML brings its stylesheet but never runs its script: settle the page's copies again.
+    settlePartSheets(part.name);
     return part.ready ||= Promise.resolve().then(async () => {
       const [version, scriptFile, styleFile] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
       part.version = version;

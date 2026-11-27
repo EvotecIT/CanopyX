@@ -155,3 +155,28 @@ test('late font loading refreshes column fitting without a manual resize', async
   await nextFrames(page);
   expect(await widths()).toEqual(automatic);
 });
+
+test('an inline font stylesheet that imports the faces prints with them', async ({ page }) => {
+  // A constructed stylesheet drops @import, so the print frame inserts this one again and waits for what it imports.
+  await page.addInitScript(() => { window.print = () => {
+    window.parent.__importedFonts = [...document.fonts].map(face => ({ family: face.family.replaceAll('"', ''), status: face.status }));
+  }; });
+  await page.route('http://canopyx.test/**', async route => {
+    const relative = new URL(route.request().url()).pathname.slice(1);
+    const file = path.join(examples, 'fonts', relative);
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const type = path.extname(file) === '.woff2' ? 'font/woff2' : path.extname(file) === '.css' ? 'text/css' : path.extname(file) === '.js' ? 'text/javascript' : 'text/html';
+    const body = type === 'text/html' ? fs.readFileSync(file, 'utf8').replace(/<link data-font-source rel="stylesheet" href="([^"]+)">/,
+      '<style data-font-source>@import url("$1");</style>') : fs.readFileSync(file);
+    return route.fulfill({ contentType: type, body });
+  });
+  await page.goto('http://canopyx.test/plain.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; await document.fonts.ready; });
+  expect(await page.locator('head style[data-font-source]').count()).toBe(1);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  // Both imported faces reach the paper; the body text's face has loaded before it prints.
+  const faces = await page.evaluate(() => window.__importedFonts);
+  expect(faces.map(face => face.family).sort()).toEqual(['Archivo', 'JetBrains Mono']);
+  expect(faces).toContainEqual({ family: 'Archivo', status: 'loaded' });
+  await expect(page.locator('iframe')).toHaveCount(0);
+});

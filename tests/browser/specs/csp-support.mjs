@@ -94,4 +94,3 @@ export async function exerciseGrid(page, root = page.locator(".cx-data-grid").fi
   const csv = await root.evaluate(element => element.closest("[data-canopyx-host]").canopyx.toCsv({ scope: "filtered" }));
   expect(csv.split("\r\n")[0]).toContain("Record");
 }
-
