@@ -387,3 +387,21 @@ test('dialog structure and focus states pass accessibility checks', async ({ pag
   const violations = (await new AxeBuilder({ page }).analyze()).violations;
   expect(violations).toEqual([]);
 });
+
+// A dialog nested in a drawer: each way of dismissing the inner dialog closes it alone, the drawer stays open, and the focus
+// returns to the inner dialog's trigger inside the drawer.
+for (const dismiss of ['Close', 'Cancel', 'Escape']) test(`dismissing a dialog nested in a drawer with ${dismiss} leaves the drawer open`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openUi(page, overlay('drawer', 'outer', overlay('dialog', 'inner')));
+  await page.getByRole('button', { name: 'Open outer' }).click();
+  const drawer = page.getByRole('dialog', { name: 'outer settings' });
+  await expect(drawer).toBeVisible();
+  await drawer.getByRole('button', { name: 'Open inner' }).click();
+  const dialog = page.getByRole('dialog', { name: 'inner settings' });
+  await expect(dialog).toBeVisible();
+  if (dismiss === 'Escape') await page.keyboard.press('Escape');
+  else await dialog.getByRole('button', { name: dismiss, exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Open inner' })).toBeFocused();
+});
