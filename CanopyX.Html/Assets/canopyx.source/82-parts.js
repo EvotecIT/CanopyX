@@ -39,7 +39,8 @@
   // and without the media, or, with fallback, the part's file, linked. Every load checks it again: one that left the document
   // is replaced, a link removed while it loads is abandoned, a
   // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
-  const PART_SHEETS = new Map();
+  // A clone a host's stylesheet took over waits in SPARE_SHEETS, so it applies again if the host's stops and no template is left.
+  const PART_SHEETS = new Map(), SPARE_SHEETS = new Map();
   // A host stylesheet counts while it is enabled and its media matches.
   const live = element => element.sheet && !element.sheet.disabled && (!element.media || matchMedia(element.media).matches);
   // The runtime's own copy applies while it is in the document; disabling it or changing its media is outside the contract.
@@ -56,13 +57,16 @@
     // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
     if (owned && (!applies(owned) || host && owned.element !== host)) {
       owned.abandon?.(again());
+      if (host && owned.element.localName === "style") SPARE_SHEETS.set(part.name, owned.element);
       if (!owned.host) owned.element.remove();
       PART_SHEETS.delete(part.name); owned = undefined;
     }
     if (!owned) {
       const allowed = elements.filter(element => mine(element) && "canopyxTemplate" in element.dataset && element.sheet);
       const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0];
+      const spare = SPARE_SHEETS.get(part.name);
       if (host) owned = { element: host, host: true };
+      else if (!template && spare) { document.head.appendChild(spare); if (spare.sheet) owned = { element: spare }; else spare.remove(); }
       else if (template) {
         const copy = template.cloneNode(true);
         copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = ""; document.head.appendChild(copy);

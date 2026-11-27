@@ -126,6 +126,9 @@ const ROWS = [
   { transition: "a host's marked style given media=\"not all\" stays inactive and the runtime's copy applies",
     page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${asset(part("ui-tabs").style)}</style>${TABS}`,
     steps: [["mount", "a"], ["host-off"], ["mount", "b"]], styles: 1, links: 0, files: false },
+  { transition: "a host's stylesheet takes over after the fragment is gone, then stops applying: the runtime's copy returns", cssMissing: true,
+    page: `<section id="carrier">${TABS}</section>`,
+    steps: [["mount", "a"], ["remove-element", "#carrier"], ["host-link"], ["mount", "b"], ["host-print"], ["mount", "c"]], styles: 1, links: 1, files: true },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -169,7 +172,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
     } else if (step === "css-ok") missing = false;
     else if (step === "host-link") {
       await page.evaluate(version => new Promise(resolve => {
-        const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css", onload: resolve });
+        const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css?host", onload: resolve });
         Object.assign(link.dataset, { canopyxPart: "ui-tabs", cxVersion: version }); document.head.append(link);
       }), VERSION);
     } else if (step === "mount-host-rescues") {
