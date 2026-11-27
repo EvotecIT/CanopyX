@@ -159,18 +159,19 @@ A part script registers itself whether it runs before or after the runtime: it p
 
 ### Part stylesheets
 
-A single-file page carries a part's stylesheet as a template, `<style data-canopyx-part="<name>" data-cx-version="…" media="not all">`, which never applies by itself. The runtime owns one stylesheet per part in `document.head`: a clone of a template of this build's version that the policy allowed (with its nonce, without the media), or else the part's file, linked. Every load of the part, by any view, checks that stylesheet and those of the parts it requires. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition and checks that exactly one stylesheet of the part, and of a part it requires, applies.
+A single-file page carries a part's stylesheet as a template, `<style data-canopyx-part="<name>" data-cx-version="…" media="not all">`, which never applies by itself. Each part has one stylesheet: a host's own stylesheet marked `data-canopyx-part` and `data-cx-version` with this build's version, or the runtime's, which it marks `data-canopyx-owned` and keeps in `document.head`, a clone of a template the policy allowed (with its nonce, without the media) or the part's file, linked. Every load of the part, by any view, checks that stylesheet and those of the parts it requires. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition and checks that exactly one stylesheet of the part, and of a part it requires, applies.
 
 | Transition | Result |
 | --- | --- |
-| A part registers and a view loads it | The runtime clones a template the policy allowed into the head; without one, it links the file. |
+| A part registers and a view loads it | A host's marked stylesheet is used as it is; otherwise the runtime clones a template the policy allowed, or links the file when the part's code came from its file or the page carries the part's script. |
 | A fragment is inserted, removed (by element or node by node), replaced through `innerHTML` or re-inserted | Nothing applies twice: its templates are inert, and the runtime's stylesheet is its own. |
 | Fragments carry repeated copies, or copies from another build | Inert. Only a template of this build's version is cloned; a registration of this build's version stays, another build's copy replaces only one that is not. |
-| A script is preloaded (or the entry point carries the part's code), with or without a template | With one, it is cloned; without one, the file is linked. Code registered before the load installs even when no stylesheet can be applied, so a host that preloads part scripts provides their stylesheets; the next load tries again. A part an entry point registers itself takes a template when the page has one, and no file otherwise. |
+| A host preloads a part's script (a classic script, or a module beside the module runtime) | The host provides the stylesheet: a marked one is the part's stylesheet, an unmarked one is left alone, and without a template the runtime adds none. The part installs without waiting for a stylesheet. |
+| An entry point registers a part itself | It takes a template when the page has one; otherwise the entry point's styles cover it. |
 | A policy refused a template (hash or nonce) | It has no sheet and is never cloned; another template, or the file, is used. |
 | The file fails to load | Every view waiting for it fails; the next load tries a template again, then the file. |
 | A link is removed while it loads | The next load replaces it, and the views waiting for the removed one take the replacement. |
-| The runtime's stylesheet leaves the head (removed, moved into a shadow root, or the head rewritten) | The next load applies a template again, or links the file, and removes any other applying copy of the part. |
+| The part's stylesheet stops applying (removed, moved out of the document, disabled, given a media, or the head rewritten) | The next load replaces it and removes the runtime's other copies; a host's stylesheet is never removed. |
 | A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
 
 ### Serving parts

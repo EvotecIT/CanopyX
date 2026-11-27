@@ -47,7 +47,8 @@ const hashPolicy = html => {
 // removes the applying part stylesheets in the head; ["clear-templates"] removes the page's templates; ["css-ok"] serves the
 // stylesheet file again; ["head-reparse"] rewrites the head through innerHTML, which recreates its links; ["take-link", key]
 // removes the tabs link and keeps it; ["reinsert-link", key] puts it back; ["to-shadow"] moves the tabs stylesheet into a
-// shadow root; ["mount-detached", id] starts a mount, removes its pending link, then mounts the next id: both get the replacement.
+// shadow root; ["mount-detached", id] starts a mount, removes its pending link, then mounts the next id: both get the replacement;
+// ["disable"] disables the runtime's stylesheet; ["inert"] gives it media="not all".
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
 const TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
@@ -64,10 +65,15 @@ const ROWS = [
   { transition: "a host re-inserts nodes it removed", page: "",
     steps: [["parsed", TABS, "carrier"], ["mount", "a"], ["remove", "carrier"], ["reinsert", "carrier"], ["mount", "b"]], ...PAGE },
   { transition: "a script preloaded with a template", page: `<script>${asset(part("ui-tabs").script)}</script>${TABS}`, steps: [["mount", "a"]], ...PAGE },
-  { transition: "a script preloaded without a template loads the stylesheet file", page: `<script>${asset(part("ui-tabs").script)}</script>`,
-    steps: [["mount", "a"]], ...FILES },
-  { transition: "a script preloaded without a template installs even when the file is missing", page: `<script>${asset(part("ui-tabs").script)}</script>`,
-    cssMissing: true, steps: [["mount", "a"]], styles: 0, links: 0, files: true, applied: 0 },
+  { transition: "a host preload without a stylesheet: the host provides it, the runtime adds none", page: `<script>${asset(part("ui-tabs").script)}</script>`,
+    steps: [["mount", "a"]], styles: 0, links: 0, files: false, applied: 0 },
+  { transition: "a host preload with its own stylesheet link: the runtime adds none",
+    page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css"><script>${asset(part("ui-tabs").script)}</script>`, steps: [["mount", "a"]], styles: 0, links: 0, files: true },
+  { transition: "a host's marked stylesheet is the part's stylesheet and is never removed",
+    page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}"><script>${asset(part("ui-tabs").script)}</script>${TABS}`,
+    steps: [["mount", "a"], ["html", TABS], ["mount", "b"]], styles: 0, links: 1, files: true },
+  { transition: "a part imported beside the module runtime is a host preload", page: "", module: true, steps: [["mount", "a"]], styles: 0, links: 0, files: false, applied: 0 },
+  { transition: "a part the page carries beside the module runtime applies its template", page: TABS, module: true, steps: [["mount", "a"]], ...PAGE },
   { transition: "two builds: another build's copy first, queued before the runtime", page: markup("ui-tabs", OTHER_BUILD) + TABS, runtimeLast: true,
     steps: [["mount", "a"]], ...PAGE },
   { transition: "two builds: another build's copy first, runtime first", page: markup("ui-tabs", OTHER_BUILD) + TABS, steps: [["mount", "a"]], ...PAGE },
@@ -96,15 +102,18 @@ const ROWS = [
     steps: [["mount", "a"], ["take-link", "old"], ["mount", "b"], ["reinsert-link", "old"], ["mount", "c"]], ...FILES },
   { transition: "a pending link is removed, and the next mount's replacement serves both mounts", page: "", holdCss: true,
     steps: [["mount-detached", "a"]], ...FILES },
+  { transition: "the runtime's stylesheet is disabled, so it is replaced", page: TABS, steps: [["mount", "a"], ["disable"], ["mount", "b"]], ...PAGE },
+  { transition: "the runtime's stylesheet is given media=\"not all\", so it is replaced", page: TABS, steps: [["mount", "a"], ["inert"], ["mount", "b"]], ...PAGE },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
 
-for (const { transition, page: carried, steps, runtimeLast, hashes, cssMissing, holdCss, styles, links, files, applied = 1 } of ROWS) test(transition, async ({ page }) => {
+for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssMissing, holdCss, styles, links, files, applied = 1 } of ROWS) test(transition, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
-  const runtime = `<script>${asset("canopyx.js")}</script>`;
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style>${runtimeLast ? "" : runtime}</head>` +
-    `<body class="cx-page"><main>${carried}</main>${requirements("ui-tabs")}${runtimeLast ? runtime : ""}</body></html>`;
+  // With module, the runtime is the ES module and, without page markup, the host imports the tabs part file beside it.
+  const runtime = module ? `<script type="module" src="/canopyx-module.mjs"></script>${carried ? "" : '<script type="module" src="/canopyx-ui-tabs.js"></script>'}` : `<script>${asset("canopyx.js")}</script>`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parts</title><style>${asset("canopyx.css")}</style>${runtimeLast || module ? "" : runtime}</head>` +
+    `<body class="cx-page"><main>${carried}</main>${requirements("ui-tabs")}${runtimeLast || module ? runtime : ""}</body></html>`;
   const requested = [];
   let missing = cssMissing, release, held = holdCss;
   const gate = new Promise(resolve => { release = resolve; });
@@ -118,6 +127,7 @@ for (const { transition, page: carried, steps, runtimeLast, hashes, cssMissing, 
     return route.fulfill({ body: html, headers: { "content-type": "text/html; charset=utf-8", ...hashes ? { "content-security-policy": hashPolicy(html) } : {} } });
   });
   await page.goto("http://canopyx.test/parts");
+  await page.waitForFunction(() => window.CanopyX?.tabs);
   const insertTabs = id => page.locator("main").evaluate((main, markup) => main.insertAdjacentHTML("beforeend", markup), tabs(id));
   const mount = id => page.evaluate(id => CanopyX.tabs("#" + id).ready.then(() => "ready", error => error.message), id);
   const works = async id => {
@@ -158,6 +168,8 @@ for (const { transition, page: carried, steps, runtimeLast, hashes, cssMissing, 
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
+      else if (step === "disable") document.head.querySelector('[data-canopyx-part="ui-tabs"][data-canopyx-owned]').sheet.disabled = true;
+      else if (step === "inert") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "not all";
       else if (step === "head-reparse") document.head.innerHTML = document.head.innerHTML;
       else if (step === "take-link") { kept[value] = document.querySelector('link[data-canopyx-part="ui-tabs"]'); kept[value].remove(); }
       else if (step === "reinsert-link") document.head.append(kept[value]);
