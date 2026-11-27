@@ -163,7 +163,7 @@ A single-file page carries a part's stylesheet as a template, `<style data-canop
 
 | Transition | Result |
 | --- | --- |
-| A part registers and a view loads it | A host's marked stylesheet is used as it is; otherwise the runtime clones a template the policy allowed, or links the file when the part's code came from its file or the page carries the part's script. |
+| A part registers and a view loads it | A host's marked stylesheet is used as it is, also one that arrives after the runtime's copy or while its link loads; otherwise the runtime clones a template the policy allowed, or links the file when the registered code came from the part file or from a part script the page carries. Code from the part file waits for its stylesheet on every load. |
 | A fragment is inserted, removed (by element or node by node), replaced through `innerHTML` or re-inserted | Nothing applies twice: its templates are inert, and the runtime's stylesheet is its own. |
 | Fragments carry repeated copies, or copies from another build | Inert. Only a template of this build's version is cloned; a registration of this build's version stays, another build's copy replaces only one that is not. |
 | A host preloads a part's script (a classic script, or a module beside the module runtime) | The host provides the stylesheet: a marked one is the part's stylesheet, an unmarked one is left alone, and without a template the runtime adds none. The part installs without waiting for a stylesheet. |
@@ -171,7 +171,7 @@ A single-file page carries a part's stylesheet as a template, `<style data-canop
 | A policy refused a template (hash or nonce) | It has no sheet and is never cloned; another template, or the file, is used. |
 | The file fails to load | Every view waiting for it fails; the next load tries a template again, then the file. |
 | A link is removed while it loads | The next load replaces it, and the views waiting for the removed one take the replacement. |
-| The part's stylesheet stops applying (removed, moved out of the document, disabled, given a media, or the head rewritten) | The next load replaces it and removes the runtime's other copies; a host's stylesheet is never removed. |
+| The part's stylesheet stops applying (removed, moved out of the document, disabled, given a media that does not match, or the head rewritten) | The next load replaces it and removes the runtime's other copies; a host's stylesheet is never removed. |
 | A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
 
 ### Serving parts

@@ -48,7 +48,8 @@ const hashPolicy = html => {
 // stylesheet file again; ["head-reparse"] rewrites the head through innerHTML, which recreates its links; ["take-link", key]
 // removes the tabs link and keeps it; ["reinsert-link", key] puts it back; ["to-shadow"] moves the tabs stylesheet into a
 // shadow root; ["mount-detached", id] starts a mount, removes its pending link, then mounts the next id: both get the replacement;
-// ["disable"] disables the runtime's stylesheet; ["inert"] gives it media="not all".
+// ["disable"] disables the runtime's stylesheet; ["inert"] gives it media="not all"; ["print-media"] gives it media="print";
+// ["host-link"] adds a host's marked stylesheet; ["mount-host-takes-over", id] adds one while the runtime's link is held.
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
 const TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
@@ -104,6 +105,19 @@ const ROWS = [
     steps: [["mount-detached", "a"]], ...FILES },
   { transition: "the runtime's stylesheet is disabled, so it is replaced", page: TABS, steps: [["mount", "a"], ["disable"], ["mount", "b"]], ...PAGE },
   { transition: "the runtime's stylesheet is given media=\"not all\", so it is replaced", page: TABS, steps: [["mount", "a"], ["inert"], ["mount", "b"]], ...PAGE },
+  { transition: "the runtime's stylesheet is given a media that does not match, so it is replaced", page: TABS,
+    steps: [["mount", "a"], ["print-media"], ["mount", "b"]], ...PAGE },
+  { transition: "a host's marked stylesheet added after the runtime's copy takes over", page: TABS,
+    steps: [["mount", "a"], ["host-link"], ["mount", "b"]], styles: 0, links: 1, files: true },
+  { transition: "a host's marked stylesheet takes over while the runtime's link still loads", page: "", holdCss: true,
+    steps: [["mount-host-takes-over", "a"]], styles: 0, links: 1, files: true },
+  { transition: "an inert older fragment beside a host preload adds no stylesheet",
+    page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css"><script>${asset(part("ui-tabs").script)}</script>`,
+    steps: [["mount", "a"], ["html", markup("ui-tabs", OTHER_BUILD)], ["mount", "b"]], styles: 0, links: 0, files: true },
+  { transition: "a part the page carries loses its template and the runtime's copy, so the file loads", page: `<section id="carrier">${TABS}</section>`,
+    steps: [["mount", "a"], ["remove-element", "#carrier"], ["clear-head"], ["mount", "b"]], ...FILES },
+  { transition: "code from its file keeps waiting for its stylesheet on retries", page: "", cssMissing: true,
+    steps: [["mount-fails", "a"], ["mount-fails", "b"], ["css-ok"], ["mount", "c"]], ...FILES },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -145,6 +159,26 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       await insertTabs(value); await insertTabs(value + "2");
       expect(await Promise.all([mount(value), mount(value + "2")])).toEqual([expect.stringContaining("unavailable"), expect.stringContaining("unavailable")]);
     } else if (step === "css-ok") missing = false;
+    else if (step === "host-link") {
+      await page.evaluate(version => new Promise(resolve => {
+        const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css", onload: resolve });
+        Object.assign(link.dataset, { canopyxPart: "ui-tabs", cxVersion: version }); document.head.append(link);
+      }), VERSION);
+    } else if (step === "mount-host-takes-over") {
+      // The runtime's link is held; a host's marked stylesheet arrives and applies, and both mounts take it.
+      await insertTabs(value);
+      await page.evaluate(id => { window.first = CanopyX.tabs("#" + id).ready.then(() => "ready", error => error.message); }, value);
+      await page.waitForSelector('link[data-canopyx-part="ui-tabs"][data-canopyx-owned]', { state: "attached" });
+      await page.evaluate(version => new Promise(resolve => {
+        const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css?host", onload: resolve });
+        Object.assign(link.dataset, { canopyxPart: "ui-tabs", cxVersion: version }); document.head.append(link);
+      }), VERSION);
+      await insertTabs("next");
+      expect(await mount("next")).toBe("ready");
+      release();
+      expect(await page.evaluate(() => window.first)).toBe("ready");
+      await works("next");
+    }
     else if (step === "mount-detached") {
       // The first mount's link is removed while its response is held; the next mount replaces it, and both mounts get it.
       await insertTabs(value);
@@ -168,6 +202,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
+      else if (step === "print-media") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "print";
       else if (step === "disable") document.head.querySelector('[data-canopyx-part="ui-tabs"][data-canopyx-owned]').sheet.disabled = true;
       else if (step === "inert") document.head.querySelector('style[data-canopyx-part="ui-tabs"][data-canopyx-owned]').media = "not all";
       else if (step === "head-reparse") document.head.innerHTML = document.head.innerHTML;

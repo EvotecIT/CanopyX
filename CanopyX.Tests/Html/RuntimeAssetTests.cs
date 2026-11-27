@@ -97,8 +97,9 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Measured 129,093 bytes gzip with rich cells and rows from an address, with about 1.5% headroom.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 128 * 1024);
+        // Measured 129,093 bytes gzip with rich cells and rows from an address, with about 1.5% headroom; the part stylesheet
+        // lifecycle (docs/plugins.md#part-stylesheets) took about 500 bytes of it, so the budget moves by that much.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 128 * 1024 + 512);
     }
 
     [Fact]
