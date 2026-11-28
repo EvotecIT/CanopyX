@@ -25,7 +25,7 @@
     const top = uiTopOverlay();
     if (!top || !top.dismissible || uiInside(event, top)) return;
     const target = uiCloseTarget(event)?.target;
-    if (event.button === 0 && target && uiOverlayRoots.get(target).some(controller => controller.opened)) uiPendingPress = { pointer: event.pointerId, top };
+    if (event.button === 0 && target && uiOverlayRoots.get(target).some(controller => controller.opened)) uiPendingPress = { pointer: event.pointerId, target, top };
     else top.close("outside", false);
   }
   function uiPressEnd(event) {
@@ -82,10 +82,13 @@
   };
   const uiUp = node => uiSlot(node) || uiParentNode.call(node) || (uiNodeType.call(node) === 11 && node.host) || null;
   /** The close or cancel button an event came from, the innermost overlay around it, and the overlay it closes. */
-  function uiCloseTarget(event) {
-    const path = event.composedPath(), button = path.find(node => uiIsElement(node) && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
-    if (!button) return null;
-    const around = []; for (let at = button; at; at = uiUp(at)) if (uiOverlayRoots.has(at)) around.push(at);
+  // An overlay's own listener reads the overlays around the button from the path it sees, which shows every shadow root between
+  // them; the document, which cannot see into closed shadow roots, walks the flat tree from the button.
+  function uiCloseTarget(event, local) {
+    const path = event.composedPath(), at = path.findIndex(node => uiIsElement(node) && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
+    if (at < 0) return null;
+    const button = path[at], around = local ? path.slice(at).filter(node => uiOverlayRoots.has(node)) : [];
+    if (!local) for (let node = button; node; node = uiUp(node)) if (uiOverlayRoots.has(node)) around.push(node);
     const nearest = around[0], name = uiAttribute(button, "data-cx-close");
     // A name is looked up among the overlays around the button first (two may share an id in separate shadow roots), then in
     // the button's root and the document.
@@ -95,7 +98,7 @@
     return { path, nearest, target: named || nearest };
   }
   function uiCloseClick(event, owner) {
-    const found = uiCloseTarget(event);
+    const found = uiCloseTarget(event, !!owner);
     if (!found || found.nearest !== owner || !found.target) return;
     // Within one dispatch, listeners run from the inner overlay outwards: an outer one that the marked overlay is inside (on the
     // path, or still in its tree) leaves the click to it. The marked overlay's own listener sees a new dispatch. The document's
@@ -105,11 +108,12 @@
       if (marked && marked !== owner && (found.path.includes(marked) || uiDeepContains(owner, marked))) return;
       uiHandledClicks.set(event, owner);
     }
-    // The handler acting settles a pending press, also when the host then vetoes the close.
-    uiPendingPress = null;
-    // Several controllers can share an element (a drawer and a dialog factory on one root): the open one closes.
-    const controllers = uiOverlayRoots.get(found.target);
-    (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
+    // The handler acting on the press's own target settles it, also when the host then vetoes the close.
+    if (uiPendingPress?.target === found.target) uiPendingPress = null;
+    // Several controllers can share an element (a drawer and a dialog factory on one root): each that has it open closes, so
+    // the surface and its controllers agree.
+    const controllers = uiOverlayRoots.get(found.target), open = controllers.filter(controller => controller.opened);
+    for (const controller of open.length ? open.reverse() : [controllers.at(-1)]) controller.close("cancel");
   }
   let uiDocumentListening = false;
   function uiOverlayRegister(element, controller) {
@@ -134,12 +138,18 @@
   function uiNativeCancel(event, element) {
     // Only the dialog's own cancel: one that bubbles from a descendant (a file input's) is not a request to close.
     if (event.target !== element || !uiOverlayRoots.has(element)) return;
-    // A host that already vetoed the cancel keeps the overlays it would reach through this one open.
-    const vetoed = event.defaultPrevented;
-    event.preventDefault();
+    // A host that vetoes the cancel, before or after this listener, keeps the overlays it would reach through this one open,
+    // so that close waits until the dispatch is over.
+    const prevent = Event.prototype.preventDefault;
+    let vetoed = event.defaultPrevented;
+    Object.defineProperty(event, "preventDefault", { configurable: true, value() { vetoed = true; prevent.call(this); } });
+    prevent.call(event);
     const top = uiTopOverlay();
-    if (top?.element === element) top.close("cancel");
-    else if (!vetoed) for (let owner = top?.parent; owner; owner = owner.parent) if (owner.element === element) { top.close("cancel"); return; }
+    if (top?.element === element) { top.close("cancel"); return; }
+    if (!vetoed) setTimeout(() => {
+      if (vetoed || uiTopOverlay() !== top) return;
+      for (let owner = top?.parent; owner; owner = owner.parent) if (owner.element === element) { top.close("cancel"); return; }
+    });
   }
   function uiOverlayUnregister(element, controller) {
     const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);

@@ -5,8 +5,9 @@ namespace CanopyX.Tests.Html;
 /// <summary>Optional UI parts stay lazy, with component budgets separate from shared-token fallback transport.</summary>
 public sealed class UiPartAssetsTests {
     [Theory]
-    // The dialog and drawer body loader, address history and record controls take the overlays past 10 KiB.
-    [InlineData("ui-overlays", 11 * 1024)]
+    // The dialog and drawer body loader, address history and record controls take the overlays past 10 KiB; close and cancel
+    // routing for nested overlays across shadow roots takes them just past 11 KiB.
+    [InlineData("ui-overlays", 11 * 1024 + 512)]
     [InlineData("ui-menu", 12 * 1024)]
     [InlineData("ui-picker", 3 * 1024)]
     [InlineData("ui-navigation", 6 * 1024)]

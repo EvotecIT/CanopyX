@@ -407,7 +407,7 @@ const VETO_FIRST = `window.second = CanopyX.dialog(document.getElementById("oute
 // triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
 // the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
 // requestClose() on an overlay, { script } runs a page script, { press } presses and releases the pointer on a button without
-// relying on its click, or on another role's element (mouse names the button; dragTo moves away before the release); without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true).
+// relying on its click, or on another role's element (mouse names the button; dragTo moves away before the release); without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true; data-state is "closed" only after an opening closed).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -527,14 +527,14 @@ const DISMISSALS = [
     markup: '<div id="dup" class="cx-drawer" role="dialog" aria-label="page drawer" data-side="end"><p>Page drawer</p></div><div id="slot-host"><button data-cx-close="dup">Close slotted</button></div>',
     setup: `const root = document.getElementById("slot-host").attachShadow({ mode: "closed" });
       root.innerHTML = '<dialog id="dup" class="cx-drawer" aria-label="shadow drawer" data-side="start"><slot></slot></dialog>';
-      window.page = CanopyX.drawer(document.getElementById("dup")); window.shadowDrawer = CanopyX.drawer(root.getElementById("dup"));
+      window.page = CanopyX.drawer(document.getElementById("dup")); window.shadowDrawer = CanopyX.drawer(window.shadowElement = root.getElementById("dup"));
       return Promise.all([page.ready, shadowDrawer.ready]).then(() => { page.open(); shadowDrawer.open(); });`,
-    dismiss: { button: 'Close slotted' }, staysLabels: ['page drawer'], holds: '!window.shadowDrawer.opened' },
+    dismiss: { button: 'Close slotted' }, staysLabels: ['page drawer'], holds: 'window.shadowElement.dataset.state === "closed"' },
   { name: 'Cancel on a dialog in a same-origin frame mounted through the page closes it', open: [], markup: '<iframe id="frame" title="Frame"></iframe>',
     setup: `const frame = document.getElementById("frame").contentDocument;
       frame.body.innerHTML = '<dialog id="framed" aria-label="framed dialog"><button data-cx-cancel>Cancel</button></dialog>';
       window.framed = CanopyX.dialog(frame.getElementById("framed")); return framed.ready.then(() => framed.open());`,
-    dismiss: { script: 'document.getElementById("frame").contentDocument.querySelector("[data-cx-cancel]").click();' }, holds: '!window.framed.opened' },
+    dismiss: { script: 'document.getElementById("frame").contentDocument.querySelector("[data-cx-cancel]").click();' }, holds: 'document.getElementById("frame").contentDocument.getElementById("framed").dataset.state === "closed"' },
   { name: 'a press on a close naming a closed drawer outside the open one dismisses it as an outside press', open: ['outer'],
     markup: overlay('drawer', 'outer') + overlay('drawer', 'other') + '<button data-cx-close="other">Close other</button>',
     dismiss: { press: 'Close other' }, closed: ['outer'], stays: [] },
@@ -553,7 +553,7 @@ const DISMISSALS = [
     // Driven from the page: the test runner's own locators call getRootNode and would read the field.
     markup: '<form id="fd" class="cx-drawer" role="dialog" aria-label="form drawer" data-side="end" hidden><input name="getRootNode" aria-label="Root"><button type="button" data-cx-cancel>Cancel</button></form>',
     setup: 'window.fd = CanopyX.drawer(document.getElementById("fd")); return fd.ready.then(() => fd.open());',
-    dismiss: { script: 'document.querySelector("#fd [data-cx-cancel]").click();' }, holds: 'window.fd && !window.fd.opened' },
+    dismiss: { script: 'document.querySelector("#fd [data-cx-cancel]").click();' }, holds: 'document.getElementById("fd").dataset.state === "closed"' },
   { name: 'requestClose() on a parent open through two controllers closes only its nested dialog, with one cancel', open: [],
     markup: overlay('dialog', 'outer', overlay('dialog', 'inner')),
     setup: `window.cancels = 0; for (const type of ["cx-drawer:cancel", "cx-dialog:cancel"]) document.addEventListener(type, () => window.cancels++, true);
@@ -587,6 +587,33 @@ const DISMISSALS = [
     markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
     setup: 'window.addEventListener("pointerup", () => CanopyX.drawer("#outer").open({}), true);',
     dismiss: { press: 'Close from the page', dragTo: [4, 890] }, closed: [], stays: ['outer'] },
+  { name: 'Cancel on a surface a dialog opened first, then a drawer, share closes both and releases the scroll lock', open: [],
+    markup: '<div id="shared" class="cx-drawer" role="dialog" aria-label="shared surface" data-side="end" hidden><button data-cx-cancel>Cancel</button></div>',
+    setup: `const element = document.getElementById("shared"); window.first = CanopyX.dialog(element, { modal: true }); window.second = CanopyX.drawer(element, { modal: true });
+      return Promise.all([first.ready, second.ready]).then(() => { first.open(); second.open(); });`,
+    dismiss: { in: 'shared', button: 'Cancel' }, holds: '!first.getState().open && !second.getState().open && document.documentElement.style.overflow !== "hidden"' },
+  { name: 'Cancel on a surface a drawer opened first, then a dialog, share closes both and releases the scroll lock', open: [],
+    markup: '<div id="shared" class="cx-drawer" role="dialog" aria-label="shared surface" data-side="end" hidden><button data-cx-cancel>Cancel</button></div>',
+    setup: `const element = document.getElementById("shared"); window.first = CanopyX.drawer(element, { modal: true }); window.second = CanopyX.dialog(element, { modal: true });
+      return Promise.all([first.ready, second.ready]).then(() => { first.open(); second.open(); });`,
+    dismiss: { in: 'shared', button: 'Cancel' }, holds: '!first.getState().open && !second.getState().open && document.documentElement.style.overflow !== "hidden"' },
+  { name: 'requestClose() on a drawer whose host vetoes the native cancel after mounting keeps its nested popover open', open: ['outer', 'pop'],
+    markup: overlay('drawer', 'outer', closablePopover('pop')),
+    setup: 'document.getElementById("outer").addEventListener("cancel", event => event.preventDefault());',
+    dismiss: { request: 'outer' }, closed: [], stays: ['outer', 'pop'] },
+  { name: 'a toolbar close for the top drawer dragged off while the host cancels the lower drawer still dismisses the top one',
+    markup: SIBLINGS() + '<button data-cx-close="right">Close right from the page</button>', open: ['left', 'right'], scriptOpen: true,
+    setup: 'window.addEventListener("pointerup", () => document.querySelector("#left [data-cx-cancel]").click(), { capture: true, once: true });',
+    dismiss: { press: 'Close right from the page', dragTo: [700, 890] }, closed: ['left', 'right'] },
+  { name: 'Cancel slotted into a drawer through a slot a closed shadow root forwards closes the drawer', open: [],
+    markup: '<div id="forward-host"><button data-cx-cancel>Cancel forwarded</button></div>',
+    setup: `const closed = document.getElementById("forward-host").attachShadow({ mode: "closed" });
+      closed.innerHTML = '<div id="inner-host"><slot></slot></div>';
+      const open = closed.getElementById("inner-host").attachShadow({ mode: "open" });
+      open.innerHTML = '<dialog id="forwarded" aria-label="forwarded drawer"><slot></slot></dialog>';
+      window.forwardedElement = open.getElementById("forwarded"); window.forwarded = CanopyX.drawer(forwardedElement);
+      return forwarded.ready.then(() => forwarded.open());`,
+    dismiss: { script: 'document.querySelector("#forward-host [data-cx-cancel]").click();' }, holds: 'window.forwardedElement.dataset.state === "closed"' },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
