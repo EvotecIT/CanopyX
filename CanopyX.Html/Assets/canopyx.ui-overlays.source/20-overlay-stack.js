@@ -16,44 +16,25 @@
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }
   }
-  // An outside primary press on a button that closes an open overlay waits for its click, which goes through the close and
-  // cancel path of that overlay. A press that ends without that overlay's handler acting on the click (dragged off, cancelled,
-  // or its propagation stopped) is an outside press after all. The top overlay closing, opening again or showing another record
-  // drops the pending press.
-  let uiPendingPress = null;
   function uiOverlayPointer(event) {
     const top = uiTopOverlay();
-    if (!top || !top.dismissible || uiInside(event, top)) return;
-    const target = uiCloseTarget(event)?.target;
-    if (event.button === 0 && target && uiOverlayRoots.get(target).some(controller => controller.opened)) uiPendingPress = { pointer: event.pointerId, target, top };
-    else top.close("outside", false);
-  }
-  function uiPressEnd(event) {
-    const pending = uiPendingPress;
-    if (!pending || pending.pointer !== event.pointerId) return;
-    // The click follows the release in the same task.
-    setTimeout(() => { if (uiPendingPress === pending) { uiPendingPress = null; if (uiTopOverlay() === pending.top) pending.top.close("outside", false); } });
-  }
-  function uiInside(event, top) {
+    if (!top) return;
     const box = top.element.getBoundingClientRect(), backdrop = event.target === top.element && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
-    return !backdrop && top.element.contains(event.target) || top.trigger?.contains(event.target);
+    if (!backdrop && top.element.contains(event.target) || top.trigger?.contains(event.target)) return;
+    if (top.dismissible) top.close("outside", false);
   }
   function uiStackPush(entry) {
     if (!uiOverlayStack.length) {
       document.addEventListener("keydown", uiOverlayKey);
       document.addEventListener("pointerdown", uiOverlayPointer, true);
-      document.addEventListener("pointerup", uiPressEnd, true); document.addEventListener("pointercancel", uiPressEnd, true);
     }
-    if (uiPendingPress) uiPendingPress = null;
     uiOverlayStack.push(entry);
   }
   function uiStackRemove(entry) {
     const at = uiOverlayStack.indexOf(entry); if (at >= 0) uiOverlayStack.splice(at, 1);
-    if (uiPendingPress?.top === entry) uiPendingPress = null;
     if (!uiOverlayStack.length) {
       document.removeEventListener("keydown", uiOverlayKey);
       document.removeEventListener("pointerdown", uiOverlayPointer, true);
-      document.removeEventListener("pointerup", uiPressEnd, true); document.removeEventListener("pointercancel", uiPressEnd, true);
     }
   }
 
@@ -63,9 +44,10 @@
   // without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
   // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once.
   // A named close button outside every overlay (a page toolbar's) is handled by one document listener in the capture phase, so
-  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its overlay's depth (its
-  // distance from the window on the path, the same in every shadow scope), so a host that destroys the closing overlay from its
-  // close event cannot make an outer overlay act later in the same dispatch, while a click dispatched again starts afresh.
+  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its overlay, so a host that
+  // destroys the closing overlay from its close event cannot make an outer overlay act later in the same dispatch, while a
+  // click dispatched again starts afresh. Outside presses and native cancel work as before: an outside press dismisses the top
+  // overlay, and a native cancel closes its own overlay only when it is on top. One controller per element is the contract.
   // Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through the DOM's own accessors,
   // which work for nodes of any frame and which a form's named controls cannot shadow.
   const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakMap(), uiListening = new WeakSet(), uiClosedRoots = new WeakMap();
@@ -108,12 +90,9 @@
       if (marked && marked !== owner && (found.path.includes(marked) || uiDeepContains(owner, marked))) return;
       uiHandledClicks.set(event, owner);
     }
-    // The handler acting on the press's own target settles it, also when the host then vetoes the close.
-    if (uiPendingPress?.target === found.target) uiPendingPress = null;
-    // Several controllers can share an element (a drawer and a dialog factory on one root): each that has it open closes, so
-    // the surface and its controllers agree.
-    const controllers = uiOverlayRoots.get(found.target), open = controllers.filter(controller => controller.opened);
-    for (const controller of open.length ? open.reverse() : [controllers.at(-1)]) controller.close("cancel");
+    // One controller per element is the contract; with several, the open one closes.
+    const controllers = uiOverlayRoots.get(found.target);
+    (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
   }
   let uiDocumentListening = false;
   function uiOverlayRegister(element, controller) {
@@ -122,34 +101,11 @@
       uiHandledClicks.delete(event); uiCloseClick(event, undefined);
     }, true); }
     uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
-    // One click and one cancel listener per element, however many controllers share it; they act only while it is registered.
-    if (!uiListening.has(element)) {
-      uiListening.add(element);
-      element.addEventListener("click", event => uiCloseClick(event, element));
-      element.addEventListener("cancel", event => uiNativeCancel(event, element));
-    }
+    // One click listener per element; it acts only while the element is registered.
+    if (!uiListening.has(element)) { uiListening.add(element); element.addEventListener("click", event => uiCloseClick(event, element)); }
     // A closed shadow root hides its slots; its host is recorded so a button slotted into the overlay is found.
     const root = Node.prototype.getRootNode.call(element);
     if (root.host && root.mode === "closed") uiClosedRoots.set(root.host, root);
-  }
-  // A native cancel (Escape on a dialog, or requestClose()) closes the overlay on top when it is this element's, or when this
-  // element's overlay opened it (the chain recorded when each opened, which the stack's close cascade follows too). It is
-  // resolved once for the element, however many controllers share it, so one cancel is emitted.
-  function uiNativeCancel(event, element) {
-    // Only the dialog's own cancel: one that bubbles from a descendant (a file input's) is not a request to close.
-    if (event.target !== element || !uiOverlayRoots.has(element)) return;
-    // A host that vetoes the cancel, before or after this listener, keeps the overlays it would reach through this one open,
-    // so that close waits until the dispatch is over.
-    const prevent = Event.prototype.preventDefault;
-    let vetoed = event.defaultPrevented;
-    Object.defineProperty(event, "preventDefault", { configurable: true, value() { vetoed = true; prevent.call(this); } });
-    prevent.call(event);
-    const top = uiTopOverlay();
-    if (top?.element === element) { top.close("cancel"); return; }
-    if (!vetoed) setTimeout(() => {
-      if (vetoed || uiTopOverlay() !== top) return;
-      for (let owner = top?.parent; owner; owner = owner.parent) if (owner.element === element) { top.close("cancel"); return; }
-    });
   }
   function uiOverlayUnregister(element, controller) {
     const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
@@ -264,6 +220,8 @@
       }
       UI_TOOLS.emit(element, kind, "open", {}); return true;
     }
+    const cancel = event => { event.preventDefault(); if (uiTopOverlay() === entry) close("cancel"); };
+    element.addEventListener("cancel", cancel, { signal });
     const nativeClose = event => {
       if (event.target !== element) return;
       const pending = nativeCloses.shift();
@@ -286,11 +244,10 @@
       if (value) element.setAttribute("aria-modal", "true"); else element.removeAttribute("aria-modal");
       if (active && element.contains(active)) active.focus({ preventScroll: true });
     }
-    const destroy = () => { uiOverlayUnregister(element, controller); close("destroy", false, true); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
+    const destroy = () => { uiOverlayUnregister(element, controller); close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
     signal?.addEventListener("abort", destroy, { once: true });
     // An open overlay that now shows another record returns focus to that record's control.
-    // It also drops a pending press made while the previous record showed.
-    const setReturnFocus = target => { if (!opened) return; if (target) returnFocus = target; if (uiPendingPress?.top === entry) uiPendingPress = null; };
+    const setReturnFocus = target => { if (opened && target) returnFocus = target; };
     const controller = { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
     if (kind !== "tooltip") uiOverlayRegister(element, controller);
     return controller;

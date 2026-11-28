@@ -149,6 +149,12 @@ Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their decla
 
 Dialogs use the native modal dialog. Drawers are non-modal on desktop and become full-height modal sheets when their container narrows below 640 px. `modal: true` also makes a desktop drawer modal. The shared overlay manager handles nested Escape order, modal focus trapping, scroll locking, dismissal and focus return. Anchored overlays flip and shift within the viewport.
 
+A close or cancel button (`data-cx-close`, `data-cx-cancel`) closes the nearest overlay around it, so a dialog or popover nested in a drawer closes alone. A `data-cx-close` that names an overlay by id closes that overlay wherever the button is, also a page toolbar's button; an id that names no overlay falls back to the nearest one. These are outside the contract:
+
+- **Presses outside the top overlay.** A press outside the top overlay dismisses it as an outside press, also a press on a button that names another overlay. A close in a lower drawer that names the top drawer therefore closes it without its cancel event, so a host can't veto it. A press inside an overlay that lives in a shadow root reads as outside it.
+- **Native cancel on an overlay that is not on top.** `requestClose()` or a native `cancel` closes its overlay only when it is on top. On a drawer whose nested popover is on top it does nothing; Escape closes the top overlay.
+- **Several controllers on one element.** Mount one dialog, drawer or popover per element; with several, a close or cancel button closes the open one.
+
 ### Confirm and submit
 
 A dialog's typed actions replace hand-written footer markup. `CanopyDialog.Confirm` builds the common case: an alert dialog with a plain text question, a Cancel button it focuses first, and one answer.
