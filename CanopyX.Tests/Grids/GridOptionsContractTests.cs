@@ -149,7 +149,7 @@ public sealed class GridOptionsContractTests {
         view.Query = new CanopyGridQuery(view.Id) { FilterGroup = new CanopyGridFilterGroup(CanopyGridFilterJunction.All) };
         view.Query.FilterGroup.Groups.Add(new CanopyGridFilterGroup(CanopyGridFilterJunction.Any, new CanopyGridFilter("amount", "isEven", new CanopyCell(2))));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "grid-options");
-        Assert.Contains("application/x-canopyx-grid-options\"", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"grid-options\"", view.ToHtmlFragment());
     }
 
     [Fact]

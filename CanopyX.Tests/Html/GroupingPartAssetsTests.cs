@@ -43,8 +43,8 @@ public sealed class GroupingPartAssetsTests {
         grid.Reporting.Aggregates.Add(new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total"));
         Assert.Contains("grouping", Names(grid));
         var fragment = grid.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-grouping", fragment);
-        Assert.Contains("application/x-canopyx-detail-rows", fragment);
+        Assert.Contains("<script data-canopyx-part=\"grouping\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"detail-rows\"", fragment);
     }
 
     private static string[] Names(CanopyDataGridView view) => CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name).ToArray();

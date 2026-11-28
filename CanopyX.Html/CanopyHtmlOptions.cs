@@ -19,7 +19,7 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>
     /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
-    /// <see cref="CanopyAssetMode.Inline"/> (the default) a fragment carries the inert payloads of the optional parts its view
+    /// <see cref="CanopyAssetMode.Inline"/> (the default) a fragment carries the script and stylesheet elements of the optional parts its view
     /// loads (tree tools, export, filter editor, history presenters), once per <see cref="Document"/> when fragments share one.
     /// </summary>
     public CanopyAssetMode AssetMode { get; set; }
@@ -100,7 +100,7 @@ public sealed class CanopyHtmlOptions {
     /// <summary>
     /// Gets the names of parts (<see cref="CanopyHtmlAssets.Parts"/>) a fragment carries besides the ones its view needs, for code
     /// the page runs itself: for example <c>link</c> when the page links the view to charts or other grids (linked views). With
-    /// <see cref="CanopyAssetMode.Inline"/> the payloads travel with the fragment, once per <see cref="Document"/>; with external
+    /// <see cref="CanopyAssetMode.Inline"/> the parts travel with the fragment, once per <see cref="Document"/>; with external
     /// assets the runtime loads the part files that <c>WriteTo</c> and <c>SaveBundle</c> write beside it. Writing fails for a
     /// name that is not a part, or a part that does not ship with the view's runtime.
     /// </summary>
@@ -114,9 +114,10 @@ public sealed class CanopyHtmlOptions {
     /// none. With a nonce, every element CanopyX writes that a strict policy
     /// (<c>script-src 'self' 'nonce-…'; style-src 'self' 'nonce-…'</c>) would otherwise block carries it: the inline
     /// runtime script and stylesheet of a page, the script and stylesheet references of a page with external assets, the
-    /// inert payloads of the optional parts, which the runtime inserts with the same nonce when it loads them, and the rule
-    /// that gives a fragment its <see cref="Height"/> before the runtime runs. The view document is a JSON data
-    /// block, which a policy does not restrict. A nonce must be new for every response, so write the markup per response,
+    /// script and stylesheet elements of the optional parts, and the rule that gives a fragment its <see cref="Height"/> before
+    /// the runtime runs. The view document and row data are JSON data blocks, which a policy does not restrict and the runtime
+    /// only parses. Without a nonce, <see cref="CanopyAssetMode.External"/> pages need nothing inline, so a policy of
+    /// <c>script-src 'self'; style-src 'self'</c> allows them. A nonce must be new for every response, so write the markup per response,
     /// or put a placeholder here and replace it per response. See <c>docs/security.md</c>.
     /// </summary>
     /// <exception cref="ArgumentException">The value is not a valid nonce: base64 or base64url characters, optionally followed by up to two <c>=</c>.</exception>

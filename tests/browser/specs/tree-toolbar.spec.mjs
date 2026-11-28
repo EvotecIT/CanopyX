@@ -31,14 +31,16 @@ test.afterEach(({ page }) => { expect(page.errors).toEqual([]); });
 test("three trees written into one document share a single embedded tree tools part", async ({ page }) => {
   await open(page);
   // The .NET writer embedded the part with the first fragment only; the runtime found it by type and version for all three.
-  expect(await page.locator('script[type="application/x-canopyx-tree-tools"]').count()).toBe(1);
-  expect(await page.locator('script[type="application/x-canopyx-tree-tools-style"]').count()).toBe(1);
+  expect(await page.locator('script[data-canopyx-part="tree-tools"]').count()).toBe(1);
+  // One template in the page, and the one stylesheet the runtime applies from it.
+  expect(await page.locator('style[data-canopyx-part="tree-tools"][media="not all"]').count()).toBe(1);
+  expect(await page.locator('head style[data-canopyx-part="tree-tools"]:not([media="not all"])').count()).toBe(1);
   for (const host of [org(page), files(page), groups(page)]) {
     await expect(host).toHaveClass(/cx-tree-tools/);
     await expect(host.locator(".cx-grid-columns > summary")).toBeVisible();
   }
   const html = fs.readFileSync(fileURLToPath(exampleUrl("tree-parity.html")), "utf8");
-  expect(html.split("application/x-canopyx-tree-tools\"").length - 1).toBe(1);
+  expect(html.split("<script data-canopyx-part=\"tree-tools\"").length - 1).toBe(1);
 });
 
 test("the tree toolbar is one row of search, filter, Columns, Views, Export and more, and its controls work", async ({ page }) => {

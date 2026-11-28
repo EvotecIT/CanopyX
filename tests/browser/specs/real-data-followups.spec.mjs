@@ -4,7 +4,6 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 import { viewPage, nextFrames, openExample, openGridControl } from "./support.mjs";
-import { requiredParts } from "./part-fixture-support.mjs";
 
 async function capture(page, name) { if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, name + ".png") }); }
 async function open(page, document, width = 1100, script = "") {
@@ -298,26 +297,17 @@ for (const theme of ["light", "dark"]) {
 test("a tree loads the export part on first use and offers its Export menu", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 800 });
   page.errors = []; page.on("pageerror", error => page.errors.push(error.message));
-  // Records the parts whose embedded payloads run (the loader runs a payload as a script without a type, while the page's
-  // inert payloads keep theirs): each registers itself with CanopyXParts.push(["<name>", part]).
-  await page.addInitScript(() => {
-    window.__canopyxParts = [];
-    new MutationObserver(records => {
-      for (const record of records) for (const node of record.addedNodes) {
-        const match = node.nodeName === "SCRIPT" && !node.type && /\.push\(\["([a-z-]+)",[\w$]+\]\)/.exec(node.textContent || "");
-        if (match) window.__canopyxParts.push(match[1]);
-      }
-    }).observe(document, { childList: true, subtree: true });
-  });
   await openExample(page, "wide-tree.html");
-  // The tree tools part is installed; the export part is not, until the menu opens.
-  const initialParts = requiredParts("tree-tools").map(part => part.name);
-  expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(initialParts.slice().sort());
-  expect(await page.evaluate(() => window.__canopyxParts)).not.toContain("export");
+  // The page carries every part the tree may need; the tree tools part installs on mount, the export part only when the
+  // menu opens, which draws its body.
+  const host = page.locator("[data-canopyx-host]").first();
+  await expect(host).toHaveClass(/cx-tree-tools/);
+  expect(await page.locator('script[data-canopyx-part="export"]').count()).toBe(1);
+  await expect(page.locator(".cx-grid-export").getByRole("button", { name: "CSV" })).toHaveCount(0);
   await page.locator(".cx-grid-export > summary").click();
   await expect(page.locator(".cx-grid-export").getByRole("button", { name: "CSV" })).toBeVisible();
-  const exportParts = requiredParts("tree-tools", "export").map(part => part.name);
-  expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(exportParts.slice().sort());
+  // Nothing loaded from a file: a single file runs the parts it carries.
+  expect(await page.evaluate(() => document.querySelectorAll("script[src], link[rel=stylesheet][href*='canopyx-']").length)).toBe(0);
   expect(page.errors).toEqual([]);
 });
 // Auto height on trees, as on flat grids: a short tree is as tall as its toolbar, header and rows inside the host's height

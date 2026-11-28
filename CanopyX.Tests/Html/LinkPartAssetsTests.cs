@@ -32,7 +32,7 @@ public sealed class LinkPartAssetsTests {
     [Fact]
     public void Fragments_CarryTheLinkPartOnlyWhenTheHostAsksOncePerDocument() {
         var grid = Grid();
-        Assert.DoesNotContain("x-canopyx-link\"", grid.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"link\"", grid.ToHtmlFragment());
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(grid), part => part.Name == "link");
 
         var document = new CanopyHtmlDocument();
@@ -42,9 +42,9 @@ public sealed class LinkPartAssetsTests {
         var tree = new CanopyTreeView("sites", "Sites");
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         var second = tree.ToHtmlFragment(options);
-        var marker = "<script type=\"application/x-canopyx-link\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("link").Version + "\">";
+        var marker = "<script data-canopyx-part=\"link\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("link").Version + "\">";
         Assert.Contains(marker, first);
-        Assert.Contains("application/x-canopyx-link-style", first);
+        Assert.Contains("<style data-canopyx-part=\"link\"", first);
         Assert.DoesNotContain(marker, second);
         Assert.Contains("link@" + CanopyHtmlAssets.GetPart("link").Version, document.EmbeddedParts);
 

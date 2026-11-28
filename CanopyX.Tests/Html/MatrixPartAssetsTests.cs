@@ -50,9 +50,9 @@ public sealed class MatrixPartAssetsTests {
         matrix.Rows.Item("a", "A"); matrix.Columns.Item("x", "X");
         matrix.Set("a", "x", "ok");
         var page = matrix.ToHtml();
-        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
+        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("<script data-canopyx-part=\"" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "matrix" }, embedded);
-        Assert.Contains("type=\"application/x-canopyx-matrix-style\"", page);
+        Assert.Contains("<style data-canopyx-part=\"matrix\"", page);
     }
 
     private static long Gzip(string value) {

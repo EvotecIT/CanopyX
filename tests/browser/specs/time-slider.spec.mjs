@@ -33,7 +33,7 @@ async function lazyTime(page, kind, delayed = false) {
   const requests = [], origin = "https://canopyx-time.test";
   const html = fs.readFileSync(path.join(examples, "time-" + kind + ".html"), "utf8")
     .replace("data-canopyx-host data-cx-theme=", 'data-canopyx-host data-cx-mount="manual" data-cx-theme=')
-    .replace(/<script\b[^>]*type="application\/x-canopyx-time-slider(?:-style)?"[^>]*>[\s\S]*?<\/script>/g, "");
+    .replace(/<(script|style)\b[^>]*data-canopyx-part="time-slider"[^>]*>[\s\S]*?<\/\1>/g, "");
   await page.route(origin + "/**", async route => {
     const name = new URL(route.request().url()).pathname.slice(1);
     if (!name) return route.fulfill({ contentType: "text/html", body: html });

@@ -102,12 +102,12 @@ public sealed class GridLiveTests {
         Assert.True(ComponentGzip(part.Style!) <= 1024, "The live stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 1 KiB.");
 
         var plain = Grid();
-        Assert.DoesNotContain("x-canopyx-live\"", plain.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"live\"", plain.ToHtmlFragment());
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(plain), item => item.Name == "live");
         var live = Grid();
         live.Live = new CanopyGridLive();
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(live), item => item.Name == "live");
-        Assert.Contains("<script type=\"application/x-canopyx-live\" data-cx-version=\"" + part.Version + "\">", live.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"live\" data-cx-version=\"" + part.Version + "\">", live.ToHtmlFragment());
     }
 
     [Fact]

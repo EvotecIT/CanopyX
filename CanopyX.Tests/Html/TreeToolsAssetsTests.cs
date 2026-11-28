@@ -47,12 +47,12 @@ public sealed class TreeToolsAssetsTests {
         var view = new CanopyTreeView("tree", "Tree");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var inline = view.ToHtmlFragment();
-        Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", inline);
-        Assert.Contains("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", inline);
-        Assert.DoesNotContain("x-canopyx-tree-tools", view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", inline);
+        Assert.Contains("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\" data-canopyx-template>", inline);
+        Assert.DoesNotContain("data-canopyx-part=\"tree-tools\"", view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.DoesNotContain("x-canopyx-tree-tools", grid.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"tree-tools\"", grid.ToHtmlFragment());
     }
 
     [Fact]
@@ -65,39 +65,41 @@ public sealed class TreeToolsAssetsTests {
             return view.ToHtmlFragment(options);
         }).ToArray();
         var page = string.Concat(fragments);
-        Assert.Single(Regex.Matches(page, "<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">"));
-        Assert.Single(Regex.Matches(page, "application/x-canopyx-tree-tools-style"));
-        Assert.Contains("x-canopyx-tree-tools", fragments[0]);
-        Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("x-canopyx-tree-tools", fragment));
+        Assert.Single(Regex.Matches(page, "<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">"));
+        Assert.Single(Regex.Matches(page, "<style data-canopyx-part=\"tree-tools\""));
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", fragments[0]);
+        Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("data-canopyx-part=\"tree-tools\"", fragment));
         Assert.Equal(new[] { "ui-overlays@" + CanopyHtmlAssets.GetPart("ui-overlays").Version, "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion, "csv-export@" + CanopyHtmlAssets.GetPart("csv-export").Version }, document.EmbeddedParts);
-        Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays\""));
-        Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays-style\""));
-        Assert.Single(Regex.Matches(page, "application/x-canopyx-export"));
+        Assert.Single(Regex.Matches(page, "<script data-canopyx-part=\"ui-overlays\""));
+        Assert.Single(Regex.Matches(page, "<style data-canopyx-part=\"ui-overlays\""));
+        Assert.Single(Regex.Matches(page, "data-canopyx-part=\"export\""));
 
         // Flat grids share the filter editor and export parts the same way: the trees above already carry the export part.
         var grid = new CanopyDataGridView("records", "Records");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         var first = grid.ToHtmlFragment(options);
-        Assert.Contains("application/x-canopyx-filter-editor", first);
-        Assert.DoesNotContain("application/x-canopyx-export", first);
-        Assert.DoesNotContain("application/x-canopyx-", grid.ToHtmlFragment(options).Replace("application/json", ""));
+        Assert.Contains("<script data-canopyx-part=\"filter-editor\"", first);
+        Assert.DoesNotContain("data-canopyx-part=\"export\"", first);
+        Assert.DoesNotContain("data-canopyx-part=", grid.ToHtmlFragment(options));
         var tree = new CanopyTreeView("mixed", "Mixed");
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.DoesNotContain("application/x-canopyx-", tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document, Runtime = CanopyRuntime.DataGrid }));
+        Assert.DoesNotContain("data-canopyx-part=", tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document, Runtime = CanopyRuntime.DataGrid }));
         // Without a document every inline fragment stands alone.
-        Assert.Contains("application/x-canopyx-tree-tools", tree.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", tree.ToHtmlFragment());
     }
 
     [Fact]
-    public void Runtime_FindsAPayloadByTheMarkerTheWriterEmits() {
-        // The writer marks a payload with its type and version; the part loader looks for exactly that pair anywhere in the
-        // document, so the views of a page share one payload whatever their order.
+    public void Runtime_NeverTurnsPageTextIntoScriptOrStyle() {
+        // A part the page carries registers itself as it runs; the loader only inserts the part files beside the runtime, so a
+        // strict Content Security Policy needs no 'unsafe-inline' (docs/security.md).
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
-            Assert.Contains("document.querySelectorAll('script[type=\"application/x-canopyx-'+type+'\"][data-cx-version=\"'+part.version+'\"]')", ReadableAssets.Script(runtime));
+            var script = ReadableAssets.Script(runtime);
+            Assert.DoesNotContain("application/x-canopyx-'+", script);
+            Assert.DoesNotContain("trusted(\"Script\"", script);
+            Assert.DoesNotContain("createScript:", script);
         }
-        Assert.StartsWith("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
-        Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
+        Assert.StartsWith("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" media=\"not all\" data-canopyx-template>", CanopyHtmlAssets.TreeToolsMarkup);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
     }
 
     [Theory]

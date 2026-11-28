@@ -10,9 +10,9 @@ public sealed class FlowPartAssetsTests {
     [Fact]
     public void InformationFactsLoadTheirOptionalPartOnlyWhenPresent() {
         var flow = new CanopyFlow("evidence", "Evidence").Info("record", "Record");
-        Assert.DoesNotContain("application/x-canopyx-flow-facts", flow.ToHtml());
+        Assert.DoesNotContain("data-canopyx-part=\"flow-facts\"", flow.ToHtml());
         flow.Steps[0].Facts.Add(new("SHA-256", new string('a', 64)));
-        Assert.Contains("application/x-canopyx-flow-facts", flow.ToHtml());
+        Assert.Contains("<script data-canopyx-part=\"flow-facts\"", flow.ToHtml());
     }
 
     [Fact]
@@ -92,10 +92,10 @@ public sealed class FlowPartAssetsTests {
     [Fact]
     public void FlowPage_EmbedsOnlyTheFormsAndFlowPayloads() {
         var page = FlowSamples.Everything().ToHtml();
-        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("type=\"application/x-canopyx-" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
+        var embedded = CanopyHtmlAssets.Parts.Where(part => page.Contains("<script data-canopyx-part=\"" + part.Name + "\"", StringComparison.Ordinal)).Select(part => part.Name);
         Assert.Equal(new[] { "forms", "flow" }, embedded);
-        Assert.Contains("type=\"application/x-canopyx-forms-style\"", page);
-        Assert.Contains("type=\"application/x-canopyx-flow-style\"", page);
+        Assert.Contains("<style data-canopyx-part=\"forms\"", page);
+        Assert.Contains("<style data-canopyx-part=\"flow\"", page);
     }
 
     // Token fallback bytes have their own shared allowance; keep this component ceiling unchanged.

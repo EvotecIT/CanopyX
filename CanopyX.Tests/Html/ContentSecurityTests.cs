@@ -42,7 +42,7 @@ public sealed class ContentSecurityTests {
         Assert.Contains("<style nonce=\"" + Nonce + "\">", html);
         Assert.Contains("<script nonce=\"" + Nonce + "\">", html);
         // The parts' payloads carry the nonce, which the runtime gives the elements it inserts when a part loads.
-        Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" nonce=\"" + Nonce + "\">", html);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\" nonce=\"" + Nonce + "\">", html);
     }
 
     [Fact]
@@ -89,7 +89,8 @@ public sealed class ContentSecurityTests {
         Assert.Empty(document.EmbeddedParts);
         var first = document.EmbedOnce(part, Nonce);
         Assert.Equal(part.GetMarkup(Nonce), first);
-        Assert.Equal(2, Regex.Matches(first, " nonce=\"" + Regex.Escape(Nonce) + "\">").Count);
+        // The stylesheet template and the script both carry the nonce.
+        Assert.Equal(2, Regex.Matches(first, " nonce=\"" + Regex.Escape(Nonce) + "\"[ >]").Count);
         Assert.Equal(string.Empty, document.EmbedOnce(part, Nonce));
     }
 

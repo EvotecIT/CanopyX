@@ -46,7 +46,7 @@ public sealed class GridEditingContractTests {
         Assert.Equal("""{"mode":"row","drawer":"always"}""", JsonNode.Parse(json)!["editing"]!.ToJsonString());
         // Editing needs no other entry point; the editing part travels with the page.
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(view));
-        Assert.Contains("application/x-canopyx-editing", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"editing\"", view.ToHtmlFragment());
     }
 
     [Fact]

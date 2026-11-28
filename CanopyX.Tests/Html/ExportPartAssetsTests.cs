@@ -19,7 +19,7 @@ public sealed class ExportPartAssetsTests {
         Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 10240, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 10 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment();
-        Assert.Contains("<script type=\"application/x-canopyx-export\" data-cx-version=\"" + CanopyHtmlAssets.ExportVersion + "\">", fragment);
+        Assert.Contains("<script data-canopyx-part=\"export\" data-cx-version=\"" + CanopyHtmlAssets.ExportVersion + "\">", fragment);
     }
 
     [Fact]

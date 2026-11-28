@@ -29,9 +29,10 @@ test("a single-file flow page carries its parts inline and loads no grid code", 
   expect(loaded.filter(url => /canopyx-grid|canopyx-reporting|canopyx-interactive|canopyx\.(?:[0-9a-f]{16}\.)?js/.test(url))).toEqual([]);
   expect(loaded.filter(url => /\.js(\?|$)/.test(url))).toEqual([]);
   const api = await page.evaluate(() => ({ createFlow: typeof window.CanopyX.createFlow, createDataGrid: typeof window.CanopyX.createDataGrid,
-    createTreeGrid: typeof window.CanopyX.createTreeGrid, payloads: [...document.querySelectorAll('script[type^="application/x-canopyx-"]')].map(script => script.type).sort() }));
+    createTreeGrid: typeof window.CanopyX.createTreeGrid, parts: [...document.querySelectorAll("[data-canopyx-part]")].map(element => element.localName + (element.media === "not all" ? " template " : " ") + element.dataset.canopyxPart).sort() }));
+  // The page's scripts and templates, and the one stylesheet per part the runtime applied from a template.
   expect(api).toEqual({ createFlow: "function", createDataGrid: "undefined", createTreeGrid: "undefined",
-    payloads: ["application/x-canopyx-flow", "application/x-canopyx-flow-style", "application/x-canopyx-forms", "application/x-canopyx-forms-style"] });
+    parts: ["script flow", "script forms", "style flow", "style forms", "style template flow", "style template forms"] });
 });
 
 /**
@@ -49,7 +50,7 @@ function externalPage(testInfo, example) {
   fs.writeFileSync(path.join(folder, "index.html"), "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>External flow</title>" +
     "<link rel=\"stylesheet\" href=\"canopyx-flow-entry.css\"><script src=\"canopyx-flow-entry.js\" defer></script></head><body><main>" + fragment + "</main></body></html>");
   // The parts the single-file page carries inline: the ones C# chose for this flow.
-  const inline = [...single.matchAll(/type="application\/x-canopyx-([a-z-]+?)(?:-style)?"/g)].map(match => "canopyx-" + match[1] + ".js");
+  const inline = [...single.matchAll(/<script data-canopyx-part="([a-z-]+)"/g)].map(match => "canopyx-" + match[1] + ".js");
   return { url: pathToFileURL(path.join(folder, "index.html")).href, inline: [...new Set(inline)].sort() };
 }
 const scriptNames = urls => [...new Set(urls.filter(url => /\.js(\?|$)/.test(url)).map(url => path.basename(new URL(url).pathname)))].sort();
@@ -84,7 +85,7 @@ test("a grid page creates a flow and loads the flow part on first use", async ({
   // A grid page whose entry point is a file with its parts beside it (enhance-assets/canopyx-grid.js).
   await page.goto(exampleUrl("enhance-table.html"));
   await page.waitForFunction(() => typeof window.CanopyX?.createFlow === "function");
-  const before = await page.evaluate(() => [...document.querySelectorAll('script[type="application/x-canopyx-flow"]')].length);
+  const before = await page.evaluate(() => [...document.querySelectorAll('script[data-canopyx-part="flow"]')].length);
   await page.evaluate(() => {
     const host = document.createElement("div");
     host.id = "late-flow";

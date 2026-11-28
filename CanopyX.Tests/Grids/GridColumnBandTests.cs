@@ -29,7 +29,7 @@ public sealed class GridColumnBandTests {
         Assert.Equal(CanopyGridColumnPin.Right, view.GetColumn("after").Pinned);
         Assert.Null(view.GetColumn("root").Pinned); Assert.Null(view.GetColumn("host").Section);
         Assert.Equal("Authored section", view.GetColumn("before").Section);
-        Assert.Contains("x-canopyx-column-groups", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"column-groups\"", view.ToHtmlFragment());
     }
 
     [Fact]

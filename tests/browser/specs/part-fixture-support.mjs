@@ -22,16 +22,16 @@ export function requiredParts(...names) {
   return [...parts.values()];
 }
 
-/** Plain/hashed files and versioned inert payloads for only the requested parts and their requirements. */
+/** Plain/hashed files and the style and script elements (CanopyHtmlPart.Markup) of only the requested parts and their requirements. */
 export function partFixture(...names) {
   const files = new Map(), payloads = [];
   for (const part of requiredParts(...names)) {
-    for (const [file, suffix, contentType] of [[part.script, "", "text/javascript"], [part.style, "-style", "text/css"]]) {
+    for (const [file, tag, contentType] of [[part.style, "style", "text/css"], [part.script, "script", "text/javascript"]]) {
       if (!file) continue;
       const body = readAsset(file), asset = { body, contentType };
       files.set(file, asset);
       files.set(file.replace(/\.(js|css)$/, "." + assetHash(body) + ".$1"), asset);
-      payloads.push('<script type="application/x-canopyx-' + part.name + suffix + '" data-cx-version="' + part.version + '">' + body + "</script>");
+      payloads.push("<" + tag + ' data-canopyx-part="' + part.name + '" data-cx-version="' + part.version + '"' + (tag === "style" ? ' media="not all" data-canopyx-template' : "") + ">" + body + "</" + tag + ">");
     }
   }
   return { files, payloads: payloads.join("") };

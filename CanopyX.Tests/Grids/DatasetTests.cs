@@ -102,14 +102,14 @@ public sealed class DatasetTests {
         var html = dataset.ToHtmlFragment(options);
         Assert.StartsWith("<div class=\"cx-dataset\" data-cx-dataset=\"orders\" hidden><script type=\"application/json\" class=\"cx-config\">", html);
         Assert.Equal(3, html.Split("<script type=\"application/x-canopyx-rows\">").Length - 1);
-        Assert.Contains("x-canopyx-data", html);
+        Assert.Contains("<script data-canopyx-part=\"data\"", html);
         var config = html.Substring(html.IndexOf("cx-config\">", StringComparison.Ordinal) + 11);
         config = config.Substring(0, config.IndexOf("</script>", StringComparison.Ordinal));
         ProtocolSchema.AssertValid(config, "compact dataset");
         using (var document = JsonDocument.Parse(config)) Assert.Equal(250, document.RootElement.GetProperty("rowData").GetProperty("count").GetInt32());
         // Few rows stay row objects, and external assets leave the parts to the page.
         Assert.DoesNotContain("x-canopyx-rows", Orders().ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
-        Assert.DoesNotContain("x-canopyx-data", Orders().ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.DoesNotContain("data-canopyx-part=\"data\"", Orders().ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
         var parts = CanopyHtmlAssets.GetRequiredParts(View(dataset)).Select(part => part.Name).ToList();
         Assert.Contains("datasets", parts);
         Assert.Contains("rich-cells", parts);

@@ -41,13 +41,13 @@ public sealed class EditingPartAssetsTests {
     public void SingleFilePages_CarryThePartOnlyForEditableGrids() {
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.DoesNotContain("application/x-canopyx-editing", grid.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"editing\"", grid.ToHtmlFragment());
         grid.Columns[0].Editable = true;
         var fragment = grid.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-editing\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("editing").Version, fragment);
-        Assert.Contains("application/x-canopyx-editing-style", fragment);
-        Assert.Contains("application/x-canopyx-filter-editor", fragment);
-        Assert.Contains("application/x-canopyx-forms\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("forms").Version, fragment);
+        Assert.Contains("<script data-canopyx-part=\"editing\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("editing").Version, fragment);
+        Assert.Contains("<style data-canopyx-part=\"editing\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"filter-editor\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"forms\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("forms").Version, fragment);
     }
 
     private static long Gzip(string value) {

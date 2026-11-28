@@ -15,7 +15,12 @@ for (const { width, theme } of [{ width: 1440, theme: "light" }, { width: 390, t
       const errors = []; page.on("pageerror", error => errors.push(error.message));
       await page.clock.setFixedTime(new Date("2026-10-25T15:00:00Z"));
       if (state === "print" || state === "card-print") await page.addInitScript(() => {
-        window.print = () => { window.parent.__printedDocument = "<!doctype html>" + document.documentElement.outerHTML; };
+        // The paper's rules are constructed stylesheets; the captured, script-free copy carries them as a style element.
+        window.print = () => {
+          const rules = [...document.adoptedStyleSheets].flatMap(sheet => [...sheet.cssRules].map(rule => rule.cssText)).join("\n");
+          document.head.append(Object.assign(document.createElement("style"), { textContent: rules }));
+          window.parent.__printedDocument = "<!doctype html>" + document.documentElement.outerHTML;
+        };
       });
       const name = state === "cards" || state === "card-print" ? "template-cards" : state === "sticky-header" ? "sticky-grid" : "office-export";
       await page.goto(server.url + name + (theme === "dark" ? "-dark" : "") + ".html");

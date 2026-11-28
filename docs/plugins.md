@@ -121,10 +121,9 @@ In TypeScript the types are `CanopyPlugin`, `CanopyPluginContext`, `CanopyCellRe
 
 A part is runtime code that loads when a view needs it. The runtime's build manifest names each part it knows with its version and content-hashed file names. When a view first needs a part, the loader:
 
-1. uses the part's code if a script of the same version already registered it (a host that preloads part scripts);
-2. otherwise runs the inert payload a single-file page carries (`<script type="application/x-canopyx-<name>" data-cx-version="…">`, and `<name>-style` for the stylesheet), found anywhere in the document;
-3. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
-4. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
+1. uses the part's code if a script of the same version already registered it: a single-file page carries each part it needs as its own `<script>` and an inert `<style media="not all">` template (`data-canopyx-part="<name>" data-cx-version="…"`), whose script registers the part as it runs (only where the browser runs scripts: not in markup set through `innerHTML`), and a host may preload part scripts the same way. The stylesheet follows [Part stylesheets](#part-stylesheets);
+2. otherwise loads `canopyx-<name>.<hash>.js` (and `.css`) beside a content-hashed runtime, or `canopyx-<name>.js` beside a plainly named one or the ES module;
+3. installs the part only when its registered version is the runtime's, after the parts it requires; a failed load can be retried.
 
 | Part | Loads when | Content |
 | --- | --- | --- |
@@ -158,9 +157,32 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 
+### Part stylesheets
+
+A single-file page carries a part's stylesheet as a template, `<style data-canopyx-part="<name>" data-cx-version="…" media="not all" data-canopyx-template>`, which never applies by itself; only elements marked `data-canopyx-template` are cloned. Each part has one stylesheet, the runtime's, chosen on the part's first load: it marks it `data-canopyx-owned` and keeps it in `document.head`, a clone of a template the policy allowed (with its nonce, without the media) or the part's file, linked. A host that moves the part markup a fragment carries into one block of its page, the template and its script together, keeps it a page part. Every later load of the part, by any view, checks that the stylesheet is still in the document, and so do the loads of the parts it requires. A part script records the element it ran from when it registers, also when it queues itself before the runtime, so where the code came from is known even after its fragment is gone. `tests/browser/specs/part-copies.spec.mjs` has a row for each transition and checks that exactly one stylesheet of the part, and of a part it requires, applies.
+
+| Transition | Result |
+| --- | --- |
+| A part registers and a view loads it | The runtime clones a template the policy allowed, or links the file when the registered code came from the part file or from a part script the page carries. Code from the part file waits for its stylesheet on every load. |
+| A fragment is inserted, removed (by element or node by node), replaced through `innerHTML` or re-inserted | Nothing applies twice: its templates are inert, and the runtime's stylesheet is its own. |
+| Fragments carry repeated copies, or copies from another build | Inert. Only a template of this build's version is cloned; a registration of this build's version stays, another build's copy replaces only one that is not. |
+| A host preloads a part's script (a classic script, also one with a `src` that carries the part's marker, or a module beside the module runtime) | The host provides the stylesheet and the runtime leaves it alone; without a template the runtime adds none. The part installs without waiting for a stylesheet. |
+| An entry point registers a part itself | It takes a template when the page has one; otherwise the entry point's styles cover it. |
+| A policy refused a template (hash or nonce) | It has no sheet and is never cloned; another template, or the file, is used. |
+| The file fails to load | Every view waiting for it fails; the next load tries a template again, then the file. |
+| A link is removed while it loads | The next load replaces it, and the views waiting for it take the replacement. |
+| The runtime's stylesheet leaves the document (removed, or the head rewritten) | The next load replaces it, from a template, the runtime's last applied copy (so a single file whose fragment is gone keeps its rules) or the file, and removes the runtime's other copies. |
+| A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
+
+The contract covers what hosts do with fragments: inserting, removing, replacing and re-inserting fragments, two builds on one page, host preloads and teardown. These are outside it:
+
+- **Host stylesheets.** The runtime never adopts, watches or removes a host's stylesheet, also one marked `data-canopyx-part`. A page that carries a part's template, or loads code from the part's file, gets the runtime's stylesheet beside the host's, and a host's rules override it through the cascade. A host that wants to provide a part's stylesheet alone preloads the part's script and carries no template.
+- **The runtime's own stylesheets.** Disabling the elements it marks `data-canopyx-owned`, changing their media, or editing their rules through the CSSOM leaves the part as the host left it; only an element that leaves the document is replaced.
+- **Imports in inline font stylesheets when printing.** The print copy waits for linked font stylesheets and for the faces already declared, not for the imports of an inline `<style data-font-source>`, so faces that only an `@import` declares may print before they arrive. Link such a font stylesheet instead.
+
 ### Serving parts
 
-C# hosts need nothing new. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the payloads of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
+C# hosts that write whole pages or parse fragments into them need nothing new. A host that inserts inline fragments later through `innerHTML` does: the browser never runs a script set that way, so those fragments' embedded parts stay inert. Write such fragments with `AssetMode = CanopyAssetMode.External` and serve the matching part files beside the runtime, or insert them with `Range.createContextualFragment`. `CanopyHtmlAssets.WriteTo` writes every part an entry point knows beside it, `SaveBundle` does the same, and fragments written with inline assets carry the `<style>` and `<script>` elements of the parts their view needs, once per `CanopyHtmlDocument`. Parts are handled generically:
 
 - `CanopyHtmlAssets.Parts`, `GetPart(name)` and `GetParts(runtime)` list them as `CanopyHtmlPart` objects with `Script`, `Style`, `Version`, the plain and content-hashed file names and `Markup`.
 - `CanopyHtmlAssets.GetRequiredParts(view)` names the parts a tree or flat grid loads, for a host that assembles single-file pages itself; `CanopyHtmlDocument.EmbedOnce(part)` returns a part's markup the first time a document asks for it.
@@ -187,7 +209,7 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 
 | Field | Meaning |
 | --- | --- |
-| `name`, `label` | The part's name (file `canopyx-<name>.js`, payload type `application/x-canopyx-<name>`) and the words its errors use. |
+| `name`, `label` | The part's name (file `canopyx-<name>.js`, page marker `data-canopyx-part="<name>"`) and the words its errors use. |
 | `runtimes` | `tree` (the two tree entry points) and/or `grid` (the two grid entry points): which manifests name the part and beside which entry points `WriteTo` writes it. |
 | `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds), `deepLink` and `features` narrow that further. |
 | `key`, `context` | The object that marks the part as installed for one runtime context, and the names `install` destructures from the context the runtime hands it. |

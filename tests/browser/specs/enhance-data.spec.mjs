@@ -188,3 +188,21 @@ test("pager settings from .NET load the embedded pager part; a view's invalid pa
     range: document.querySelector("#a .cx-grid-page-range").hidden, menu: document.querySelector("#a .cx-rpp").hidden, pages: document.querySelectorAll("#a .cx-page").length,
     fallback: document.querySelector("#b .cx-grid-pager").hidden, error: errors[0] })), "five slots: pages 1 to 3, a gap and the last page").toEqual({ first: true, input: true, range: true, menu: true, pages: 4, fallback: false, error: "CanopyX: invalid pager numbers." });
 });
+
+test("a grid created after the pager installed still restores the pager stylesheet", async ({ page }) => {
+  // The pager part is installed once; every paged grid still loads it, which checks its stylesheet (docs/plugins.md#part-stylesheets).
+  await servePage(page, "<div id='a'></div><div id='c'></div>");
+  const view = id => ({ protocol: "canopyx/2", type: "grid", id, label: id, source: { kind: "inline" }, pageSize: 50, selection: "none", search: false, presentation: "paged",
+    pageLength: 5, pager: { numbers: 5 }, columns: [{ id: "n", title: "N", kind: "number" }], rows: Array.from({ length: 40 }, (_, i) => ({ id: "r" + i, cells: { n: i } })) });
+  const sheets = () => page.evaluate(() => [...document.styleSheets].filter(sheet => sheet.ownerNode?.dataset?.canopyxPart === "pager" && !sheet.disabled).length);
+  await page.evaluate(view => CanopyX.createDataGrid(document.getElementById("a"), { view }).ready, view("a"));
+  await page.waitForSelector("#a .cx-pages .cx-page");
+  expect(await sheets()).toBe(1);
+  await page.evaluate(() => document.querySelector('link[data-canopyx-part="pager"]').remove());
+  expect(await sheets()).toBe(0);
+  await page.evaluate(view => CanopyX.createDataGrid(document.getElementById("c"), { view }).ready, view("c"));
+  await page.waitForSelector("#c .cx-pages .cx-page");
+  await expect.poll(sheets).toBe(1);
+  // The second grid builds its pager once, like every grid created after the part installed.
+  expect(await page.locator("#c .cx-grid-pager").count()).toBe(1);
+});

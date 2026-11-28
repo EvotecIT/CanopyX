@@ -10,7 +10,7 @@ public static partial class CanopyHtmlAssets {
     public static string HistoryVersion => GetPart("history").Version;
     /// <summary>Gets the content-hashed history presenter part file name.</summary>
     public static string HashedHistoryScriptFileName => GetPart("history").HashedScriptFileName;
-    /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
+    /// <summary>Gets the part's markup (its script and stylesheet elements) for hosts embedding the runtime into a single-file page.</summary>
     /// <remarks>Grid fragments already carry this markup. Custom JavaScript hosts can include it once outside a mounted host, or load <see cref="HistoryScript"/> with the runtime.</remarks>
     public static string HistoryMarkup => GetPart("history").Markup;
 }

@@ -37,14 +37,14 @@ public sealed class GridCalendarPartTests {
         Assert.True(ComponentGzip(part.Style!) <= 6400, "The calendar stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 6,400 (5,522 measured + 15%).");
 
         var plain = Grid();
-        Assert.DoesNotContain("x-canopyx-calendar\"", plain.ToHtmlFragment());
+        Assert.DoesNotContain("data-canopyx-part=\"calendar\"", plain.ToHtmlFragment());
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(plain), item => item.Name == "calendar");
         var calendar = Grid();
         calendar.Calendar = new CanopyCalendar("starts");
         var required = CanopyHtmlAssets.GetRequiredParts(calendar).Select(item => item.Name).ToList();
         Assert.Contains("calendar", required);
         Assert.DoesNotContain("timeline", required);
-        Assert.Contains("<script type=\"application/x-canopyx-calendar\" data-cx-version=\"" + part.Version + "\">", calendar.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"calendar\" data-cx-version=\"" + part.Version + "\">", calendar.ToHtmlFragment());
     }
 
     [Theory]
@@ -104,7 +104,7 @@ public sealed class GridCalendarPartTests {
         options.Parts.Add("calendar-ics");
         var fragment = calendar.ToHtmlFragment(options);
         foreach (var name in new[] { "calendar", "calendar-recurrence", "calendar-ics" }) {
-            var marker = "type=\"application/x-canopyx-" + name + "\"";
+            var marker = "<script data-canopyx-part=\"" + name + "\"";
             Assert.Equal(1, fragment.Split(new[] { marker }, StringSplitOptions.None).Length - 1);
         }
         Assert.Equal(new[] { "calendar-ics" }, options.Parts);
@@ -134,8 +134,8 @@ public sealed class GridCalendarPartTests {
         var required = CanopyHtmlAssets.GetRequiredParts(view).Select(item => item.Name).ToList();
         foreach (var name in new[] { "calendar", "timeline", "tree-tools" }) Assert.Contains(name, required);
         var fragment = view.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-timeline\"", fragment);
-        Assert.Contains("application/x-canopyx-tree-tools\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"timeline\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", fragment);
     }
 
     private static CanopyDataGridView Grid() {

@@ -31,7 +31,9 @@ for (const mode of ['inline', 'plain', 'hashed', 'hosted']) test(`${mode} grids 
     window.parent.__printedFonts = {
       family: getComputedStyle(document.body).fontFamily,
       faces: [...document.fonts].map(face => ({ family: face.family.replaceAll('"', ''), status: face.status })),
-      sources: document.head.querySelectorAll('[data-font-source]').length,
+      // A linked font stylesheet is linked again; an inline one's rules join the paper's constructed stylesheets.
+      sources: document.head.querySelectorAll('[data-font-source]').length +
+        document.adoptedStyleSheets.filter(sheet => [...sheet.cssRules].some(rule => rule.constructor.name === 'CSSFontFaceRule')).length,
       numeric: getComputedStyle(document.querySelector('.cx-print-number')).fontVariantNumeric
     };
   }; });
@@ -152,4 +154,99 @@ test('late font loading refreshes column fitting without a manual resize', async
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.autoSizeColumns());
   await nextFrames(page);
   expect(await widths()).toEqual(automatic);
+});
+
+// The print copy does not wait for an inline font stylesheet's imports (docs/plugins.md#part-stylesheets). An import with media
+// "not all" that the page loads and whose print frame request answers 404, alone or after one that applies and loads: the
+// inline faces still print.
+for (const [imports, label] of [['', 'whose only import never applies'], ['@import url("extra-faces.css");', 'with a loading import and one that never applies']])
+test(`an inline font stylesheet ${label} prints when the print frame's request for the inactive one fails`, async ({ page }) => {
+  await page.addInitScript(() => { window.print = () => {
+    window.parent.__printedFonts = [...document.fonts].filter(face => face.status === 'loaded').map(face => face.family.replaceAll('"', ''));
+  }; });
+  let imported = 0;
+  await page.route('http://canopyx.test/**', route => {
+    const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
+    if (relative === 'extra-faces.css') return route.fulfill({ contentType: 'text/css', body: '' });
+    if (relative === 'missing-faces.css') return imported++ ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    if (path.extname(file) !== '.html') return route.fulfill({ contentType: 'application/octet-stream', body: fs.readFileSync(file) });
+    // Under a nonce policy, as a strict page serves it.
+    const html = fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source>' + imports + '@import url("missing-faces.css") not all;')
+      .replace(/<(script|style)(?=[\s>])/g, '<$1 nonce="print-nonce"');
+    return route.fulfill({ contentType: 'text/html', body: html,
+      headers: { 'content-security-policy': "default-src 'self'; script-src 'self' 'nonce-print-nonce'; style-src 'self' 'nonce-print-nonce'; font-src 'self' data:" } });
+  });
+  await page.goto('http://canopyx.test/inline.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; await document.fonts.ready; });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  expect(await page.evaluate(() => window.__printedFonts)).toContain('Archivo');
+});
+
+test('print keeps the media condition of an inline font stylesheet', async ({ page }) => {
+  // A font stylesheet the page does not apply (media="not all") stays unapplied on paper too.
+  await page.addInitScript(() => { window.print = () => { window.parent.__mediaFonts = document.fonts.size; }; });
+  await page.route('http://canopyx.test/**', route => {
+    const file = path.join(examples, 'fonts', new URL(route.request().url()).pathname.slice(1));
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const html = path.extname(file) === '.html';
+    return route.fulfill({ contentType: html ? 'text/html' : 'application/octet-stream',
+      body: html ? fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source media="not all">') : fs.readFileSync(file) });
+  });
+  await page.goto('http://canopyx.test/inline.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; });
+  expect(await page.evaluate(() => document.fonts.size)).toBe(0);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  expect(await page.evaluate(() => window.__mediaFonts)).toBe(0);
+});
+
+test('print keeps the page order of inline and linked font sources', async ({ page }) => {
+  // The inline source maps Archivo to the monospaced face with the same descriptors; the later linked source maps it back,
+  // so it wins on screen, and must win on paper too.
+  await page.addInitScript(() => { window.print = () => {
+    const probe = document.createElement('span'); document.body.append(probe);
+    // Letters, since the paper uses tabular numbers: a monospaced face draws both runs equally wide.
+    probe.textContent = 'iiiiii'; const narrow = probe.getBoundingClientRect().width;
+    probe.textContent = 'WWWWWW'; const wide = probe.getBoundingClientRect().width;
+    window.parent.__printedWidths = [narrow, wide];
+  }; });
+  await page.route('http://canopyx.test/**', route => {
+    const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const type = path.extname(file) === '.woff2' ? 'font/woff2' : path.extname(file) === '.css' ? 'text/css' : path.extname(file) === '.js' ? 'text/javascript' : 'text/html';
+    const body = type === 'text/html' ? fs.readFileSync(file, 'utf8').replace('<link data-font-source rel="stylesheet"',
+      '<style data-font-source>@font-face{font-family:Archivo;font-style:normal;font-weight:100 900;src:url("plain/JetBrainsMono.woff2") format("woff2")}</style>\n<link data-font-source rel="stylesheet"') : fs.readFileSync(file);
+    return route.fulfill({ contentType: type, body });
+  });
+  await page.goto('http://canopyx.test/plain.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; await document.fonts.ready; });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  const screen = await page.evaluate(() => {
+    const probe = document.createElement('span'); probe.style.font = getComputedStyle(document.body).font; probe.style.fontFamily = 'Archivo'; probe.style.fontSize = '11px'; document.body.append(probe);
+    probe.textContent = 'iiiiii'; const narrow = probe.getBoundingClientRect().width;
+    probe.textContent = 'WWWWWW'; const wide = probe.getBoundingClientRect().width;
+    probe.remove(); return [narrow, wide];
+  });
+  const paper = await page.evaluate(() => window.__printedWidths);
+  expect(screen[1] - screen[0]).toBeGreaterThan(10);
+  expect(paper[1] - paper[0]).toBeGreaterThan(10);
+});
+
+test('print clones a titled inline font stylesheet, so its stylesheet set survives on paper', async ({ page }) => {
+  // A constructed stylesheet has no title, so a titled source keeps the clone path with its title.
+  await page.addInitScript(() => { window.print = () => {
+    window.parent.__titled = { clones: document.querySelectorAll('style[data-font-source][title="Archivo"]').length, sheets: document.adoptedStyleSheets.length };
+  }; });
+  await page.route('http://canopyx.test/**', route => {
+    const file = path.join(examples, 'fonts', new URL(route.request().url()).pathname.slice(1));
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const html = path.extname(file) === '.html';
+    return route.fulfill({ contentType: html ? 'text/html' : 'application/octet-stream',
+      body: html ? fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source title="Archivo">') : fs.readFileSync(file) });
+  });
+  await page.goto('http://canopyx.test/inline.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  // The paper's own rules are still one constructed stylesheet; the font source is a clone with its title.
+  expect(await page.evaluate(() => window.__titled)).toEqual({ clones: 1, sheets: 1 });
 });

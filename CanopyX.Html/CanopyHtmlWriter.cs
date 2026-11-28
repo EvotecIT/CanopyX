@@ -28,7 +28,7 @@ internal static partial class CanopyHtmlWriter {
         return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
 
-    /// <summary>The payloads of the parts a view needs, leaving out those the fragment's document already carries.</summary>
+    /// <summary>The markup of the parts a view needs, leaving out those the fragment's document already carries.</summary>
     private static string SharedParts(CanopyHtmlOptions options, IEnumerable<CanopyHtmlPart> parts) {
         var builder = new StringBuilder();
         foreach (var part in parts) builder.Append(options.Document == null ? part.GetMarkup(options.Nonce) : options.Document.EmbedOnce(part, options.Nonce));

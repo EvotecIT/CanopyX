@@ -48,11 +48,14 @@ public sealed class HtmlWriterTests {
 
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" id=\"" + view.Id + "\" data-cx-height=\"70vh\">", html);
         Assert.Equal(view.ToJson(), ConfigOf(html));
-        Assert.DoesNotContain("<style", html);
-        // FullView has deep links but no context actions, drag/drop or editable columns: the configuration, overlays and
-        // tree tools (two payloads each), export, CSV export and links (one each) make eight script elements.
+        // Without a nonce the height has no rule: the runtime applies it. The only style elements are the parts' own.
+        Assert.DoesNotContain("--cx-height-rule", html);
+        // FullView has deep links but no context actions, drag/drop or editable columns: the configuration and the scripts of
+        // the overlays, tree tools, export, CSV export and links parts make six script elements; overlays and tree tools
+        // also carry a stylesheet each.
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
-        Assert.Equal(8, Regex.Matches(html, "<script").Count);
+        Assert.Equal(6, Regex.Matches(html, "<script").Count);
+        Assert.Equal(2, Regex.Matches(html, "<style").Count);
         Assert.EndsWith(CanopyHtmlAssets.GetPart("ui-overlays").Markup + CanopyHtmlAssets.TreeToolsMarkup + CanopyHtmlAssets.ExportMarkup + CanopyHtmlAssets.GetPart("csv-export").Markup + CanopyHtmlAssets.GetPart("links").Markup, html);
         Assert.DoesNotContain(CanopyHtmlAssets.TreeToolsMarkup, view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }

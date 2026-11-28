@@ -28,7 +28,7 @@ public static partial class CanopyHtmlAssets {
     /// <returns>The parts shipped with that entry point, in manifest order.</returns>
     public static IReadOnlyList<CanopyHtmlPart> GetParts(CanopyRuntime runtime) => Parts.Where(part => part.IsShippedWith(runtime)).ToList().AsReadOnly();
 
-    /// <summary>Gets the parts a tree loads, whose payloads a single-file page carries: the tree tools and export parts, and the
+    /// <summary>Gets the parts a tree loads, whose markup a single-file page carries: the tree tools and export parts, and the
     /// search part for a sidecar source and the links part for deep links.</summary>
     /// <param name="view">The tree view.</param>
     /// <returns>The parts, in manifest order.</returns>
@@ -49,7 +49,7 @@ public static partial class CanopyHtmlAssets {
         return Parts.Where(part => names.Contains(part.Name)).ToList().AsReadOnly();
     }
 
-    /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, the
+    /// <summary>Gets the parts a flat grid loads, whose markup a single-file page carries: the filter editor and export parts, the
     /// history part for status strips and sparklines, the pager part for a paged view with pager settings, the detail rows and
     /// grouping parts for grouping, aggregates and detail rows, the parts of the other features the view uses, and the parts of a
     /// nested detail grid or tree.</summary>

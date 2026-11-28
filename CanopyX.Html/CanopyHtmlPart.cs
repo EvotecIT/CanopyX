@@ -6,19 +6,19 @@ namespace CanopyX.Html;
 
 /// <summary>
 /// A part of the browser runtime that loads when a view needs it: its script, optional stylesheet, version, file names and
-/// inert payload markup. The parts come from <c>Build/parts.json</c>; <see cref="CanopyHtmlAssets.Parts"/> lists them.
+/// markup for a single-file page. The parts come from <c>Build/parts.json</c>; <see cref="CanopyHtmlAssets.Parts"/> lists them.
 /// </summary>
 /// <remarks>
 /// <para>
 /// An entry point knows the parts of its build by name and version. A part installs only when its version is that build's:
-/// from an inert payload in the page (<see cref="Markup"/>), or from the file beside the runtime, under the naming of the
+/// from its markup in the page (<see cref="Markup"/>), or from the file beside the runtime, under the naming of the
 /// runtime file (<see cref="GetScriptFileName"/>). <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming, CanopyRuntime)"/>
-/// writes every part an entry point knows, and fragments written with inline assets carry the payloads of the parts their view
+/// writes every part an entry point knows, and fragments written with inline assets carry the markup of the parts their view
 /// needs (<see cref="CanopyHtmlAssets.GetRequiredParts(CanopyTreeView)"/>), once per <see cref="CanopyHtmlDocument"/>.
 /// </para>
 /// <para>
 /// A host that writes its own pages handles every part the same way, so a new part needs no host code: it serves the files
-/// of <see cref="CanopyHtmlAssets.GetParts(CanopyRuntime)"/> beside the runtime, or embeds the payloads a view needs.
+/// of <see cref="CanopyHtmlAssets.GetParts(CanopyRuntime)"/> beside the runtime, or embeds the markup of the parts a view needs.
 /// </para>
 /// </remarks>
 public sealed class CanopyHtmlPart {
@@ -44,8 +44,8 @@ public sealed class CanopyHtmlPart {
         ScriptFileName = Text(entry, "script") ?? throw new InvalidOperationException("The CanopyX part '" + Name + "' has no script.");
         StyleFileName = Text(entry, "style");
         var styleFile = StyleFileName;
-        _script = new Lazy<string>(() => CanopyHtmlResources.Read(ScriptFileName));
-        _style = new Lazy<string?>(() => styleFile == null ? null : CanopyHtmlResources.Read(styleFile));
+        _script = new Lazy<string>(() => Embeddable(CanopyHtmlResources.Read(ScriptFileName), ScriptFileName, "</script", "<!--"));
+        _style = new Lazy<string?>(() => styleFile == null ? null : Embeddable(CanopyHtmlResources.Read(styleFile), styleFile, "</style"));
         Runtimes = List(entry, "runtimes").SelectMany(RuntimesOf).Distinct().ToList().AsReadOnly();
         Requires = List(entry, "requires").ToList().AsReadOnly();
         _views = List(entry, "views").ToArray();
@@ -92,24 +92,36 @@ public sealed class CanopyHtmlPart {
     public IReadOnlyList<string> Requires { get; }
 
     /// <summary>
-    /// Gets inert payload markup for a single-file page: the stylesheet (type <c>application/x-canopyx-&lt;name&gt;-style</c>)
-    /// and the script (type <c>application/x-canopyx-&lt;name&gt;</c>), marked with the version. The runtime finds the payload
-    /// anywhere in the document and runs it on first use.
+    /// Gets the part's markup for a single-file page: its stylesheet as a <c>&lt;style media="not all" data-canopyx-template&gt;</c> template and its
+    /// script as a <c>&lt;script&gt;</c> element, both marked <c>data-canopyx-part</c> and <c>data-cx-version</c>. The script only
+    /// registers the part, before or after the runtime, and the part installs when a view first needs it. The template never
+    /// applies by itself, so copies of it in the page change nothing; the runtime applies one copy of it per part.
     /// </summary>
     public string Markup => GetMarkup(null);
 
     /// <summary>
-    /// Returns the inert payload markup (<see cref="Markup"/>) marked with a Content Security Policy nonce. The payloads are
-    /// data blocks, which a policy does not run; the runtime inserts the stylesheet and the script with the payload's nonce
-    /// when the part loads, so a strict policy (<c>script-src 'nonce-…'; style-src 'nonce-…'</c>) allows them.
+    /// Returns the part's markup (<see cref="Markup"/>) marked with a Content Security Policy nonce, so a strict policy
+    /// (<c>script-src 'nonce-…'; style-src 'nonce-…'</c>) runs the script and applies the stylesheet. Without a nonce, a policy
+    /// allows them by their hashes or not at all; serve the part files beside the runtime
+    /// (<see cref="CanopyAssetMode.External"/>) to need neither. The runtime never turns page text into script or style.
     /// </summary>
     /// <param name="nonce">The response's nonce, or null for none (the same as <see cref="Markup"/>).</param>
-    /// <returns>The payload markup.</returns>
+    /// <returns>The part's markup.</returns>
     /// <exception cref="ArgumentException"><paramref name="nonce"/> is not a valid nonce.</exception>
     public string GetMarkup(string? nonce) {
-        var attribute = CanopyContentSecurity.Attribute(nonce);
-        return (Style == null ? string.Empty : "<script type=\"application/x-canopyx-" + Name + "-style\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Style + "</script>")
-            + "<script type=\"application/x-canopyx-" + Name + "\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Script + "</script>";
+        var attributes = " data-canopyx-part=\"" + Name + "\" data-cx-version=\"" + Version + "\"" + CanopyContentSecurity.Attribute(nonce);
+        // The stylesheet is a template that never applies by itself (media="not all"): the runtime applies one copy per part.
+        return (Style == null ? string.Empty : "<style" + attributes + " media=\"not all\" data-canopyx-template>" + Style + "</style>") + "<script" + attributes + ">" + Script + "</script>";
+    }
+
+    // The markup writes the text raw inside its element, so a sequence that ends the element early, or that changes how a
+    // script element is parsed, would spill the rest into the page.
+    private static string Embeddable(string text, string file, params string[] refused) {
+        foreach (var sequence in refused) {
+            if (text.IndexOf(sequence, StringComparison.OrdinalIgnoreCase) >= 0) throw new InvalidOperationException("The CanopyX part file '" + file + "' contains '" + sequence + "', which cannot be written inside its element.");
+        }
+
+        return text;
     }
 
     /// <summary>Returns the script file name under a naming.</summary>

@@ -72,7 +72,7 @@ test.describe("basic calendars", () => {
 
   test("a basic page carries only the core calendar part; the scheduler page carries editing and iCalendar too", () => {
     const basic = fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8"), scheduler = fs.readFileSync(path.join(examples, "calendar-scheduler.html"), "utf8");
-    const payload = name => 'type="application/x-canopyx-' + name + '"';
+    const payload = name => '<script data-canopyx-part="' + name + '"';
     expect(basic).toContain(payload("calendar"));
     expect(basic).not.toContain(payload("calendar-edit"));
     expect(basic).not.toContain(payload("calendar-ics"));

@@ -27,9 +27,10 @@ public sealed class RuntimePartTests {
             Assert.Equal("canopyx-" + part.Name + ".js", part.ScriptFileName);
             Assert.Matches("^canopyx-" + part.Name + "\\.[a-f0-9]{16}\\.js$", part.HashedScriptFileName);
             Assert.Equal(part.Style == null, part.StyleFileName == null);
-            // The script registers its code under its name with its version, before or after the runtime runs.
+            // The script registers its code under its name with its version, before or after the runtime runs, with the script
+            // element it ran from, which tells the runtime where the code came from.
             Assert.Contains("={version:\"" + part.Version + "\"", part.Script);
-            Assert.Matches("\\.CanopyXParts\\|\\|=\\[\\]\\)\\.push\\(\\[\"" + Regex.Escape(part.Name) + "\",[\\w$]+\\]\\)\\}\\)\\(typeof window!==\"undefined\"\\?window:globalThis\\);\\n?$", part.Script);
+            Assert.Matches("\\.CanopyXParts\\|\\|=\\[\\]\\)\\.push\\(\\[\"" + Regex.Escape(part.Name) + "\",[\\w$]+,typeof document!==\"undefined\"\\?document\\.currentScript:null\\]\\)\\}\\)\\(typeof window!==\"undefined\"\\?window:globalThis\\);\\n?$", part.Script);
             Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain('\r', part.Script);
             foreach (var runtime in AllRuntimes) {
@@ -101,13 +102,13 @@ public sealed class RuntimePartTests {
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         var single = tree.ToHtmlFragment();
         foreach (var part in CanopyHtmlAssets.GetRequiredParts(tree)) Assert.Contains(part.Markup, single);
-        Assert.DoesNotContain("application/x-canopyx-search", single);
+        Assert.DoesNotContain("data-canopyx-part=\"search\"", single);
 
         var document = new CanopyHtmlDocument();
         var first = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         var second = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
-        Assert.Contains("application/x-canopyx-links", first);
-        Assert.DoesNotContain("application/x-canopyx-", second.Replace("application/json", ""));
+        Assert.Contains("<script data-canopyx-part=\"links\"", first);
+        Assert.DoesNotContain("data-canopyx-part=", second);
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, document.EmbeddedParts.Select(marker => marker.Substring(0, marker.IndexOf('@'))));
         Assert.Equal(string.Empty, document.EmbedOnce(CanopyHtmlAssets.GetPart("links")));
         Assert.Equal(CanopyHtmlAssets.GetPart("search").Markup, document.EmbedOnce(CanopyHtmlAssets.GetPart("search")));
@@ -115,12 +116,32 @@ public sealed class RuntimePartTests {
     }
 
     [Fact]
-    public void Markup_MarksThePayloadWithItsTypeAndVersion() {
+    public void Markup_WritesThePartAsStyleAndScriptElementsMarkedWithItsNameAndVersion() {
         var part = CanopyHtmlAssets.GetPart("tree-tools");
-        Assert.Equal("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + part.Version + "\">" + part.Style + "</script>"
-            + "<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Script + "</script>", part.Markup);
+        Assert.Equal("<style data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\" media=\"not all\" data-canopyx-template>" + part.Style + "</style>"
+            + "<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + part.Version + "\">" + part.Script + "</script>", part.Markup);
         var links = CanopyHtmlAssets.GetPart("links");
-        Assert.Equal("<script type=\"application/x-canopyx-links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);
+        Assert.Equal("<script data-canopyx-part=\"links\" data-cx-version=\"" + links.Version + "\">" + links.Script + "</script>", links.Markup);
+    }
+
+    public static TheoryData<string> PartNames() {
+        var names = new TheoryData<string>();
+        foreach (var part in CanopyHtmlAssets.Parts) names.Add(part.Name);
+        return names;
+    }
+
+    [Theory]
+    [MemberData(nameof(PartNames))]
+    public void Markup_KeepsEveryPartInsideItsOwnElements(string name) {
+        // A single file writes the text raw, so nothing in it may end its element early or change how a script is parsed.
+        var part = CanopyHtmlAssets.GetPart(name);
+        var markup = part.GetMarkup("abc123");
+        // Inside a script only "</script" and "<!--" matter; inside a stylesheet only "</style".
+        Assert.Single(Regex.Matches(markup, "</script", RegexOptions.IgnoreCase));
+        Assert.DoesNotContain("<!--", part.Script, StringComparison.Ordinal);
+        Assert.Equal(part.Style != null, markup.StartsWith("<style ", StringComparison.Ordinal));
+        if (part.Style != null) Assert.DoesNotContain("</style", part.Style, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("<script data-canopyx-part=\"" + name + "\" data-cx-version=\"" + part.Version + "\" nonce=\"abc123\">" + part.Script + "</script>", markup);
     }
 
     [Theory]

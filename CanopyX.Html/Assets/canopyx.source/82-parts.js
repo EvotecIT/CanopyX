@@ -1,17 +1,87 @@
   // ---------- parts: runtime code loaded when a view needs it (Build/parts.json, docs/plugins.md) ----------
   // PARTS is this build's manifest: each part this entry point may load, as name -> [version, content-hashed script,
   // content-hashed stylesheet]. A part's script registers its code with registerPart (directly, or through the
-  // CanopyXParts queue when it runs before the runtime) and installs on first use, from an inert payload in the page (a
-  // script of type application/x-canopyx-<name>, and <name>-style for its stylesheet) or from files beside the runtime:
-  // the content-hashed names when the runtime itself is content-hashed, the plain names otherwise. A part installs only
-  // when its version is this build's; a failed load can be retried. A part's requires load, and install, before it.
+  // CanopyXParts queue when it runs before the runtime) and installs on first use. A part the page carries (its own
+  // <script> and an inert <style media="not all"> template, written by CanopyX.Html) has registered by then; any other part
+  // loads from the files beside the runtime: the content-hashed names when the runtime itself is content-hashed, the plain
+  // names otherwise. A part installs only when its version is this build's; a failed load can be retried. Its requires
+  // install before it. The runtime never turns page text into script or style (docs/security.md).
   const PART_URL = typeof document !== "undefined" && document.currentScript?.src;
+  // Where each accepted registration came from, which decides its stylesheet (docs/plugins.md#part-stylesheets): "entry" (the
+  // entry point registered it while its own script still ran; a microtask ends that), "page" (an inline part script the page
+  // carries; one with a src is the host's),
+  // "file" (the loader's script for the part file) or "host" (a host preload).
+  const PART_SOURCE = new Map(), LOADER_SCRIPTS = new WeakSet();
+  let drainingParts = false, entryRunning = true;
+  Promise.resolve().then(() => { entryRunning = false; });
   const PARTS = __CX_PARTS__, PART_CODE = new Map(), SHARED_PARTS = {}, partName = name => typeof name === "string" && /^[a-z][a-z\d-]{0,31}$/.test(name);
-  /** Registers a part's code ({ version, requires?, install(context) }) under its name; parts of this build call it as they run. */
-  function registerPart(name, part) {
+  const manifest = name => Object.hasOwn(PARTS, name) ? PARTS[name] : [];
+  /**
+   * Registers a part's code ({ version, requires?, install(context) }) under its name; parts of this build call it as they run.
+   * A part file queued before the runtime passes the script element it ran from, so its origin is known when it registers.
+   */
+  function registerPart(name, part, from) {
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
         part.requires !== undefined && !(Array.isArray(part.requires) && part.requires.every(partName))) throw new Error("CanopyX: invalid part.");
-    PART_CODE.set(name, part);
+    // Fragments written without a shared document each carry the parts they need, so a part can register more than once,
+    // and a page may hold a copy from another build. A registration of this build's version stays; another copy only
+    // replaces a registration that is not this build's.
+    const current = PART_CODE.get(name), wanted = manifest(name)[0] || part.version;
+    if (!current || current.version !== part.version && current.version !== wanted) {
+      PART_CODE.set(name, part);
+      const script = from !== undefined ? from : typeof document !== "undefined" ? document.currentScript : null;
+      PART_SOURCE.set(name, LOADER_SCRIPTS.has(script) ? "file" : script?.dataset?.canopyxPart === name && !script.hasAttribute("src") ? "page" : entryRunning && !drainingParts ? "entry" : "host");
+    }
+  }
+  // Part stylesheets (docs/plugins.md#part-stylesheets). The page's <style data-canopyx-part media="not all"
+  // data-canopyx-template> elements are templates that never apply, so copies the page gains or loses (innerHTML, re-inserted
+  // nodes, other builds) change nothing. Each part has one stylesheet, the runtime's, chosen on the first load and marked
+  // data-canopyx-owned: a clone in document.head of a template the policy allowed (a refused one has no sheet), with its nonce
+  // and without the media, or, with fallback, the part's file, linked. The runtime never adopts or watches a host's
+  // stylesheets. A later load replaces the runtime's stylesheet only when it left the document (a link removed while it loads
+  // is abandoned), retries a failed file load, and removes the runtime's other copies of the part. The last clone it applied is
+  // kept in SPARE_SHEETS, so it applies again when the clone left the page and no template is left.
+  const PART_SHEETS = new Map(), SPARE_SHEETS = new Map();
+  function partSheet(part, fallback) {
+    const [version, , styleFile] = manifest(part.name);
+    if (!styleFile || typeof document === "undefined") return;
+    const elements = [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].filter(element => element.dataset.canopyxPart === part.name);
+    let owned = PART_SHEETS.get(part.name);
+    // Disabling the runtime's own stylesheet or changing its media is outside the contract; leaving the document is not.
+    if (owned && owned.element.getRootNode() !== document) {
+      owned.abandon?.(Object.assign(new Error("CanopyX: " + part.label + " stylesheet replaced."), { abandoned: true }));
+      owned.element.remove(); PART_SHEETS.delete(part.name); owned = undefined;
+    }
+    if (!owned) {
+      const allowed = elements.filter(element => element.dataset.cxVersion === version && "canopyxTemplate" in element.dataset && element.sheet);
+      const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0], spare = SPARE_SHEETS.get(part.name);
+      if (template) {
+        const copy = template.cloneNode(true); copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = "";
+        document.head.appendChild(copy);
+        if (copy.sheet) { owned = { element: copy }; SPARE_SHEETS.set(part.name, copy); } else copy.remove();
+      } else if (spare) { document.head.appendChild(spare); if (spare.sheet) owned = { element: spare }; else spare.remove(); }
+      if (!owned) {
+        if (!fallback) return;
+        const link = h("link"); link.rel = "stylesheet";
+        Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version, canopyxOwned: "" });
+        owned = { element: link };
+        owned.ready = new Promise((resolve, reject) => { owned.abandon = reject; partFile(part, link, "href", styleFile, "stylesheet").then(resolve, reject); })
+          // Settled, later loads take the link as it is; a failed one is removed so the next load tries again.
+          .then(() => { owned.abandon = null; owned.ready = undefined; }, error => {
+            if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name);
+            link.remove(); throw error;
+          });
+      }
+      PART_SHEETS.set(part.name, owned);
+    }
+    for (const element of elements) if ("canopyxOwned" in element.dataset && element !== owned.element && element !== SPARE_SHEETS.get(part.name)) element.remove();
+    return owned.ready;
+  }
+  /** The part's stylesheet (undefined once it applies), following a replacement when the link it waited for was removed. */
+  async function partSheetReady(part, fallback) {
+    for (;;) {
+      try { return await partSheet(part, fallback); } catch (error) { if (!error.abandoned) throw error; }
+    }
   }
   // A view kind's parts by name, each with the context its code installs into: definePart(TreeGrid, "tree-tools", ...).
   function definePart(View, name, label, context) {
@@ -20,40 +90,41 @@
     return parts[name] = { name, label, context, parts };
   }
   // Build/Sync-Assets.ps1 refuses requires that name no part of the same view kind or that form a cycle.
+  /** Loads a part file beside the runtime into an element: the plain names, or the content-hashed ones beside a hashed runtime. */
+  function partFile(part, element, attribute, hashedFile, kind) {
+    const base = global.CanopyXFilterEditorBase, runtime = PART_URL || typeof base === "string" && base || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
+    const file = hashed ? hashedFile : "canopyx-" + part.name + (attribute === "src" ? ".js" : ".css");
+    return new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
+      element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
+  }
   function loadPart(part) {
-    return part.ready ||= Promise.resolve().then(async () => {
-      const [version, scriptFile, styleFile] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
+    // Checked first, so a stylesheet that left the head is replaced even while the part is still installing. Code from its
+    // file needs its stylesheet, on every load. A part the page carries falls back to the file too, without waiting for it;
+    // an entry point's part and a host preload take a host's stylesheet or a template, and install without one.
+    const source = PART_CODE.get(part.name)?.version === manifest(part.name)[0] ? PART_SOURCE.get(part.name) : "file";
+    const required = source === "file", sheet = partSheetReady(part, required || source === "page");
+    if (!required) sheet.catch(() => {});
+    const installed = part.ready ||= Promise.resolve().then(async () => {
+      const [version, scriptFile] = manifest(part.name);
       part.version = version;
       if (!version) throw new Error("CanopyX: no " + part.label + ".");
-      if (PART_CODE.get(part.name)?.version !== part.version || part.styleReady === null) {
-        // An embedded part runs with its payload's own nonce. When the page nonce is known (CanopyX.setNonce, or the runtime
-        // script's own nonce), only a payload that carries it counts, so markup injected into the page cannot run as a part,
-        // also under 'strict-dynamic' and Trusted Types.
-        const find = type => [...document.querySelectorAll('script[type="application/x-canopyx-'+type+'"][data-cx-version="'+part.version+'"]')].find(item => !pageNonce || item.nonce === pageNonce);
-        const payload = find(part.name), script = h("script"), embeddedStyle = styleFile && find(part.name + "-style");
-        if (payload) {
-          if (embeddedStyle) { const style = h("style"); style.nonce = payload.nonce; setText(style, embeddedStyle.textContent); document.head.appendChild(style); }
-          script.textContent = trusted("Script", payload.textContent); script.nonce = payload.nonce; document.head.appendChild(script); script.remove();
-        } else {
-          const base = global.CanopyXFilterEditorBase, runtime = PART_URL || typeof base === "string" && base || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
-          const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
-            element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
-          const link = h("link"); link.rel = "stylesheet";
-          const style = styleFile && (part.styleReady ||= load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet")
-            .catch(error => { part.styleReady = null; throw error; }));
-          const code = PART_CODE.get(part.name)?.version === part.version || (part.scriptReady ||= load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")
-            .finally(() => script.remove()).catch(error => { part.scriptReady = null; throw error; }));
-          await Promise.all([style, code]);
-        }
-      }
-      const code = PART_CODE.get(part.name);
-      if (code?.version !== part.version) throw new Error("CanopyX: " + part.label + " and runtime must come from the same build.");
-      for (const name of code.requires || []) await loadPart(part.parts[name] || SHARED_PARTS[name]);
-      code.install(part.context());
+      const script = h("script");
+      LOADER_SCRIPTS.add(script);
+      const code = PART_CODE.get(part.name)?.version === version || (part.scriptReady ||= partFile(part, script, "src", scriptFile, "script")
+        .finally(() => script.remove()).catch(error => { part.scriptReady = null; throw error; }));
+      await Promise.all([required && sheet, code]);
+      const registered = PART_CODE.get(part.name);
+      if (registered?.version !== version) throw new Error("CanopyX: " + part.label + " and runtime must come from the same build.");
+      for (const name of registered.requires || []) await loadPart(part.parts[name] || SHARED_PARTS[name]);
+      registered.install(part.context());
     }).catch(error => { part.ready = null; throw error; });
+    // Installed once; its stylesheet, and those of the parts it requires, are checked on every load.
+    return Promise.all([installed, required && sheet]).then(() => Promise.all((PART_CODE.get(part.name).requires || []).map(name => loadPart(part.parts[name] || SHARED_PARTS[name])))).then(() => undefined);
   }
   // Parts that ran before the runtime left their registrations in a plain array; later ones register at once.
   const partQueue = global.CanopyXParts = global.CanopyXParts || [];
+  drainingParts = true;
   partQueue.forEach(entry => registerPart(...entry));
+  drainingParts = false;
   partQueue.length = 0;
   partQueue.push = (...entries) => { entries.forEach(entry => registerPart(...entry)); return 0; };

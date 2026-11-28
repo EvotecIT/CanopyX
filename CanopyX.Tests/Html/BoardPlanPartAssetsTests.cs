@@ -24,8 +24,8 @@ public sealed class BoardPlanPartAssetsTests {
             Assert.Empty(part.Requires);
             plain.Board = new CanopyBoard("title");
             Assert.Contains(CanopyHtmlAssets.GetRequiredParts(plain), item => item.Name == "board");
-            Assert.Contains("application/x-canopyx-board", plain.ToHtml());
-            Assert.DoesNotContain("application/x-canopyx-plan", plain.ToHtml());
+            Assert.Contains("<script data-canopyx-part=\"board\"", plain.ToHtml());
+            Assert.DoesNotContain("data-canopyx-part=\"plan\"", plain.ToHtml());
         } else Assert.Contains("timeline", part.Requires);
     }
 

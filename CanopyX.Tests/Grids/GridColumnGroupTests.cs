@@ -86,13 +86,13 @@ public sealed class GridColumnGroupTests {
         var plain = new CanopyDataGridView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
         var page = plain.ToHtmlFragment();
-        Assert.DoesNotContain("x-canopyx-column-groups", page);
-        Assert.DoesNotContain("x-canopyx-cell-range", page);
+        Assert.DoesNotContain("data-canopyx-part=\"column-groups\"", page);
+        Assert.DoesNotContain("data-canopyx-part=\"cell-range\"", page);
         var budget = Budget();
         budget.RangeSelection = new CanopyGridRangeSelection();
         var fragment = budget.ToHtmlFragment();
-        Assert.Contains("application/x-canopyx-column-groups\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("column-groups").Version, fragment);
-        Assert.Contains("application/x-canopyx-cell-range\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("cell-range").Version, fragment);
+        Assert.Contains("<script data-canopyx-part=\"column-groups\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("column-groups").Version, fragment);
+        Assert.Contains("<script data-canopyx-part=\"cell-range\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("cell-range").Version, fragment);
         Assert.Equal(new[] { "column-groups", "cell-range" }, CanopyHtmlAssets.GetRequiredParts(budget).Select(part => part.Name).Where(name => name is "column-groups" or "cell-range"));
     }
 }

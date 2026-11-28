@@ -14,7 +14,7 @@ public static partial class CanopyHtmlAssets {
         return CanopyRuntime.DataGrid;
     }
 
-    /// <summary>Gets the parts a matrix loads, whose payloads a single-file page carries: the matrix part.</summary>
+    /// <summary>Gets the parts a matrix loads, whose markup a single-file page carries: the matrix part.</summary>
     /// <param name="matrix">The matrix.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>

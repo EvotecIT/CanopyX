@@ -306,7 +306,7 @@ test("a view parsed from the page keeps its rows; a host's view is copied", asyn
   }, view);
   expect(copied).toBe("Item 0");
   // The row data part registers itself like every part, and the grid entry point does not carry its decoder.
-  expect(read("canopyx-data.js")).toMatch(/\.push\(\["data",[\w$]+\]\)/);
+  expect(read("canopyx-data.js")).toMatch(/\.push\(\["data",[\w$]+,typeof document!=="undefined"\?document\.currentScript:null\]\)/);
   expect(read("canopyx-data.js")).toContain("DecompressionStream");
   expect(read("canopyx-grid.js")).not.toContain("DecompressionStream");
 });

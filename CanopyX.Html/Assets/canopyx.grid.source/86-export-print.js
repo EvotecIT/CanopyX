@@ -40,12 +40,19 @@
       for (const name of theme) if (/^--hfx-(?:font|type|weight)-/.test(name)) doc.documentElement.style.setProperty(name, theme.getPropertyValue(name));
       const add = (tag, parent, text, css) => {
         const element = doc.createElement(tag);
-        if (tag === "style") { element.nonce = fontSources[0]?.nonce || ""; withNonce(element); }
         if (text !== undefined) element.textContent = String(text);
         if (css) element.style.cssText = css;
         parent.appendChild(element); return element;
       };
-      add("style", doc.head, "@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text-muted)}}' +
+      // The paper's rules go in a constructed stylesheet, which a strict policy allows without a nonce. A browser without
+      // constructable stylesheets gets a style element with the page nonce.
+      const sheet = (text, constructedOnly, media) => {
+        const Sheet = frame.contentWindow?.CSSStyleSheet;
+        try { const rules = new Sheet(media ? { media } : undefined); rules.replaceSync(text); doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, rules]; return true; } catch (_) { if (constructedOnly) return false; }
+        const element = doc.createElement("style"); element.nonce = fontSources[0]?.nonce || ""; withNonce(element); element.textContent = text; doc.head.appendChild(element);
+        return true;
+      };
+      sheet("@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text-muted)}}' +
         "thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}a{color:inherit;text-decoration:none}" +
         "@media screen{body{padding:40px}main{max-width:1100px;margin:auto}}@media screen and (max-width:600px){body{padding:20px}}" +
         "@media (max-width:600px){body{font-size:10px!important}td,th{padding:6px 4px!important;white-space:normal!important}td.cx-print-number{white-space:nowrap!important}col.cx-print-date{width:80px!important}}" +
@@ -61,10 +68,21 @@
         "@media screen and (min-width:1200px){.cx-print-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
+      // Inline font stylesheets are copied into constructed stylesheets with the same media when every font source is inline,
+      // untitled and imports nothing, which a constructed stylesheet would drop. Otherwise every source is inserted again in page order,
+      // each with its own nonce, since constructed stylesheets would win over the linked ones and reverse their precedence.
+      const ruleList = source => source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null;
+      const imports = rules => rules?.some(rule => rule.constructor.name === "CSSImportRule");
+      // A titled source belongs to a stylesheet set, which a constructed stylesheet cannot keep: then every source is cloned.
+      const constructFonts = [...fontSources].every(source => { const rules = ruleList(source); return rules && !imports(rules) && !source.title; });
       for (const source of fontSources) {
+        const rules = ruleList(source);
+        if (constructFonts && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
+        if (source.tagName === "LINK") copy.href = source.href;
+        // A linked stylesheet loads before the paper prints, and a failed one stops printing. An inline stylesheet's imports are
+        // not waited for (docs/plugins.md#part-stylesheets), so faces only an import declares may print before they arrive.
         if (source.tagName === "LINK") {
-          copy.href = source.href;
           fontLoads.push(new Promise((resolve, reject) => {
             copy.onload = resolve; copy.onerror = () => reject(new Error("CanopyX: print font stylesheet failed to load."));
           }));

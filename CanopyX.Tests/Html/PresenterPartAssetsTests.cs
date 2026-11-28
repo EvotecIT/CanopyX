@@ -12,7 +12,7 @@ public sealed class PresenterPartAssetsTests {
         view.Record.Fields.Add(new CanopyColumn("notes", "Notes") { Wrap = true, MaxLines = 2 });
         Assert.All(view.Columns, column => { Assert.Null(column.Presenter); Assert.False(column.Wrap); });
         Assert.Contains(CanopyHtmlAssets.GetPart("presenters"), CanopyHtmlAssets.GetRequiredParts(view));
-        Assert.Contains("application/x-canopyx-presenters", view.ToHtml());
+        Assert.Contains("<script data-canopyx-part=\"presenters\"", view.ToHtml());
     }
     [Fact]
     public void DeclarativePainterIsVersionedBoundedAndCarriedByWrappedViews() {
@@ -30,6 +30,6 @@ public sealed class PresenterPartAssetsTests {
         Assert.True(bytes.Length <= 4096, "Presenter part exceeds 4 KiB gzip.");
         var view = new CanopyDataGridView("wrapped", "Wrapped") { Columns = { new CanopyColumn("notes", "Notes") { Wrap = true } } };
         Assert.Contains(part, CanopyHtmlAssets.GetRequiredParts(view));
-        Assert.Contains("application/x-canopyx-presenters", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"presenters\"", view.ToHtmlFragment());
     }
 }
