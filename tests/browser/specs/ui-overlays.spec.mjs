@@ -402,7 +402,7 @@ const SHADOW = `const host = document.getElementById("shadow-host"), root = host
 // Rows: markup, setup (page script run first), open (overlays opened by their triggers in order; scriptOpen activates the
 // triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
 // the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
-// requestClose() on an overlay), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
+// requestClose() on an overlay; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -439,6 +439,19 @@ const DISMISSALS = [
   { name: 'Cancel on a plain dialog mounted from code', mounted: 'plain', open: [],
     markup: '<dialog id="plain" aria-labelledby="plain-title"><h2 id="plain-title">plain settings</h2><button data-cx-cancel>Cancel</button></dialog>',
     dismiss: { in: 'plain', button: 'Cancel' }, closed: ['plain'], stays: [] },
+  { name: 'a pressed named close in the page toolbar closes its drawer', markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    open: ['outer'], dismiss: { button: 'Close from the page' }, closed: ['outer'], stays: [] },
+  { name: 'Enter on a named close in the page toolbar closes its drawer', markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    open: ['outer'], dismiss: { button: 'Close from the page', enter: true }, closed: ['outer'], stays: [] },
+  { name: 'a named close in the page toolbar honours its drawer\'s cancel veto', markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    setup: 'document.getElementById("outer").addEventListener("cx-drawer:cancel", event => event.preventDefault());',
+    open: ['outer'], dismiss: { button: 'Close from the page' }, closed: [], stays: ['outer'] },
+  { name: 'a host that destroys a nested popover from its close event keeps the drawer open', markup: overlay('drawer', 'outer', closablePopover('pop')),
+    setup: 'document.getElementById("pop").addEventListener("cx-popover:close", () => CanopyX.popover("#pop").destroy());',
+    open: ['outer', 'pop'], dismiss: { in: 'pop', button: 'Close' }, closed: ['pop'], stays: ['outer'] },
+  { name: 'requestClose() on a drawer whose dialog mounted in a shadow root inside it is on top',
+    markup: overlay('drawer', 'outer', '<div id="shadow-host"></div>'), open: ['outer'], afterOpen: SHADOW,
+    dismiss: { request: 'outer' }, closed: ['shadowed'], stays: ['outer'] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
@@ -453,11 +466,12 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
     if (row.scriptOpen) await trigger.evaluate(element => element.click()); else await trigger.click();
     await expect(surface(id)).toBeVisible();
   }
+  if (row.afterOpen) { await page.evaluate(script => new Function(script)(), row.afterOpen); await expect(page.locator('#shadowed')).toBeVisible(); }
   const { dismiss } = row;
   if (dismiss.key) await page.keyboard.press(dismiss.key);
   else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
   else {
-    const button = surface(dismiss.in).getByRole('button', { name: dismiss.button, exact: true }).first();
+    const button = (dismiss.in ? surface(dismiss.in) : page).getByRole('button', { name: dismiss.button, exact: true }).first();
     if (dismiss.enter) { await button.focus(); await page.keyboard.press('Enter'); } else await button.click();
   }
   for (const id of row.closed) await expect(surface(id)).toBeHidden();
