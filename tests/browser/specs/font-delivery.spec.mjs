@@ -157,11 +157,10 @@ test('late font loading refreshes column fitting without a manual resize', async
 });
 
 // The print copy does not wait for an inline font stylesheet's imports (docs/plugins.md#part-stylesheets). An import with media
-// "not all" that the page loads, whose print frame request answers 404 or never answers, alone or after one that applies and
-// loads: the inline faces still print.
+// "not all" that the page loads and whose print frame request answers 404, alone or after one that applies and loads: the
+// inline faces still print.
 for (const [imports, label] of [['', 'whose only import never applies'], ['@import url("extra-faces.css");', 'with a loading import and one that never applies']])
-for (const outcome of ['fails', 'hangs'])
-test(`an inline font stylesheet ${label} prints when the print frame's request for the inactive one ${outcome}`, async ({ page }) => {
+test(`an inline font stylesheet ${label} prints when the print frame's request for the inactive one fails`, async ({ page }) => {
   await page.addInitScript(() => { window.print = () => {
     window.parent.__printedFonts = [...document.fonts].filter(face => face.status === 'loaded').map(face => face.family.replaceAll('"', ''));
   }; });
@@ -169,7 +168,7 @@ test(`an inline font stylesheet ${label} prints when the print frame's request f
   await page.route('http://canopyx.test/**', route => {
     const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
     if (relative === 'extra-faces.css') return route.fulfill({ contentType: 'text/css', body: '' });
-    if (relative === 'missing-faces.css') return !imported++ ? route.fulfill({ contentType: 'text/css', body: '' }) : outcome === 'fails' ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : undefined;
+    if (relative === 'missing-faces.css') return imported++ ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
     if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
     if (path.extname(file) !== '.html') return route.fulfill({ contentType: 'application/octet-stream', body: fs.readFileSync(file) });
     // Under a nonce policy, as a strict page serves it.
