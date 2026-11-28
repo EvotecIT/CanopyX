@@ -44,12 +44,7 @@
       if (drawer && overlay.opened) overlay.setModal(phone || options.modal === true || root.dataset.modal === "true");
     }, signal);
     trigger?.addEventListener("click", () => open(), { signal });
-    // A close or cancel button belongs to the nearest overlay around it, or to the one its data-cx-close names: a dialog
-    // nested in a drawer closes alone, and the drawer stays open with the focus back inside it.
-    root.addEventListener("click", event => {
-      const button = event.target.closest("[data-cx-close],[data-cx-cancel]");
-      if (button && (button.dataset.cxClose ? button.dataset.cxClose === root.id : button.closest("[data-cx-dialog],[data-cx-drawer],[data-cx-popover]") === root)) overlay.close("cancel");
-    }, { signal });
+    // Close and cancel buttons are resolved once for every overlay (UI_TOOLS.overlay, 20-overlay-stack.js).
     // Typed actions (CanopyDialogAction) raise a cancelable action event; a host that cancels it answers itself. Otherwise an
     // action with a target submits the footer form natively, once, and one without closes the overlay. A nested overlay's
     // actions are its own. The submit event comes only after the form validates, so a refused submission can be tried again.

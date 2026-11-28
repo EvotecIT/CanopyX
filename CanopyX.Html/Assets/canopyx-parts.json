@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "0e38460d3cb9e415",
+      "version": "43337135688f5b4a",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [

@@ -38,6 +38,28 @@
     }
   }
 
+  // Close and cancel buttons: a [data-cx-close] that names an overlay by id closes that overlay, wherever the button is; any
+  // other close or cancel button closes the nearest overlay around it, so a dialog nested in a drawer closes alone. Every
+  // overlay the controller manages registers its element, also one mounted from code without data-cx-* markup, and one
+  // document listener resolves the click.
+  const uiOverlayRoots = new Map();
+  function uiOverlayClick(event) {
+    const button = event.target.closest?.("[data-cx-close],[data-cx-cancel]");
+    if (!button) return;
+    let root = button.dataset.cxClose ? document.getElementById(button.dataset.cxClose) : button;
+    if (!button.dataset.cxClose) while (root && !uiOverlayRoots.has(root)) root = root.parentElement;
+    uiOverlayRoots.get(root)?.close("cancel");
+  }
+  function uiOverlayRegister(element, controller) {
+    if (!uiOverlayRoots.size) document.addEventListener("click", uiOverlayClick);
+    uiOverlayRoots.set(element, controller);
+  }
+  function uiOverlayUnregister(element, controller) {
+    if (uiOverlayRoots.get(element) !== controller) return;
+    uiOverlayRoots.delete(element);
+    if (!uiOverlayRoots.size) document.removeEventListener("click", uiOverlayClick);
+  }
+
   // A portalled descendant still belongs to its trigger's open surface.
   UI_TOOLS.owns = (container, node) => {
     if (container.contains(node)) return true;
@@ -167,9 +189,11 @@
       if (value) element.setAttribute("aria-modal", "true"); else element.removeAttribute("aria-modal");
       if (active && element.contains(active)) active.focus({ preventScroll: true });
     }
-    const destroy = () => { close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
+    const destroy = () => { uiOverlayUnregister(element, controller); close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
     signal?.addEventListener("abort", destroy, { once: true });
     // An open overlay that now shows another record returns focus to that record's control.
     const setReturnFocus = target => { if (opened && target) returnFocus = target; };
-    return { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
+    const controller = { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
+    if (kind !== "tooltip") uiOverlayRegister(element, controller);
+    return controller;
   };

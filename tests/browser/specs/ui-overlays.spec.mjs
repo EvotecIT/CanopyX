@@ -388,20 +388,52 @@ test('dialog structure and focus states pass accessibility checks', async ({ pag
   expect(violations).toEqual([]);
 });
 
-// A dialog nested in a drawer: each way of dismissing the inner dialog closes it alone, the drawer stays open, and the focus
-// returns to the inner dialog's trigger inside the drawer.
-for (const dismiss of ['Close', 'Cancel', 'Escape']) test(`dismissing a dialog nested in a drawer with ${dismiss} leaves the drawer open`, async ({ page }) => {
+// Close and cancel buttons close the nearest overlay around them, or the one a data-cx-close names by id. Each row opens the
+// overlays it names in order, dismisses one way, and checks which stay open and where the focus lands.
+const closablePopover = (id, body = "") => `<button id="${id}-trigger" aria-controls="${id}" aria-haspopup="dialog" aria-expanded="false">Open ${id}</button>
+  <div id="${id}" class="cx-popover" data-cx-popover data-cx-trigger="${id}-trigger" role="dialog" aria-labelledby="${id}-title" popover="manual" hidden>
+    <h2 id="${id}-title">${id} settings</h2>${body}<button data-cx-close aria-label="Close">Close</button><button data-cx-cancel>Cancel</button>
+    <button data-cx-close="${id}">Close by id</button></div>`;
+const DISMISSALS = [
+  { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Cancel on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { in: 'inner', button: 'Cancel' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Escape on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { key: 'Escape' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Close on a popover nested in a drawer', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Close' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'Cancel on a popover nested in a drawer', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Cancel' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'a close that names its popover by id', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Close by id' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'a close that names a sibling drawer by id', open: ['left', 'right'], script: true,
+    markup: overlay('drawer', 'left', '<button data-cx-close="right">Close the right drawer</button>') + overlay('drawer', 'right'),
+    dismiss: { in: 'left', button: 'Close the right drawer' }, closed: ['right'], stays: ['left'] },
+  { name: 'a close in a nested dialog that names the outer drawer', open: ['outer', 'inner'],
+    markup: overlay('drawer', 'outer', overlay('dialog', 'inner', '<button data-cx-close="outer">Close the drawer</button>')),
+    dismiss: { in: 'inner', button: 'Close the drawer' }, closed: ['outer'], stays: [] },
+  { name: 'Cancel on a plain dialog mounted from code', mounted: 'plain', open: [],
+    markup: '<dialog id="plain" aria-labelledby="plain-title"><h2 id="plain-title">plain settings</h2><button data-cx-cancel>Cancel</button></dialog>',
+    dismiss: { in: 'plain', button: 'Cancel' }, closed: ['plain'], stays: [] }
+];
+for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await openUi(page, overlay('drawer', 'outer', overlay('dialog', 'inner')));
-  await page.getByRole('button', { name: 'Open outer' }).click();
-  const drawer = page.getByRole('dialog', { name: 'outer settings' });
-  await expect(drawer).toBeVisible();
-  await drawer.getByRole('button', { name: 'Open inner' }).click();
-  const dialog = page.getByRole('dialog', { name: 'inner settings' });
-  await expect(dialog).toBeVisible();
-  if (dismiss === 'Escape') await page.keyboard.press('Escape');
-  else await dialog.getByRole('button', { name: dismiss, exact: true }).click();
-  await expect(dialog).not.toBeVisible();
-  await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole('button', { name: 'Open inner' })).toBeFocused();
+  await openUi(page, row.markup);
+  const surface = id => page.locator('#' + id);
+  if (row.mounted) await page.evaluate(id => { window.mounted = CanopyX.dialog('#' + id); return window.mounted.ready.then(() => window.mounted.open()); }, row.mounted);
+  // A press outside the top drawer dismisses it as an outside press; the sibling row activates its controls directly.
+  const activate = locator => row.script ? locator.evaluate(element => element.click()) : locator.click();
+  for (const id of row.open) {
+    await activate(page.locator('#' + id + '-trigger'));
+    await expect(surface(id)).toBeVisible();
+  }
+  if (row.mounted) await expect(surface(row.mounted)).toBeVisible();
+  if (row.dismiss.key) await page.keyboard.press(row.dismiss.key);
+  else {
+    await activate(surface(row.dismiss.in).getByRole('button', { name: row.dismiss.button, exact: true }).first());
+  }
+  for (const id of row.closed) await expect(surface(id)).toBeHidden();
+  for (const id of row.stays) await expect(surface(id)).toBeVisible();
+  if (row.focus) await expect(page.locator('#' + row.focus)).toBeFocused();
 });
