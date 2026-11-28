@@ -514,6 +514,41 @@ const DISMISSALS = [
   { name: 'a click event dispatched again in a shadow root after reopening still closes the dialog', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
       cancel.dispatchEvent(click); window.mounted.open(); cancel.dispatchEvent(click);` }, closed: ['shadowed'], stays: [] },
+  { name: 'requestClose() on a drawer reaches its nested dialog in a form whose outside control is named parentNode', open: ['outer', 'inner'],
+    setup: 'document.addEventListener("submit", event => event.preventDefault());',
+    markup: overlay('drawer', 'outer', '<form id="named-form">' + overlay('dialog', 'inner') + '</form>') + '<input form="named-form" name="parentNode" aria-label="Parent">',
+    dismiss: { request: 'outer' }, closed: ['inner'], stays: ['outer'] },
+  { name: 'requestClose() on a drawer reaches its nested dialog in a form whose own control is named parentNode', open: ['outer', 'inner'], scriptOpen: true,
+    setup: 'document.addEventListener("submit", event => event.preventDefault());',
+    // Read from the page: the test runner's own locators walk parentNode and loop on such a form.
+    markup: overlay('drawer', 'outer', '<form><input name="parentNode" aria-label="Parent">' + overlay('dialog', 'inner') + '</form>'),
+    dismiss: { script: 'document.getElementById("outer").requestClose();' }, holds: '!document.getElementById("inner").open && document.getElementById("outer").open' },
+  { name: 'a close slotted into a drawer in a closed shadow root closes that drawer, not a same-id page drawer', open: [],
+    markup: '<div id="dup" class="cx-drawer" role="dialog" aria-label="page drawer" data-side="end"><p>Page drawer</p></div><div id="slot-host"><button data-cx-close="dup">Close slotted</button></div>',
+    setup: `const root = document.getElementById("slot-host").attachShadow({ mode: "closed" });
+      root.innerHTML = '<dialog id="dup" class="cx-drawer" aria-label="shadow drawer" data-side="start"><slot></slot></dialog>';
+      window.page = CanopyX.drawer(document.getElementById("dup")); window.shadowDrawer = CanopyX.drawer(root.getElementById("dup"));
+      return Promise.all([page.ready, shadowDrawer.ready]).then(() => { page.open(); shadowDrawer.open(); });`,
+    dismiss: { button: 'Close slotted' }, staysLabels: ['page drawer'], holds: '!window.shadowDrawer.opened' },
+  { name: 'Cancel on a dialog in a same-origin frame mounted through the page closes it', open: [], markup: '<iframe id="frame" title="Frame"></iframe>',
+    setup: `const frame = document.getElementById("frame").contentDocument;
+      frame.body.innerHTML = '<dialog id="framed" aria-label="framed dialog"><button data-cx-cancel>Cancel</button></dialog>';
+      window.framed = CanopyX.dialog(frame.getElementById("framed")); return framed.ready.then(() => framed.open());`,
+    dismiss: { script: 'document.getElementById("frame").contentDocument.querySelector("[data-cx-cancel]").click();' }, holds: '!window.framed.opened' },
+  { name: 'a press on a close naming a closed drawer outside the open one dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + overlay('drawer', 'other') + '<button data-cx-close="other">Close other</button>',
+    dismiss: { press: 'Close other' }, closed: ['outer'], stays: [] },
+  { name: 'requestClose() on a sibling drawer a popover was moved into leaves the popover to the drawer that opened it',
+    markup: SIBLINGS(closablePopover('pop')), open: ['left', 'right', 'pop'], scriptOpen: true,
+    dismiss: { script: `const right = document.getElementById("right"); if (right.moveBefore) right.moveBefore(document.getElementById("pop"), null); right.requestClose();` },
+    closed: [], stays: ['left', 'right', 'pop'] },
+  { name: 'a cancel event the host vetoes once and dispatches again closes the drawer', open: ['outer'], markup: overlay('drawer', 'outer'), setup: VETO_FIRST,
+    dismiss: { script: `const outer = document.getElementById("outer"), cancel = new Event("cancel", { cancelable: true }); outer.dispatchEvent(cancel); outer.dispatchEvent(cancel);` },
+    closed: ['outer'], stays: [], holds: 'window.cancels === 2' },
+  { name: 'a click event dispatched again in a shadow root after its button moved deeper still closes the dialog', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); window.mounted.open(); const wrap = document.createElement("span"); cancel.before(wrap); wrap.append(cancel); cancel.dispatchEvent(click);` },
+    closed: ['shadowed'], stays: [] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];

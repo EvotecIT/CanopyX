@@ -19,7 +19,8 @@
   function uiOverlayPointer(event) {
     const top = uiTopOverlay();
     // A press on a close or cancel button goes through the click and the cancel path of the overlay it closes.
-    if (!top || uiCloseTarget(event)?.target) return;
+    const target = uiCloseTarget(event)?.target;
+    if (!top || target && uiOverlayRoots.get(target).some(controller => controller.opened)) return;
     const box = top.element.getBoundingClientRect(), backdrop = event.target === top.element && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
     if (!backdrop && top.element.contains(event.target) || top.trigger?.contains(event.target)) return;
     if (top.dismissible) top.close("outside", false);
@@ -45,17 +46,30 @@
   // without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
   // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once.
   // A named close button outside every overlay (a page toolbar's) is handled by one document listener in the capture phase, so
-  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its place on the path, so a
-  // host that destroys the closing overlay from its close event cannot make an outer overlay act later in the same dispatch,
-  // while a click dispatched again starts afresh. Registrations are weak: an overlay removed with its host is not kept alive.
-  // Path entries are read through Element's own methods: a form's named controls shadow its properties.
-  const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakMap(), uiListening = new WeakSet(), uiHandledCancels = new WeakSet();
+  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its overlay's depth (its
+  // distance from the window on the path, the same in every shadow scope), so a host that destroys the closing overlay from its
+  // close event cannot make an outer overlay act later in the same dispatch, while a click dispatched again starts afresh.
+  // Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through the DOM's own accessors,
+  // which work for nodes of any frame and which a form's named controls cannot shadow.
+  const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakMap(), uiListening = new WeakSet(), uiClosedRoots = new WeakMap();
+  const uiGetter = (type, name) => Object.getOwnPropertyDescriptor(type.prototype, name).get;
+  const uiNodeType = uiGetter(Node, "nodeType"), uiParentNode = uiGetter(Node, "parentNode"), uiSlotOf = uiGetter(Element, "assignedSlot");
   const uiAttribute = (node, name) => Element.prototype.getAttribute.call(node, name);
+  const uiIsElement = node => { try { return uiNodeType.call(node) === 1; } catch { return false; } };
+  // A node's parent in the flat tree: its slot (also one in a closed shadow root that holds a registered overlay), else its
+  // parent, else a shadow root's host.
+  const uiSlot = node => {
+    if (!uiIsElement(node)) return node.assignedSlot || null;
+    const slot = uiSlotOf.call(node), parent = uiParentNode.call(node), root = !slot && parent && uiClosedRoots.get(parent);
+    return slot || root && [...root.querySelectorAll("slot")].find(candidate => candidate.assignedNodes().includes(node)) || null;
+  };
+  const uiUp = node => uiSlot(node) || uiParentNode.call(node) || (uiNodeType.call(node) === 11 && node.host) || null;
   /** The close or cancel button an event came from, the innermost overlay around it, and the overlay it closes. */
   function uiCloseTarget(event) {
-    const path = event.composedPath(), at = path.findIndex(node => node instanceof Element && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
-    if (at < 0) return null;
-    const button = path[at], around = path.slice(at).filter(node => uiOverlayRoots.has(node)), nearest = around[0], name = uiAttribute(button, "data-cx-close");
+    const path = event.composedPath(), button = path.find(node => uiIsElement(node) && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
+    if (!button) return null;
+    const around = []; for (let at = button; at; at = uiUp(at)) if (uiOverlayRoots.has(at)) around.push(at);
+    const nearest = around[0], name = uiAttribute(button, "data-cx-close");
     // A name is looked up among the overlays around the button first (two may share an id in separate shadow roots), then in
     // the button's root and the document.
     const named = name && (around.find(node => uiAttribute(node, "id") === name) || Node.prototype.getRootNode.call(button).getElementById?.(name) || document.getElementById(name));
@@ -64,10 +78,13 @@
   function uiCloseClick(event, owner) {
     const found = uiCloseTarget(event);
     if (!found || found.nearest !== owner || !found.target) return;
-    // Within one dispatch, listeners run from the inner overlay outwards; one at or inside the marked place is a new dispatch.
-    const place = owner ? found.path.indexOf(owner) : found.path.length;
-    if (place > uiHandledClicks.get(event)) return;
-    uiHandledClicks.set(event, place);
+    // Within one dispatch, listeners run from the inner overlay outwards; one at or inside the marked depth is a new dispatch.
+    // The document's listener acts only when no overlay is around the button, so it needs no mark.
+    if (owner) {
+      const depth = found.path.length - found.path.indexOf(owner);
+      if (depth < uiHandledClicks.get(event)) return;
+      uiHandledClicks.set(event, depth);
+    }
     // Several controllers can share an element (a drawer and a dialog factory on one root): the open one closes.
     const controllers = uiOverlayRoots.get(found.target);
     (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
@@ -79,6 +96,9 @@
     uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
     // One listener per element, however many controllers share it; it acts only while the element is registered.
     if (!uiListening.has(element)) { uiListening.add(element); element.addEventListener("click", event => uiCloseClick(event, element)); }
+    // A closed shadow root hides its slots; its host is recorded so a button slotted into the overlay is found.
+    const root = element.getRootNode();
+    if (root.host && root.mode === "closed") uiClosedRoots.set(root.host, root);
   }
   function uiOverlayUnregister(element, controller) {
     const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
@@ -88,7 +108,7 @@
   // A portalled descendant still belongs to its trigger's open surface.
   // Containment that crosses shadow boundaries: an overlay mounted inside a shadow root hosted in another still belongs to it.
   // It follows a slotted node's slot, so a dialog projected into a drawer's shadow root belongs to the drawer.
-  const uiDeepContains = (container, node) => { for (let at = node; at; at = at.assignedSlot || at.parentNode || at.host) if (at === container) return true; return false; };
+  const uiDeepContains = (container, node) => { for (let at = node; at; at = uiUp(at)) if (at === container) return true; return false; };
   UI_TOOLS.owns = (container, node) => {
     if (uiDeepContains(container, node)) return true;
     for (const entry of uiOverlayStack) {
@@ -194,14 +214,15 @@
       UI_TOOLS.emit(element, kind, "open", {}); return true;
     }
     // A native cancel (Escape on a dialog, or requestClose()) closes this overlay when it is on top, or the overlay on top when
-    // that one is nested in this one.
+    // this one opened it (the chain recorded when each opened, which the stack's close cascade follows too). Another controller
+    // of the same element leaves it to the one on top, so one cancel is emitted.
     const cancel = event => {
       // Only the dialog's own cancel: one that bubbles from a descendant (a file input's) is not a request to close.
-      // Controllers sharing the element handle one cancel once, so a host's veto holds.
-      if (event.target !== element || uiHandledCancels.has(event)) return;
-      uiHandledCancels.add(event); event.preventDefault();
+      if (event.target !== element) return;
+      event.preventDefault();
       const top = uiTopOverlay();
-      if (top === entry) close("cancel"); else if (top && UI_TOOLS.owns(element, top.element)) top.close("cancel");
+      if (top === entry) close("cancel");
+      else if (top && top.element !== element) for (let owner = top.parent; owner; owner = owner.parent) if (owner === entry) { top.close("cancel"); break; }
     };
     element.addEventListener("cancel", cancel, { signal });
     const nativeClose = event => {
