@@ -38,80 +38,54 @@
     }
   }
 
-  // Close and cancel buttons: a [data-cx-close] that names a registered overlay by id closes that overlay, wherever the button
-  // is; any other close or cancel button (or one whose id names no overlay) closes the nearest overlay around it, so a dialog
-  // nested in a drawer closes alone. Every overlay the controller manages registers its element, also one mounted from code
-  // without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
-  // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once.
-  // A named close button outside every overlay (a page toolbar's) is handled by one document listener in the capture phase, so
-  // a toolbar that stops propagation does not hide it. The handler that acts marks the click, so a host that destroys the
-  // closing overlay from its close event cannot make an outer overlay act later in the same dispatch, while a click dispatched
-  // again starts afresh. Outside presses and native cancel work as before: an outside press dismisses the top
-  // overlay, and a native cancel closes its own overlay only when it is on top. One controller per element is the contract.
-  // Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through the DOM's own accessors,
-  // which work for nodes of any frame and which a form's named controls cannot shadow.
-  const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakMap(), uiListening = new WeakSet(), uiClosedRoots = new WeakMap();
+  // Close and cancel buttons: a close or cancel button inside an overlay closes the nearest overlay around it, so a dialog nested
+  // in a drawer closes alone; a [data-cx-close] that names an overlay by id closes that overlay instead (an id that names no
+  // overlay falls back to the nearest one). Every overlay the controller manages registers its element, also one mounted from
+  // code without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
+  // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once. An
+  // overlay destroyed during the click (a host that removes it from its close event) still counts as the innermost one until
+  // the task ends, so its parent does not act on the same click. Outside presses and native cancel work as before: an outside
+  // press dismisses the top overlay, and a native cancel closes its own overlay only when it is on top. One controller per
+  // element is the contract. Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through
+  // the DOM's own accessors, which work for nodes of any frame and which a form's named controls cannot shadow.
+  const uiOverlayRoots = new WeakMap(), uiListening = new WeakSet(), uiRetired = new WeakSet();
   const uiGetter = (type, name) => Object.getOwnPropertyDescriptor(type.prototype, name).get;
   const uiNodeType = uiGetter(Node, "nodeType"), uiParentNode = uiGetter(Node, "parentNode"), uiSlotOf = uiGetter(Element, "assignedSlot");
   const uiAttribute = (node, name) => Element.prototype.getAttribute.call(node, name);
   const uiIsElement = node => { try { return uiNodeType.call(node) === 1; } catch { return false; } };
-  // A node's parent in the flat tree: its slot (also one in a closed shadow root that holds a registered overlay), else its
-  // parent, else a shadow root's host.
-  const uiSlot = node => {
-    if (!uiIsElement(node)) return node.assignedSlot || null;
-    const slot = uiSlotOf.call(node), parent = uiParentNode.call(node), root = !slot && parent && uiClosedRoots.get(parent);
-    return slot || root && [...root.querySelectorAll("slot")].find(candidate => candidate.assignedNodes().includes(node)) || null;
-  };
-  const uiUp = node => uiSlot(node) || uiParentNode.call(node) || (uiNodeType.call(node) === 11 && node.host) || null;
-  /** The close or cancel button an event came from, the innermost overlay around it, and the overlay it closes. */
-  // An overlay's own listener reads the overlays around the button from the path it sees, which shows every shadow root between
-  // them; the document, which cannot see into closed shadow roots, walks the flat tree from the button.
-  function uiCloseTarget(event, local) {
+  // A node's parent in the flat tree: its slot, else its parent, else a shadow root's host.
+  const uiUp = node => (uiIsElement(node) ? uiSlotOf.call(node) : node.assignedSlot) || uiParentNode.call(node) || (uiNodeType.call(node) === 11 && node.host) || null;
+  /** The close or cancel button a click came from, the innermost overlay around it on the path its listener sees, and the overlay it closes. */
+  function uiCloseTarget(event) {
     const path = event.composedPath(), at = path.findIndex(node => uiIsElement(node) && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
     if (at < 0) return null;
-    const button = path[at], around = local ? path.slice(at).filter(node => uiOverlayRoots.has(node)) : [];
-    if (!local) for (let node = button; node; node = uiUp(node)) if (uiOverlayRoots.has(node)) around.push(node);
+    const button = path[at], around = path.slice(at).filter(node => uiOverlayRoots.has(node) || uiRetired.has(node));
     const nearest = around[0], name = uiAttribute(button, "data-cx-close");
     // A name is looked up among the overlays around the button first (two may share an id in separate shadow roots), then in
-    // the button's root and the document.
-    // An id that names an element without an overlay in one scope does not hide an overlay of that id in the next.
+    // the button's root and the document. An id that names an element without an overlay in one scope does not hide an overlay
+    // of that id in the next.
     const named = name && [around.find(node => uiAttribute(node, "id") === name), Node.prototype.getRootNode.call(button).getElementById?.(name), document.getElementById(name)]
       .find(node => node && uiOverlayRoots.has(node));
-    return { path, nearest, target: named || nearest };
+    return { nearest, target: named || (uiOverlayRoots.has(nearest) ? nearest : null) };
   }
   function uiCloseClick(event, owner) {
-    const found = uiCloseTarget(event, !!owner);
+    const found = uiCloseTarget(event);
     if (!found || found.nearest !== owner || !found.target) return;
-    // Within one dispatch, listeners run from the inner overlay outwards. The overlay that acts marks the click with itself and
-    // the overlays around it then, so an outer one leaves the click to it even after a host removed it from its close event; the
-    // marked overlay's own listener sees a new dispatch. The document's listener acts only when no overlay is around the button,
-    // so it needs no mark.
-    if (owner) {
-      const marked = uiHandledClicks.get(event);
-      if (marked && marked.owner !== owner && marked.around.has(owner)) return;
-      const around = new Set(); for (let node = uiUp(owner); node; node = uiUp(node)) if (uiOverlayRoots.has(node)) around.add(node);
-      uiHandledClicks.set(event, { owner, around });
-    }
     // One controller per element is the contract; with several, the open one closes.
     const controllers = uiOverlayRoots.get(found.target);
     (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
   }
-  let uiDocumentListening = false;
   function uiOverlayRegister(element, controller) {
-    // The document's capture listener runs first in every dispatch, so it clears the handled mark of a redispatched click.
-    if (!uiDocumentListening) { uiDocumentListening = true; document.addEventListener("click", event => {
-      uiHandledClicks.delete(event); uiCloseClick(event, undefined);
-    }, true); }
+    uiRetired.delete(element);
     uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
     // One click listener per element; it acts only while the element is registered.
     if (!uiListening.has(element)) { uiListening.add(element); element.addEventListener("click", event => uiCloseClick(event, element)); }
-    // A closed shadow root hides its slots; its host is recorded so a button slotted into the overlay is found.
-    const root = Node.prototype.getRootNode.call(element);
-    if (root.host && root.mode === "closed") uiClosedRoots.set(root.host, root);
   }
   function uiOverlayUnregister(element, controller) {
     const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
-    if (controllers.length) uiOverlayRoots.set(element, controllers); else uiOverlayRoots.delete(element);
+    if (controllers.length) { uiOverlayRoots.set(element, controllers); return; }
+    uiOverlayRoots.delete(element);
+    uiRetired.add(element); setTimeout(() => uiRetired.delete(element));
   }
 
   // A portalled descendant still belongs to its trigger's open surface.

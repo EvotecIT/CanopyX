@@ -149,7 +149,9 @@ Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their decla
 
 Dialogs use the native modal dialog. Drawers are non-modal on desktop and become full-height modal sheets when their container narrows below 640 px. `modal: true` also makes a desktop drawer modal. The shared overlay manager handles nested Escape order, modal focus trapping, scroll locking, dismissal and focus return. Anchored overlays flip and shift within the viewport.
 
-A close or cancel button (`data-cx-close`, `data-cx-cancel`) closes the nearest overlay around it, so a dialog or popover nested in a drawer closes alone. A `data-cx-close` that names an overlay by id closes that overlay wherever the button is, also a page toolbar's button; an id that names no overlay falls back to the nearest one. These are outside the contract:
+A close or cancel button (`data-cx-close`, `data-cx-cancel`) inside an overlay closes the nearest overlay around it, so a dialog or popover nested in a drawer closes alone. A `data-cx-close` that names an overlay by id closes that overlay instead, such as the drawer around a nested dialog or a sibling drawer; an id that names no overlay falls back to the nearest one. These are outside the contract:
+
+- **Close buttons outside every overlay.** A page toolbar's `data-cx-close` doesn't close the overlay it names; call the controller's `close()` from the button instead.
 
 - **Presses outside the top overlay.** A press outside the top overlay dismisses it as an outside press, also a press on a button that names another overlay. A close in a lower drawer that names the top drawer therefore closes it without its cancel event, so a host can't veto it. A press inside an overlay that lives in a shadow root reads as outside it.
 - **Native cancel on an overlay that is not on top.** `requestClose()` or a native `cancel` closes its overlay only when it is on top. On a drawer whose nested popover is on top it does nothing; Escape closes the top overlay.
