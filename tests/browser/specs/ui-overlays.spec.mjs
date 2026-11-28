@@ -575,6 +575,18 @@ const DISMISSALS = [
     afterOpen: `const root = document.getElementById("tool-host").attachShadow({ mode: "open" });
       root.innerHTML = '<h2 id="outer">Heading</h2><button data-cx-close="outer">Close from the shadow toolbar</button>';`,
     dismiss: { button: 'Close from the shadow toolbar', enter: true }, closedLabels: ['outer settings'] },
+  { name: 'requestClose() on a drawer whose host vetoes the native cancel keeps its nested popover open', open: ['outer', 'pop'],
+    markup: overlay('drawer', 'outer', closablePopover('pop')),
+    setup: 'document.getElementById("outer").addEventListener("cancel", event => event.preventDefault(), true);',
+    dismiss: { request: 'outer' }, closed: [], stays: ['outer', 'pop'] },
+  { name: 'a pressed close naming the top drawer inside a wrapper that stops the click dismisses it as an outside press',
+    markup: SIBLINGS('<div id="stopper"><button data-cx-close="right">Close the right drawer</button></div>'),
+    setup: 'document.getElementById("stopper").addEventListener("click", event => event.stopPropagation());',
+    open: ['left', 'right'], scriptOpen: true, dismiss: { in: 'left', button: 'Close the right drawer' }, closed: ['right'], stays: ['left'] },
+  { name: 'a press on a toolbar close dragged off while the host shows another record keeps the drawer open', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    setup: 'window.addEventListener("pointerup", () => CanopyX.drawer("#outer").open({}), true);',
+    dismiss: { press: 'Close from the page', dragTo: [4, 890] }, closed: [], stays: ['outer'] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
