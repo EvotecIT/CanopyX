@@ -21,7 +21,7 @@ string fragment = tabs.ToHtmlFragment();
 CanopyHtmlAssets.WriteTo("assets");
 ```
 
-Include the runtime and its base stylesheet once in the page that contains `fragment`. Declarative components mount when the document loads. A host that inserts markup later calls `CanopyX.mountUi(container)` and awaits the returned controllers' `ready` promises.
+Include the runtime and its base stylesheet once in the page that contains `fragment`. Declarative components mount when the document loads. A host that inserts markup later calls `CanopyX.mountUi(container)` and awaits the returned controllers' `ready` promises. Part markup in that insertion registers only where the browser runs its scripts: parsed with the page, or inserted with `Range.createContextualFragment`. Markup set through `innerHTML` never runs them, so the runtime loads the parts from their files beside it, which the host then serves (see [part stylesheets](plugins.md#part-stylesheets)).
 
 The builders encode identities, labels, badges and accessibility references. Properties named `ContentHtml` or `FooterHtml` contain trusted host HTML; encode or sanitize untrusted content before assigning them. Without JavaScript, tab and step panels remain readable with headings. Overlay builders emit their closed content and a separate `ToTriggerHtmlFragment(label)` button.
 

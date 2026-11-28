@@ -15,7 +15,7 @@ public sealed class FilterEditorAssetsTests {
         var size = Gzip(CanopyHtmlAssets.FilterEditorScript) + Gzip(CanopyHtmlAssets.FilterEditorStyle);
         Assert.True(size <= 19968, "The filter editor part is " + size + " bytes gzip; the guard is 19.5 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
-        var fragment = view.ToHtmlFragment(); Assert.Contains("data-canopyx-part=\"filter-editor\"", fragment); Assert.Contains(CanopyHtmlAssets.FilterEditorVersion, fragment);
+        var fragment = view.ToHtmlFragment(); Assert.Contains("<script data-canopyx-part=\"filter-editor\"", fragment); Assert.Contains(CanopyHtmlAssets.FilterEditorVersion, fragment);
     }
     [Fact]
     public void ExternalGridAssets_WriteMatchingCompanionsWithoutChangingReturnedMainPaths() {

@@ -12,7 +12,7 @@ public sealed class FlowPartAssetsTests {
         var flow = new CanopyFlow("evidence", "Evidence").Info("record", "Record");
         Assert.DoesNotContain("data-canopyx-part=\"flow-facts\"", flow.ToHtml());
         flow.Steps[0].Facts.Add(new("SHA-256", new string('a', 64)));
-        Assert.Contains("data-canopyx-part=\"flow-facts\"", flow.ToHtml());
+        Assert.Contains("<script data-canopyx-part=\"flow-facts\"", flow.ToHtml());
     }
 
     [Fact]

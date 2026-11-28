@@ -67,7 +67,7 @@ public sealed class TreeToolsAssetsTests {
         var page = string.Concat(fragments);
         Assert.Single(Regex.Matches(page, "<script data-canopyx-part=\"tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">"));
         Assert.Single(Regex.Matches(page, "<style data-canopyx-part=\"tree-tools\""));
-        Assert.Contains("data-canopyx-part=\"tree-tools\"", fragments[0]);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", fragments[0]);
         Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("data-canopyx-part=\"tree-tools\"", fragment));
         Assert.Equal(new[] { "ui-overlays@" + CanopyHtmlAssets.GetPart("ui-overlays").Version, "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion, "csv-export@" + CanopyHtmlAssets.GetPart("csv-export").Version }, document.EmbeddedParts);
         Assert.Single(Regex.Matches(page, "<script data-canopyx-part=\"ui-overlays\""));
@@ -78,14 +78,14 @@ public sealed class TreeToolsAssetsTests {
         var grid = new CanopyDataGridView("records", "Records");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         var first = grid.ToHtmlFragment(options);
-        Assert.Contains("data-canopyx-part=\"filter-editor\"", first);
+        Assert.Contains("<script data-canopyx-part=\"filter-editor\"", first);
         Assert.DoesNotContain("data-canopyx-part=\"export\"", first);
         Assert.DoesNotContain("data-canopyx-part=", grid.ToHtmlFragment(options));
         var tree = new CanopyTreeView("mixed", "Mixed");
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.DoesNotContain("data-canopyx-part=", tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document, Runtime = CanopyRuntime.DataGrid }));
         // Without a document every inline fragment stands alone.
-        Assert.Contains("data-canopyx-part=\"tree-tools\"", tree.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", tree.ToHtmlFragment());
     }
 
     [Fact]

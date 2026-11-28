@@ -229,3 +229,22 @@ test('print keeps the page order of inline and linked font sources', async ({ pa
   expect(screen[1] - screen[0]).toBeGreaterThan(10);
   expect(paper[1] - paper[0]).toBeGreaterThan(10);
 });
+
+test('print clones a titled inline font stylesheet, so its stylesheet set survives on paper', async ({ page }) => {
+  // A constructed stylesheet has no title, so a titled source keeps the clone path with its title.
+  await page.addInitScript(() => { window.print = () => {
+    window.parent.__titled = { clones: document.querySelectorAll('style[data-font-source][title="Archivo"]').length, sheets: document.adoptedStyleSheets.length };
+  }; });
+  await page.route('http://canopyx.test/**', route => {
+    const file = path.join(examples, 'fonts', new URL(route.request().url()).pathname.slice(1));
+    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const html = path.extname(file) === '.html';
+    return route.fulfill({ contentType: html ? 'text/html' : 'application/octet-stream',
+      body: html ? fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source title="Archivo">') : fs.readFileSync(file) });
+  });
+  await page.goto('http://canopyx.test/inline.html');
+  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
+  // The paper's own rules are still one constructed stylesheet; the font source is a clone with its title.
+  expect(await page.evaluate(() => window.__titled)).toEqual({ clones: 1, sheets: 1 });
+});

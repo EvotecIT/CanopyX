@@ -68,12 +68,13 @@
         "@media screen and (min-width:1200px){.cx-print-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
-      // Inline font stylesheets are copied into constructed stylesheets with the same media when every font source is inline
-      // and imports nothing, which a constructed stylesheet would drop. Otherwise every source is inserted again in page order,
+      // Inline font stylesheets are copied into constructed stylesheets with the same media when every font source is inline,
+      // untitled and imports nothing, which a constructed stylesheet would drop. Otherwise every source is inserted again in page order,
       // each with its own nonce, since constructed stylesheets would win over the linked ones and reverse their precedence.
       const ruleList = source => source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null;
       const imports = rules => rules?.some(rule => rule.constructor.name === "CSSImportRule");
-      const constructFonts = [...fontSources].every(source => { const rules = ruleList(source); return rules && !imports(rules); });
+      // A titled source belongs to a stylesheet set, which a constructed stylesheet cannot keep: then every source is cloned.
+      const constructFonts = [...fontSources].every(source => { const rules = ruleList(source); return rules && !imports(rules) && !source.title; });
       for (const source of fontSources) {
         const rules = ruleList(source);
         if (constructFonts && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;

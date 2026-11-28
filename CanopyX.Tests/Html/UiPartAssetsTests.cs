@@ -91,7 +91,7 @@ public sealed class UiPartAssetsTests {
         foreach (var name in new[] { "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper" }) {
             Assert.DoesNotContain("data-canopyx-part=\"" + name + "\"", fragment);
         }
-        Assert.DoesNotContain("data-canopyx-part=\"ui-\"", tree.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
+        Assert.DoesNotContain("data-canopyx-part=\"ui-", tree.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class UiPartAssetsTests {
         var fragment = flow.ToHtmlFragment();
         Assert.Contains(CanopyHtmlAssets.GetPart("forms").Markup, fragment);
         Assert.Contains(CanopyHtmlAssets.GetPart("flow").Markup, fragment);
-        Assert.DoesNotContain("data-canopyx-part=\"ui-\"", fragment);
+        Assert.DoesNotContain("data-canopyx-part=\"ui-", fragment);
         // The slim flow entry point carries the UI factories and knows the UI parts, so a page with menus, selects or toasts
         // beside its flow needs no data view entry point; a flow that uses none of them embeds none.
         Assert.Contains(CanopyHtmlAssets.GetParts(CanopyRuntime.Flow), part => part.Name == "ui-select");

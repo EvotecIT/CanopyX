@@ -44,10 +44,10 @@ public sealed class EditingPartAssetsTests {
         Assert.DoesNotContain("data-canopyx-part=\"editing\"", grid.ToHtmlFragment());
         grid.Columns[0].Editable = true;
         var fragment = grid.ToHtmlFragment();
-        Assert.Contains("data-canopyx-part=\"editing\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("editing").Version, fragment);
+        Assert.Contains("<script data-canopyx-part=\"editing\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("editing").Version, fragment);
         Assert.Contains("<style data-canopyx-part=\"editing\"", fragment);
-        Assert.Contains("data-canopyx-part=\"filter-editor\"", fragment);
-        Assert.Contains("data-canopyx-part=\"forms\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("forms").Version, fragment);
+        Assert.Contains("<script data-canopyx-part=\"filter-editor\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"forms\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("forms").Version, fragment);
     }
 
     private static long Gzip(string value) {

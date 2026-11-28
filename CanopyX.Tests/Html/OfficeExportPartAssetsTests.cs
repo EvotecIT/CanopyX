@@ -60,12 +60,12 @@ public sealed class OfficeExportPartAssetsTests {
         var grid = new CanopyDataGridView("costs", "Costs"); grid.Columns.Add(new CanopyColumn("name", "Resource"));
         Assert.DoesNotContain("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment());
         grid.ExportFormats = CanopyExportFormats.Office();
-        Assert.Contains("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"office-export\"", grid.ToHtmlFragment());
         Assert.DoesNotContain("data-canopyx-part=\"office-export\"", grid.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
         var tree = new CanopyTreeView("outline", "Outline"); tree.Columns.Add(new CanopyColumn("name", "Resource"));
         Assert.DoesNotContain("data-canopyx-part=\"office-export\"", tree.ToHtmlFragment());
         tree.ExportFormats = CanopyExportFormats.Office();
-        Assert.Contains("data-canopyx-part=\"office-export\"", tree.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"office-export\"", tree.ToHtmlFragment());
     }
 
     private static long Gzip(string script) {

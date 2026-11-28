@@ -218,8 +218,8 @@ public sealed class Wave1ModelRegressionTests {
         grid.Source = CanopyGridSource.Inline();
         grid.Record = new CanopyRecordPanel { Source = CanopyRecordSource.Host() };
         var html = grid.ToHtmlFragment();
-        Assert.Contains("data-canopyx-part=\"record-panel\"", html);
-        Assert.Contains("data-canopyx-part=\"tree-tools\"", html);
+        Assert.Contains("<script data-canopyx-part=\"record-panel\"", html);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", html);
         var tree = new CanopyTreeView("remote", "Remote") { Source = CanopySource.Remote("api/tree?ref={ref}&cursor={cursor}") };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(tree), part => part.Name == "record-panel");

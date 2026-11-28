@@ -107,7 +107,7 @@ public sealed class GridRowActionsTests {
         var view = View();
         view.RowActions.Action(new CanopyRowAction("run", "Run"));
         Assert.Contains(CanopyHtmlAssets.GetRequiredParts(view), item => item.Name == "row-actions");
-        Assert.Contains("data-canopyx-part=\"row-actions\"", view.ToHtml(), StringComparison.Ordinal);
+        Assert.Contains("<script data-canopyx-part=\"row-actions\"", view.ToHtml(), StringComparison.Ordinal);
     }
 
     private static long Gzip(string value) {

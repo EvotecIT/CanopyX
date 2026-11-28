@@ -102,7 +102,7 @@ public sealed class DatasetTests {
         var html = dataset.ToHtmlFragment(options);
         Assert.StartsWith("<div class=\"cx-dataset\" data-cx-dataset=\"orders\" hidden><script type=\"application/json\" class=\"cx-config\">", html);
         Assert.Equal(3, html.Split("<script type=\"application/x-canopyx-rows\">").Length - 1);
-        Assert.Contains("data-canopyx-part=\"data\"", html);
+        Assert.Contains("<script data-canopyx-part=\"data\"", html);
         var config = html.Substring(html.IndexOf("cx-config\">", StringComparison.Ordinal) + 11);
         config = config.Substring(0, config.IndexOf("</script>", StringComparison.Ordinal));
         ProtocolSchema.AssertValid(config, "compact dataset");

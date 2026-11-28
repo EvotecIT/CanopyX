@@ -125,8 +125,8 @@ public sealed class GridFormattingTests {
         formatted.Formatting = new CanopyFormatOptions { Editor = true };
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "csv-export", "formatting", "format-editor" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
         var fragment = formatted.ToHtmlFragment();
-        Assert.Contains("data-canopyx-part=\"formatting\"", fragment);
-        Assert.Contains("data-canopyx-part=\"format-editor\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"formatting\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"format-editor\"", fragment);
         Assert.DoesNotContain("data-canopyx-part=\"format", plain.ToHtmlFragment());
         var legendOnly = View();
         legendOnly.Formatting = new CanopyFormatOptions { Legend = true };

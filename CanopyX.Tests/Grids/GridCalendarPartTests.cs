@@ -134,8 +134,8 @@ public sealed class GridCalendarPartTests {
         var required = CanopyHtmlAssets.GetRequiredParts(view).Select(item => item.Name).ToList();
         foreach (var name in new[] { "calendar", "timeline", "tree-tools" }) Assert.Contains(name, required);
         var fragment = view.ToHtmlFragment();
-        Assert.Contains("data-canopyx-part=\"timeline\"", fragment);
-        Assert.Contains("data-canopyx-part=\"tree-tools\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"timeline\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"tree-tools\"", fragment);
     }
 
     private static CanopyDataGridView Grid() {

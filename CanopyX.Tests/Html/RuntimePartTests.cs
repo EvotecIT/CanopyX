@@ -107,7 +107,7 @@ public sealed class RuntimePartTests {
         var document = new CanopyHtmlDocument();
         var first = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         var second = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
-        Assert.Contains("data-canopyx-part=\"links\"", first);
+        Assert.Contains("<script data-canopyx-part=\"links\"", first);
         Assert.DoesNotContain("data-canopyx-part=", second);
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, document.EmbeddedParts.Select(marker => marker.Substring(0, marker.IndexOf('@'))));
         Assert.Equal(string.Empty, document.EmbedOnce(CanopyHtmlAssets.GetPart("links")));

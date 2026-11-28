@@ -36,7 +36,7 @@ public sealed class ViewModePartAssetsTests {
         Assert.Contains("<style data-canopyx-part=\"highlight\"", fragment);
         Assert.DoesNotContain("data-canopyx-part=\"layouts\"", fragment);
         view.Layout = new CanopyLayoutOptions();
-        Assert.Contains("data-canopyx-part=\"layouts\"", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"layouts\"", view.ToHtmlFragment());
         Assert.DoesNotContain("data-canopyx-part=\"highlight\"", view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 
@@ -46,7 +46,7 @@ public sealed class ViewModePartAssetsTests {
         view.Columns.Add(new CanopyColumn("name", "Article"));
         Assert.DoesNotContain("data-canopyx-part=\"layouts\"", view.ToHtmlFragment());
         view.Layout = new CanopyLayoutOptions();
-        Assert.Contains("data-canopyx-part=\"layouts\"", view.ToHtmlFragment());
+        Assert.Contains("<script data-canopyx-part=\"layouts\"", view.ToHtmlFragment());
         Assert.DoesNotContain("data-canopyx-part=\"highlight\"", view.ToHtmlFragment());
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "layouts" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
     }

@@ -53,7 +53,7 @@ public sealed class FlowHtmlTests {
         var document = new CanopyHtmlDocument();
         var first = FlowSamples.MailServer().ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         var second = FlowSamples.Everything().ToHtmlFragment(new CanopyHtmlOptions { Document = document });
-        Assert.Contains("data-canopyx-part=\"flow\"", first);
+        Assert.Contains("<script data-canopyx-part=\"flow\"", first);
         Assert.DoesNotContain("data-canopyx-part=\"flow\"", second);
     }
 
@@ -68,7 +68,7 @@ public sealed class FlowHtmlTests {
         Assert.Contains("<style nonce=\"n0nce\">", page);
         Assert.Contains("<script nonce=\"n0nce\">", page);
         Assert.Contains("class=\"cx-host cx-flow-host\"", page);
-        Assert.Contains("data-canopyx-part=\"flow\" data-cx-version=", page);
+        Assert.Contains("<script data-canopyx-part=\"flow\" data-cx-version=", page);
     }
 
     [Fact]

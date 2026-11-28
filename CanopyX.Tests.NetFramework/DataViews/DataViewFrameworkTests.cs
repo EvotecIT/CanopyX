@@ -26,7 +26,7 @@ public sealed class DataViewFrameworkTests {
         Assert.Contains("&lt;script&gt;", email);
         Assert.DoesNotContain("<script", email);
         var fragment = view.ToHtmlFragment();
-        Assert.Contains("data-canopyx-part=\"compare\"", fragment);
-        Assert.Contains("data-canopyx-part=\"view-intents\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"compare\"", fragment);
+        Assert.Contains("<script data-canopyx-part=\"view-intents\"", fragment);
     }
 }

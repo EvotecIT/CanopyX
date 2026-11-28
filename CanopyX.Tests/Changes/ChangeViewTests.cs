@@ -193,7 +193,7 @@ public sealed class ChangeViewTests {
     public void Html_WritesFragmentsWithTheChangesPartOnNaturalHeightHosts() {
         foreach (var fragment in new[] { List().ToHtmlFragment(), Propagation().ToHtmlFragment(), CanopyTextDiff.FromTexts("d", "D", "a", "b").ToHtmlFragment() }) {
             Assert.Contains("class=\"cx-host cx-change-host\" data-canopyx-host", fragment);
-            Assert.Contains("data-canopyx-part=\"changes\"", fragment);
+            Assert.Contains("<script data-canopyx-part=\"changes\"", fragment);
             Assert.DoesNotContain("data-canopyx-part=\"matrix\"", fragment);
         }
 
