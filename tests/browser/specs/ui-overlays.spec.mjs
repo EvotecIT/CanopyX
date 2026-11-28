@@ -394,6 +394,15 @@ const closablePopover = (id, body = "") => `<button id="${id}-trigger" aria-cont
   <div id="${id}" class="cx-popover" data-cx-popover data-cx-trigger="${id}-trigger" role="dialog" aria-labelledby="${id}-title" popover="manual" hidden>
     <h2 id="${id}-title">${id} settings</h2>${body}<button data-cx-close aria-label="Close">Close</button><button data-cx-cancel>Cancel</button>
     <button data-cx-close="${id}">Close by id</button></div>`;
+// Two drawers on opposite sides, so the top one does not cover the lower one's buttons.
+const SIBLINGS = (left = '', right = '') => overlay('drawer', 'left', left).replace('data-side="end"', 'data-side="start"') + overlay('drawer', 'right', right);
+const SHADOW = `const host = document.getElementById("shadow-host"), root = host.attachShadow({ mode: "open" });
+  root.innerHTML = '<dialog id="shadowed" aria-labelledby="shadowed-title"><h2 id="shadowed-title">shadowed settings</h2><button data-cx-cancel>Cancel</button></dialog>';
+  window.mounted = CanopyX.dialog(root.getElementById("shadowed")); return window.mounted.ready.then(() => window.mounted.open());`;
+// Rows: markup, setup (page script run first), open (overlays opened by their triggers in order; scriptOpen activates the
+// triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
+// the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
+// requestClose() on an overlay), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -407,31 +416,49 @@ const DISMISSALS = [
     dismiss: { in: 'pop', button: 'Cancel' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
   { name: 'a close that names its popover by id', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
     dismiss: { in: 'pop', button: 'Close by id' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
-  { name: 'a close that names a sibling drawer by id', open: ['left', 'right'], script: true,
-    markup: overlay('drawer', 'left', '<button data-cx-close="right">Close the right drawer</button>') + overlay('drawer', 'right'),
-    dismiss: { in: 'left', button: 'Close the right drawer' }, closed: ['right'], stays: ['left'] },
+  { name: 'requestClose() on a drawer whose nested popover is on top', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { request: 'outer' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
   { name: 'a close in a nested dialog that names the outer drawer', open: ['outer', 'inner'],
     markup: overlay('drawer', 'outer', overlay('dialog', 'inner', '<button data-cx-close="outer">Close the drawer</button>')),
     dismiss: { in: 'inner', button: 'Close the drawer' }, closed: ['outer'], stays: [] },
+  { name: 'a close whose id names no overlay closes the nearest one', markup: overlay('drawer', 'outer', '<button data-cx-close="nowhere">Close missing</button>'),
+    open: ['outer'], dismiss: { in: 'outer', button: 'Close missing' }, closed: ['outer'], stays: [] },
+  { name: 'a close whose id names a plain element closes the nearest one', open: ['outer'],
+    markup: overlay('drawer', 'outer', '<p id="note">A note.</p><button data-cx-close="note">Close note</button>'),
+    dismiss: { in: 'outer', button: 'Close note' }, closed: ['outer'], stays: [] },
+  { name: 'Cancel inside a host wrapper that stops click propagation', markup: '<div id="wrap">' + overlay('drawer', 'outer') + '</div>',
+    setup: 'document.getElementById("wrap").addEventListener("click", event => event.stopPropagation());',
+    open: ['outer'], dismiss: { in: 'outer', button: 'Cancel' }, closed: ['outer'], stays: [] },
+  { name: 'a pressed close in the lower drawer that names the top one', markup: SIBLINGS('<button data-cx-close="right">Close the right drawer</button>'),
+    open: ['left', 'right'], scriptOpen: true, dismiss: { in: 'left', button: 'Close the right drawer' }, closed: ['right'], stays: ['left'] },
+  { name: 'a pressed Close in the lower drawer closes it and keeps the top one', markup: SIBLINGS(), open: ['left', 'right'], scriptOpen: true,
+    dismiss: { in: 'left', button: 'Close' }, closed: ['left'], stays: ['right'] },
+  { name: 'a pressed close naming the top drawer honours its cancel veto', markup: SIBLINGS('<button data-cx-close="right">Close the right drawer</button>'),
+    setup: 'document.getElementById("right").addEventListener("cx-drawer:cancel", event => event.preventDefault());',
+    open: ['left', 'right'], scriptOpen: true, dismiss: { in: 'left', button: 'Close the right drawer' }, closed: [], stays: ['left', 'right'] },
   { name: 'Cancel on a plain dialog mounted from code', mounted: 'plain', open: [],
     markup: '<dialog id="plain" aria-labelledby="plain-title"><h2 id="plain-title">plain settings</h2><button data-cx-cancel>Cancel</button></dialog>',
-    dismiss: { in: 'plain', button: 'Cancel' }, closed: ['plain'], stays: [] }
+    dismiss: { in: 'plain', button: 'Cancel' }, closed: ['plain'], stays: [] },
+  { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
 for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openUi(page, row.markup);
   const surface = id => page.locator('#' + id);
+  if (row.setup) await page.evaluate(script => new Function(script)(), row.setup);
   if (row.mounted) await page.evaluate(id => { window.mounted = CanopyX.dialog('#' + id); return window.mounted.ready.then(() => window.mounted.open()); }, row.mounted);
-  // A press outside the top drawer dismisses it as an outside press; the sibling row activates its controls directly.
-  const activate = locator => row.script ? locator.evaluate(element => element.click()) : locator.click();
   for (const id of row.open) {
-    await activate(page.locator('#' + id + '-trigger'));
+    const trigger = page.locator('#' + id + '-trigger');
+    if (row.scriptOpen) await trigger.evaluate(element => element.click()); else await trigger.click();
     await expect(surface(id)).toBeVisible();
   }
-  if (row.mounted) await expect(surface(row.mounted)).toBeVisible();
-  if (row.dismiss.key) await page.keyboard.press(row.dismiss.key);
+  const { dismiss } = row;
+  if (dismiss.key) await page.keyboard.press(dismiss.key);
+  else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
   else {
-    await activate(surface(row.dismiss.in).getByRole('button', { name: row.dismiss.button, exact: true }).first());
+    const button = surface(dismiss.in).getByRole('button', { name: dismiss.button, exact: true }).first();
+    if (dismiss.enter) { await button.focus(); await page.keyboard.press('Enter'); } else await button.click();
   }
   for (const id of row.closed) await expect(surface(id)).toBeHidden();
   for (const id of row.stays) await expect(surface(id)).toBeVisible();
