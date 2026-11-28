@@ -470,6 +470,27 @@ const DISMISSALS = [
       return Promise.all([drawer.ready, inner.ready]).then(() => { drawer.open(); inner.open(); });`,
     dismiss: { script: 'document.getElementById("slot-host").shadowRoot.getElementById("shadow-drawer").requestClose();' },
     closed: ['slotted'], stays: ['shadow-drawer'] },
+  { name: 'Close on a drawer also closes its popover triggered from a shadow root inside it', open: ['outer'],
+    markup: overlay('drawer', 'outer', '<div id="trigger-host"></div><div id="shadow-pop" class="cx-popover" role="dialog" aria-label="Shadow popover" hidden><p>Popover</p></div>'),
+    afterOpen: `const root = document.getElementById("trigger-host").attachShadow({ mode: "open" }); root.innerHTML = '<button>Open shadow popover</button>';
+      window.pop = CanopyX.popover(document.getElementById("shadow-pop"), { trigger: root.querySelector("button") });
+      return window.pop.ready.then(() => window.pop.open());`, opened: 'shadow-pop',
+    dismiss: { in: 'outer', button: 'Close' }, closed: ['outer', 'shadow-pop'], stays: [] },
+  { name: 'a self-named close in one of two same-id drawers from separate shadow roots closes its own drawer', open: [],
+    markup: '<div id="first-host"></div><div id="second-host"></div>',
+    setup: `const drawers = ["first", "second"].map(name => {
+        const root = document.getElementById(name + "-host").attachShadow({ mode: "open" });
+        root.innerHTML = '<div id="dup" class="cx-drawer" role="dialog" aria-label="' + name + ' drawer" data-side="' + (name === "first" ? "start" : "end") + '"><button data-cx-close="dup">Close ' + name + '</button></div>';
+        return CanopyX.drawer(root.getElementById("dup"));
+      });
+      return Promise.all(drawers.map(drawer => drawer.ready)).then(() => drawers.forEach(drawer => drawer.open()));`,
+    dismiss: { button: 'Close second' }, closedLabels: ['second drawer'], staysLabels: ['first drawer'] },
+  { name: 'Cancel on a drawer whose element also has a dialog controller closes the drawer', open: ['outer'], markup: overlay('drawer', 'outer'),
+    setup: 'window.second = CanopyX.dialog(document.getElementById("outer")); return window.second.ready;',
+    dismiss: { in: 'outer', button: 'Cancel' }, closed: ['outer'], stays: [] },
+  { name: 'a click event dispatched again after reopening still closes the drawer', open: ['outer'], markup: overlay('drawer', 'outer'),
+    dismiss: { script: `const cancel = document.querySelector("#outer [data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); document.getElementById("outer-trigger").click(); cancel.dispatchEvent(click);` }, closed: ['outer'], stays: [] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
@@ -485,7 +506,7 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
     if (row.scriptOpen) await trigger.evaluate(element => element.click()); else await trigger.click();
     await expect(surface(id)).toBeVisible();
   }
-  if (row.afterOpen) { await page.evaluate(script => new Function(script)(), row.afterOpen); await expect(page.locator('#shadowed')).toBeVisible(); }
+  if (row.afterOpen) { await page.evaluate(script => new Function(script)(), row.afterOpen); await expect(page.locator('#' + (row.opened || 'shadowed'))).toBeVisible(); }
   const { dismiss } = row;
   if (dismiss.key) await page.keyboard.press(dismiss.key);
   else if (dismiss.script) await page.evaluate(script => new Function(script)(), dismiss.script);
@@ -499,7 +520,9 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
     const button = (dismiss.in ? surface(dismiss.in) : page).getByRole('button', { name: dismiss.button, exact: true }).first();
     if (dismiss.enter) { await button.focus(); await page.keyboard.press('Enter'); } else await button.click();
   }
-  for (const id of row.closed) await expect(surface(id)).toBeHidden();
-  for (const id of row.stays) await expect(surface(id)).toBeVisible();
+  for (const id of row.closed || []) await expect(surface(id)).toBeHidden();
+  for (const id of row.stays || []) await expect(surface(id)).toBeVisible();
+  for (const label of row.closedLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeHidden();
+  for (const label of row.staysLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeVisible();
   if (row.focus) await expect(page.locator('#' + row.focus)).toBeFocused();
 });

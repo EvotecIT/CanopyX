@@ -53,8 +53,9 @@
   function uiCloseTarget(event) {
     const path = event.composedPath(), at = path.findIndex(node => node.matches?.(":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
     if (at < 0) return null;
-    const button = path[at], nearest = path.slice(at).find(node => uiOverlayRoots.has(node));
-    const named = button.dataset.cxClose && (button.getRootNode().getElementById?.(button.dataset.cxClose) || document.getElementById(button.dataset.cxClose));
+    const button = path[at], nearest = path.slice(at).find(node => uiOverlayRoots.has(node)), name = button.dataset.cxClose;
+    // A name is looked up from the nearest overlay outwards: two overlays may share an id in separate shadow roots.
+    const named = name && (nearest?.id === name ? nearest : button.getRootNode().getElementById?.(name) || document.getElementById(name));
     return { nearest, target: uiOverlayRoots.has(named) ? named : nearest };
   }
   function uiCloseClick(event, owner) {
@@ -62,15 +63,21 @@
     const found = uiCloseTarget(event);
     if (!found || found.nearest !== owner || !found.target) return;
     uiHandledClicks.add(event);
-    uiOverlayRoots.get(found.target).close("cancel");
+    // Several controllers can share an element (a drawer and a dialog factory on one root): the open one closes.
+    const controllers = uiOverlayRoots.get(found.target);
+    (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
   }
   let uiDocumentListening = false;
   function uiOverlayRegister(element, controller, signal) {
-    if (!uiDocumentListening) { uiDocumentListening = true; document.addEventListener("click", event => uiCloseClick(event, undefined), true); }
-    uiOverlayRoots.set(element, controller);
+    // The document's capture listener runs first in every dispatch, so it clears the handled mark of a redispatched click.
+    if (!uiDocumentListening) { uiDocumentListening = true; document.addEventListener("click", event => { uiHandledClicks.delete(event); uiCloseClick(event, undefined); }, true); }
+    uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
     element.addEventListener("click", event => uiCloseClick(event, element), { signal });
   }
-  function uiOverlayUnregister(element, controller) { if (uiOverlayRoots.get(element) === controller) uiOverlayRoots.delete(element); }
+  function uiOverlayUnregister(element, controller) {
+    const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
+    if (controllers.length) uiOverlayRoots.set(element, controllers); else uiOverlayRoots.delete(element);
+  }
 
   // A portalled descendant still belongs to its trigger's open surface.
   // Containment that crosses shadow boundaries: an overlay mounted inside a shadow root hosted in another still belongs to it.
@@ -133,7 +140,7 @@
       const trigger = triggerOf(), host = options.host || trigger || originalParent || element;
       // Capture the open context before moving the surface. Focus alone does not make a sibling a child.
       entry.parent = uiOverlayStack.slice().reverse().find(owner => uiDeepContains(owner.element, element) ||
-        trigger && owner.element.contains(trigger)) || null;
+        trigger && uiDeepContains(owner.element, trigger)) || null;
       returnFocus = settings.returnFocus || trigger || document.activeElement;
       modal = settings.modal ?? options.modal ?? false;
       const position = () => UI_TOOLS.position(element, trigger, options.placement || element.dataset.placement, settings.point);
