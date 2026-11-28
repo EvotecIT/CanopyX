@@ -181,19 +181,22 @@ test('an inline font stylesheet that imports the faces prints with them', async 
   await expect(page.locator('iframe')).toHaveCount(0);
 });
 
-test('an inline font stylesheet whose only import never applies prints even when the print frame cannot load it', async ({ page }) => {
-  // The import has media "not all"; the page loads it, the print frame's request answers 404, and the inline faces still print.
+// An import with media "not all" that the page loads and the print frame's request answers with 404, alone or after one that
+// applies and loads: the inline faces still print.
+for (const [imports, label] of [['', 'whose only import never applies'], ['@import url("extra-faces.css");', 'with a loading import and one that never applies']])
+test(`an inline font stylesheet ${label} prints even when the print frame cannot load the inactive one`, async ({ page }) => {
   await page.addInitScript(() => { window.print = () => {
     window.parent.__printedFonts = [...document.fonts].filter(face => face.status === 'loaded').map(face => face.family.replaceAll('"', ''));
   }; });
   let imported = 0;
   await page.route('http://canopyx.test/**', route => {
     const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
+    if (relative === 'extra-faces.css') return route.fulfill({ contentType: 'text/css', body: '' });
     if (relative === 'missing-faces.css') return imported++ ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
     if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
     if (path.extname(file) !== '.html') return route.fulfill({ contentType: 'application/octet-stream', body: fs.readFileSync(file) });
     // Under a nonce policy, as a strict page serves it.
-    const html = fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source>@import url("missing-faces.css") not all;')
+    const html = fs.readFileSync(file, 'utf8').replace('<style data-font-source>', '<style data-font-source>' + imports + '@import url("missing-faces.css") not all;')
       .replace(/<(script|style)(?=[\s>])/g, '<$1 nonce="print-nonce"');
     return route.fulfill({ contentType: 'text/html', body: html,
       headers: { 'content-security-policy': "default-src 'self'; script-src 'self' 'nonce-print-nonce'; style-src 'self' 'nonce-print-nonce'; font-src 'self' data:" } });

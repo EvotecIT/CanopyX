@@ -88,8 +88,8 @@
     "output": "5e5cf23f4ff3899a"
   },
   "CanopyX.Html/Assets/canopyx-export.js": {
-    "input": "499b9b9c9fb4527f",
-    "output": "7fbded83c84f0193"
+    "input": "c5cc63f91758b7cb",
+    "output": "258930898329f0dd"
   },
   "CanopyX.Html/Assets/canopyx-facets.js": {
     "input": "9ac9baa40a124418",
@@ -184,16 +184,16 @@
     "output": "16cf95b707e2dd7c"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "c90860b9228f5277",
-    "output": "79e6ceb232dbf5d2"
+    "input": "145bc82fcd950e82",
+    "output": "c39111d0cdbfc388"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "6dfea751cfa29191",
     "output": "616f154d1e67d816"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "2408f9970cb1ea20",
-    "output": "ec1f66c674a4ac4d"
+    "input": "fcb56b9d1603e0b4",
+    "output": "703d266846810d2d"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "e23b574f8ff8e034",
@@ -208,8 +208,8 @@
     "output": "3623721b117cd87c"
   },
   "CanopyX.Html/Assets/canopyx-interactive.js": {
-    "input": "0d81ce1e4b9a43c3",
-    "output": "325dafb52af39942"
+    "input": "d0da7d8acb2b2019",
+    "output": "c613875d93935aeb"
   },
   "CanopyX.Html/Assets/canopyx-layouts.js": {
     "input": "c485cc09f22073ae",
@@ -236,8 +236,8 @@
     "output": "8a35b53b4ba53b1a"
   },
   "CanopyX.Html/Assets/canopyx-module.mjs": {
-    "input": "67f4497d10b11ff8",
-    "output": "573d060fdded1896"
+    "input": "207cac2bdc087db0",
+    "output": "d39adf9ff6f6c02c"
   },
   "CanopyX.Html/Assets/canopyx-office-export.js": {
     "input": "51bd188afc015f4d",
@@ -268,12 +268,12 @@
     "output": "a16a13e10a5f5c80"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "b3a92712d993ff8e",
-    "output": "b89e3748b419bccf"
+    "input": "69197aa46d59b938",
+    "output": "a06f019b4dd1fe4b"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "e5320bb75a75844f",
-    "output": "cb7ea499994743fd"
+    "input": "042fb45f88514a6e",
+    "output": "c131d818f0e3c74a"
   },
   "CanopyX.Html/Assets/canopyx-rich-cells.js": {
     "input": "1d91f1da18c7aa86",
@@ -380,7 +380,7 @@
     "output": "0dca396c7b7002b1"
   },
   "CanopyX.Html/Assets/canopyx.js": {
-    "input": "45256e5643cb522a",
-    "output": "fe22cadf17c52417"
+    "input": "edf71e7ec816dbfb",
+    "output": "a7b34482a12dd5e1"
   }
 }
