@@ -50,10 +50,11 @@ const hashPolicy = html => {
 // pending link, then mounts the next id: both get the replacement; ["host-link"] adds a host's marked stylesheet;
 // ["mount-host-takes-over", id] adds one while the runtime's link is held and mounts again; ["mount-host-rescues", id] adds one
 // while the only mount waits; ["host-print"] gives the host's marked stylesheet media="print"; ["host-off"] gives the host's
-// marked style media="not all". Disabling the runtime's own stylesheet or changing its media is outside the contract.
+// marked style media="not all"; ["host-cssom-off"] sets it through the CSSOM; ["host-style", name] adds a host's marked style
+// with the tabs rules. Disabling the runtime's own stylesheet or changing its media is outside the contract.
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
-const TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
+const TABS_CSS = asset(part("ui-tabs").style), TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
 const ROWS = [
   { transition: "register: the runtime applies one copy of the template", page: TABS, steps: [["mount", "a"]], ...PAGE },
   { transition: "the element that carried the template is removed", page: `<section id="carrier">${TABS}</section>`,
@@ -129,6 +130,13 @@ const ROWS = [
   { transition: "a host's stylesheet takes over after the fragment is gone, then stops applying: the runtime's copy returns", cssMissing: true,
     page: `<section id="carrier">${TABS}</section>`,
     steps: [["mount", "a"], ["remove-element", "#carrier"], ["host-link"], ["mount", "b"], ["host-print"], ["mount", "c"]], styles: 1, links: 1, files: true },
+  { transition: "a host replaces its marked stylesheet, then removes the replacement: the runtime's copy returns, not the first host's", cssMissing: true,
+    page: `<section id="carrier">${TABS}</section>`,
+    steps: [["mount", "a"], ["remove-element", "#carrier"], ["host-style", "first", TABS_CSS], ["mount", "b"], ["host-style", "second", TABS_CSS], ["remove-element", "#host-first"],
+      ["mount", "c"], ["remove-element", "#host-second"], ["mount", "d"]], styles: 1, links: 0, files: false },
+  { transition: "a host's marked style whose CSSOM media stops matching yields to the runtime's copy",
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${asset(part("ui-tabs").style)}</style>${TABS}`,
+    steps: [["mount", "a"], ["host-cssom-off"], ["mount", "b"]], styles: 2, links: 0, files: false },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -226,7 +234,11 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
-      else if (step === "host-off") document.getElementById("host-style").media = "not all";
+      else if (step === "host-cssom-off") document.getElementById("host-style").sheet.media.mediaText = "not all";
+      else if (step === "host-style") {
+        const style = document.createElement("style"); style.id = "host-" + value; style.textContent = key;
+        Object.assign(style.dataset, { canopyxPart: "ui-tabs", cxVersion: document.querySelector("script[data-canopyx-part=ui-tabs]")?.dataset.cxVersion }); document.head.append(style);
+      } else if (step === "host-off") document.getElementById("host-style").media = "not all";
       else if (step === "host-print") document.querySelector('link[data-canopyx-part="ui-tabs"]:not([data-canopyx-owned])').media = "print";
       else if (step === "head-reparse") document.head.innerHTML = document.head.innerHTML;
       else if (step === "take-link") { kept[value] = document.querySelector('link[data-canopyx-part="ui-tabs"]'); kept[value].remove(); }

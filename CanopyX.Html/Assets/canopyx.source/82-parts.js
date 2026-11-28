@@ -41,8 +41,8 @@
   // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
   // A clone a host's stylesheet took over waits in SPARE_SHEETS, so it applies again if the host's stops and no template is left.
   const PART_SHEETS = new Map(), SPARE_SHEETS = new Map();
-  // A host stylesheet counts while it is enabled and its media matches.
-  const live = element => element.sheet && !element.sheet.disabled && (!element.media || matchMedia(element.media).matches);
+  // A host stylesheet counts while it is enabled and its media (its CSSOM list, which can change without the attribute) matches.
+  const live = element => element.sheet && !element.sheet.disabled && (!element.sheet.media.mediaText || matchMedia(element.sheet.media.mediaText).matches);
   // The runtime's own copy applies while it is in the document; disabling it or changing its media is outside the contract.
   const applies = owned => owned.element.getRootNode() === document && (owned.abandon || (owned.host ? live(owned.element) : owned.element.sheet));
   function partSheet(part, fallback) {
@@ -57,7 +57,7 @@
     // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
     if (owned && (!applies(owned) || host && owned.element !== host)) {
       owned.abandon?.(again());
-      if (host && owned.element.localName === "style") SPARE_SHEETS.set(part.name, owned.element);
+      if (host && !owned.host && owned.element.localName === "style") SPARE_SHEETS.set(part.name, owned.element);
       if (!owned.host) owned.element.remove();
       PART_SHEETS.delete(part.name); owned = undefined;
     }
