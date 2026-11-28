@@ -407,7 +407,7 @@ const VETO_FIRST = `window.second = CanopyX.dialog(document.getElementById("oute
 // triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
 // the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
 // requestClose() on an overlay, { script } runs a page script, { press } presses and releases the pointer on a button without
-// relying on its click, or on another role's element; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true).
+// relying on its click, or on another role's element (mouse names the button; dragTo moves away before the release); without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -549,6 +549,32 @@ const DISMISSALS = [
     dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
       cancel.dispatchEvent(click); window.mounted.open(); const wrap = document.createElement("span"); cancel.before(wrap); wrap.append(cancel); cancel.dispatchEvent(click);` },
     closed: ['shadowed'], stays: [] },
+  { name: 'a form-backed drawer with a field named getRootNode mounts and Cancel closes it', open: [],
+    // Driven from the page: the test runner's own locators call getRootNode and would read the field.
+    markup: '<form id="fd" class="cx-drawer" role="dialog" aria-label="form drawer" data-side="end" hidden><input name="getRootNode" aria-label="Root"><button type="button" data-cx-cancel>Cancel</button></form>',
+    setup: 'window.fd = CanopyX.drawer(document.getElementById("fd")); return fd.ready.then(() => fd.open());',
+    dismiss: { script: 'document.querySelector("#fd [data-cx-cancel]").click();' }, holds: 'window.fd && !window.fd.opened' },
+  { name: 'requestClose() on a parent open through two controllers closes only its nested dialog, with one cancel', open: [],
+    markup: overlay('dialog', 'outer', overlay('dialog', 'inner')),
+    setup: `window.cancels = 0; for (const type of ["cx-drawer:cancel", "cx-dialog:cancel"]) document.addEventListener(type, () => window.cancels++, true);
+      const outer = document.getElementById("outer"); window.first = CanopyX.dialog(outer); window.second = CanopyX.drawer(outer, { modal: true }); window.inner = CanopyX.dialog("#inner");
+      return Promise.all([first.ready, second.ready, inner.ready]).then(() => { first.open(); second.open(); inner.open(); });`,
+    dismiss: { request: 'outer' }, closed: ['inner'], stays: ['outer'], holds: 'window.cancels === 1' },
+  { name: 'a right press on a toolbar close naming the open drawer dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    dismiss: { press: 'Close from the page', mouse: 'right' }, closed: ['outer'], stays: [] },
+  { name: 'a press on a toolbar close naming the open drawer, dragged off before release, dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<button data-cx-close="outer">Close from the page</button>',
+    dismiss: { press: 'Close from the page', dragTo: [4, 890] }, closed: ['outer'], stays: [] },
+  { name: 'a click event dispatched again in a shadow root after its dialog moved out of a wrapper still closes it', markup: '<div id="shadow-host"></div>', open: [],
+    setup: SHADOW.replace("root.innerHTML = '<dialog", "root.innerHTML = '<div><dialog").replace("</dialog>';", "</dialog></div>';"),
+    dismiss: { script: `const root = document.getElementById("shadow-host").shadowRoot, cancel = root.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); root.append(root.getElementById("shadowed")); window.mounted.open(); cancel.dispatchEvent(click);` }, closed: ['shadowed'], stays: [] },
+  { name: 'Enter on a named close in a shadow toolbar whose root has a same-id heading closes the page drawer', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<div id="tool-host"></div>', opened: 'outer-title',
+    afterOpen: `const root = document.getElementById("tool-host").attachShadow({ mode: "open" });
+      root.innerHTML = '<h2 id="outer">Heading</h2><button data-cx-close="outer">Close from the shadow toolbar</button>';`,
+    dismiss: { button: 'Close from the shadow toolbar', enter: true }, closedLabels: ['outer settings'] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
@@ -570,8 +596,10 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
   else if (dismiss.script) await page.evaluate(script => new Function(script)(), dismiss.script);
   else if (dismiss.press) {
     // A real press without a click: the disabled button produces no activation.
-    const box = await page.getByRole(dismiss.role || 'button', { name: dismiss.press, exact: true }).boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.up();
+    const box = await page.getByRole(dismiss.role || 'button', { name: dismiss.press, exact: true }).boundingBox(), button = dismiss.mouse || 'left';
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down({ button });
+    if (dismiss.dragTo) await page.mouse.move(...dismiss.dragTo, { steps: 4 });
+    await page.mouse.up({ button });
   }
   else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
   else {
