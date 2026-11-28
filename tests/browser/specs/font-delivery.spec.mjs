@@ -156,35 +156,12 @@ test('late font loading refreshes column fitting without a manual resize', async
   expect(await widths()).toEqual(automatic);
 });
 
-test('an inline font stylesheet that imports the faces prints with them', async ({ page }) => {
-  // A constructed stylesheet drops @import, so the print frame inserts this one again and waits for what it imports.
-  await page.addInitScript(() => { window.print = () => {
-    window.parent.__importedFonts = [...document.fonts].map(face => ({ family: face.family.replaceAll('"', ''), status: face.status }));
-  }; });
-  await page.route('http://canopyx.test/**', async route => {
-    const relative = new URL(route.request().url()).pathname.slice(1);
-    const file = path.join(examples, 'fonts', relative);
-    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
-    const type = path.extname(file) === '.woff2' ? 'font/woff2' : path.extname(file) === '.css' ? 'text/css' : path.extname(file) === '.js' ? 'text/javascript' : 'text/html';
-    const body = type === 'text/html' ? fs.readFileSync(file, 'utf8').replace(/<link data-font-source rel="stylesheet" href="([^"]+)">/,
-      '<style data-font-source>@import url("$1");</style>') : fs.readFileSync(file);
-    return route.fulfill({ contentType: type, body });
-  });
-  await page.goto('http://canopyx.test/plain.html');
-  await page.evaluate(async () => { await document.querySelector('[data-canopyx-host]').canopyx.ready; await document.fonts.ready; });
-  expect(await page.locator('head style[data-font-source]').count()).toBe(1);
-  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'all' }));
-  // Both imported faces reach the paper; the body text's face has loaded before it prints.
-  const faces = await page.evaluate(() => window.__importedFonts);
-  expect(faces.map(face => face.family).sort()).toEqual(['Archivo', 'JetBrains Mono']);
-  expect(faces).toContainEqual({ family: 'Archivo', status: 'loaded' });
-  await expect(page.locator('iframe')).toHaveCount(0);
-});
-
-// An import with media "not all" that the page loads and the print frame's request answers with 404, alone or after one that
-// applies and loads: the inline faces still print.
+// The print copy does not wait for an inline font stylesheet's imports (docs/plugins.md#part-stylesheets). An import with media
+// "not all" that the page loads, whose print frame request answers 404 or never answers, alone or after one that applies and
+// loads: the inline faces still print.
 for (const [imports, label] of [['', 'whose only import never applies'], ['@import url("extra-faces.css");', 'with a loading import and one that never applies']])
-test(`an inline font stylesheet ${label} prints even when the print frame cannot load the inactive one`, async ({ page }) => {
+for (const outcome of ['fails', 'hangs'])
+test(`an inline font stylesheet ${label} prints when the print frame's request for the inactive one ${outcome}`, async ({ page }) => {
   await page.addInitScript(() => { window.print = () => {
     window.parent.__printedFonts = [...document.fonts].filter(face => face.status === 'loaded').map(face => face.family.replaceAll('"', ''));
   }; });
@@ -192,7 +169,7 @@ test(`an inline font stylesheet ${label} prints even when the print frame cannot
   await page.route('http://canopyx.test/**', route => {
     const relative = new URL(route.request().url()).pathname.slice(1), file = path.join(examples, 'fonts', relative);
     if (relative === 'extra-faces.css') return route.fulfill({ contentType: 'text/css', body: '' });
-    if (relative === 'missing-faces.css') return imported++ ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
+    if (relative === 'missing-faces.css') return !imported++ ? route.fulfill({ contentType: 'text/css', body: '' }) : outcome === 'fails' ? route.fulfill({ status: 404, contentType: 'text/css', body: '' }) : undefined;
     if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
     if (path.extname(file) !== '.html') return route.fulfill({ contentType: 'application/octet-stream', body: fs.readFileSync(file) });
     // Under a nonce policy, as a strict page serves it.

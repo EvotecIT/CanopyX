@@ -34,67 +34,42 @@
     }
   }
   // Part stylesheets (docs/plugins.md#part-stylesheets). The page's <style data-canopyx-part media="not all"
-  // data-canopyx-template> elements are templates that never apply, so copies the page gains or loses (innerHTML, re-inserted nodes, other builds) change
-  // nothing. Each part has one stylesheet: a host's own marked stylesheet of this version, or the runtime's, which it marks
+  // data-canopyx-template> elements are templates that never apply, so copies the page gains or loses (innerHTML, re-inserted
+  // nodes, other builds) change nothing. Each part has one stylesheet, the runtime's, chosen on the first load and marked
   // data-canopyx-owned: a clone in document.head of a template the policy allowed (a refused one has no sheet), with its nonce
-  // and without the media, or, with fallback, the part's file, linked. Every load checks it again: one that left the document
-  // is replaced, a link removed while it loads is abandoned, a
-  // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
-  // The last clone the runtime applied is kept in SPARE_SHEETS, so it applies again once the host's stylesheet stops, or the
-  // clone left the page, and no template is left.
+  // and without the media, or, with fallback, the part's file, linked. The runtime never adopts or watches a host's
+  // stylesheets. A later load replaces the runtime's stylesheet only when it left the document (a link removed while it loads
+  // is abandoned), retries a failed file load, and removes the runtime's other copies of the part. The last clone it applied is
+  // kept in SPARE_SHEETS, so it applies again when the clone left the page and no template is left.
   const PART_SHEETS = new Map(), SPARE_SHEETS = new Map();
-  // A host stylesheet counts while it is enabled, is persistent (no title: titled and alternate sheets belong to stylesheet
-  // sets, which are outside the contract) and its media (its CSSOM list, which can change without the attribute) matches.
-  const live = element => element.sheet && !element.sheet.disabled && !element.title && !/alternate/i.test(element.rel) && (!element.sheet.media.mediaText || matchMedia(element.sheet.media.mediaText).matches);
-  // The runtime's own copy applies while it is in the document; disabling it or changing its media is outside the contract.
-  const applies = owned => owned.element.getRootNode() === document && (owned.abandon || (owned.host ? live(owned.element) : owned.element.sheet));
   function partSheet(part, fallback) {
     const [version, , styleFile] = manifest(part.name);
     if (!styleFile || typeof document === "undefined") return;
     const elements = [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].filter(element => element.dataset.canopyxPart === part.name);
-    const mine = element => element.dataset.cxVersion === version && !("canopyxOwned" in element.dataset);
-    const again = () => Object.assign(new Error("CanopyX: " + part.label + " stylesheet replaced."), { abandoned: true });
-    // A template's media="not all" never matches, so it is never a host's stylesheet.
-    const host = elements.find(element => mine(element) && live(element));
     let owned = PART_SHEETS.get(part.name);
-    // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
-    // A host's element retagged for another part or build is no longer the part's stylesheet.
-    if (owned && (!applies(owned) || host && owned.element !== host || owned.host && (owned.element.dataset.canopyxPart !== part.name || !mine(owned.element)))) {
-      owned.abandon?.(again());
-      // A loaded file a host's stylesheet takes over from stays, disabled, as the spare: it applies again without a request.
-      // (Disabled through the CSSOM: the element's own disabled attribute would drop the loaded sheet.)
-      if (host && !owned.host && !owned.abandon && owned.element.localName === "link" && owned.element.sheet) { owned.element.sheet.disabled = true; SPARE_SHEETS.set(part.name, owned.element); }
-      else if (!owned.host) owned.element.remove();
-      PART_SHEETS.delete(part.name); owned = undefined;
+    // Disabling the runtime's own stylesheet or changing its media is outside the contract; leaving the document is not.
+    if (owned && owned.element.getRootNode() !== document) {
+      owned.abandon?.(Object.assign(new Error("CanopyX: " + part.label + " stylesheet replaced."), { abandoned: true }));
+      owned.element.remove(); PART_SHEETS.delete(part.name); owned = undefined;
     }
-    const allowed = elements.filter(element => mine(element) && "canopyxTemplate" in element.dataset && element.sheet);
-    const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0];
-    const clone = () => { const copy = template.cloneNode(true); copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = ""; return copy; };
-    const spare = SPARE_SHEETS.get(part.name);
-    // While a host's stylesheet applies, a template seen on any load (also one that arrived after the host's was adopted)
-    // leaves a detached copy as the spare, for when the host's stops applying; a spare already kept stays.
-    if (host && template && !spare) SPARE_SHEETS.set(part.name, clone());
     if (!owned) {
-      if (host) owned = { element: host, host: true };
-      else if (!template && spare) { if (!spare.isConnected) document.head.appendChild(spare); if (spare.sheet) { spare.sheet.disabled = false; owned = { element: spare }; } else spare.remove(); }
-      else if (template) {
-        const copy = clone(); document.head.appendChild(copy);
+      const allowed = elements.filter(element => element.dataset.cxVersion === version && "canopyxTemplate" in element.dataset && element.sheet);
+      const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0], spare = SPARE_SHEETS.get(part.name);
+      if (template) {
+        const copy = template.cloneNode(true); copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = "";
+        document.head.appendChild(copy);
         if (copy.sheet) { owned = { element: copy }; SPARE_SHEETS.set(part.name, copy); } else copy.remove();
-      }
+      } else if (spare) { document.head.appendChild(spare); if (spare.sheet) owned = { element: spare }; else spare.remove(); }
       if (!owned) {
         if (!fallback) return;
         const link = h("link"); link.rel = "stylesheet";
         Object.assign(link.dataset, { canopyxPart: part.name, cxVersion: version, canopyxOwned: "" });
         owned = { element: link };
-        // When the link settles, a host stylesheet that applies meanwhile sends the waiters to partSheet again (abandoned),
-        // which takes the host's.
-        const hostApplies = () => [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].some(element => element.dataset.canopyxPart === part.name && mine(element) && live(element));
         owned.ready = new Promise((resolve, reject) => { owned.abandon = reject; partFile(part, link, "href", styleFile, "stylesheet").then(resolve, reject); })
-          // Settled, later loads take the link as it is; only the views that waited are sent on to the host's stylesheet.
-          .then(() => { owned.abandon = null; owned.ready = undefined; if (hostApplies()) throw again(); }, error => {
+          // Settled, later loads take the link as it is; a failed one is removed so the next load tries again.
+          .then(() => { owned.abandon = null; owned.ready = undefined; }, error => {
             if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name);
-            link.remove();
-            throw hostApplies() ? again() : error;
+            link.remove(); throw error;
           });
       }
       PART_SHEETS.set(part.name, owned);

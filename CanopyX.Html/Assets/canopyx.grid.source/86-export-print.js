@@ -73,8 +73,6 @@
       // each with its own nonce, since constructed stylesheets would win over the linked ones and reverse their precedence.
       const ruleList = source => source.tagName === "STYLE" && source.sheet ? [...source.sheet.cssRules] : null;
       const imports = rules => rules?.some(rule => rule.constructor.name === "CSSImportRule");
-      // An import whose media is "not all" never applies, so printing does not wait for it.
-      const applyingImports = rules => rules?.some(rule => rule.constructor.name === "CSSImportRule" && rule.media.mediaText.trim().toLowerCase() !== "not all");
       // A titled source belongs to a stylesheet set, which a constructed stylesheet cannot keep: then every source is cloned.
       const constructFonts = [...fontSources].every(source => { const rules = ruleList(source); return rules && !imports(rules) && !source.title; });
       for (const source of fontSources) {
@@ -82,14 +80,13 @@
         if (constructFonts && sheet(rules.map(rule => rule.cssText).join("\n"), true, source.media)) continue;
         const copy = source.cloneNode(true); copy.nonce = source.nonce;
         if (source.tagName === "LINK") copy.href = source.href;
-        // A linked stylesheet, or an inline one's imports that can apply, load before the paper prints. A failed link stops
-        // printing. An inline stylesheet reports an error when any of its imports fails, also one that never applies, so its
-        // imports are only waited for: a face they fail to bring is caught with the other print fonts.
+        // A linked stylesheet loads before the paper prints, and a failed one stops printing. An inline stylesheet's imports are
+        // not waited for (docs/plugins.md#part-stylesheets), so faces only an import declares may print before they arrive.
         if (source.tagName === "LINK") {
           fontLoads.push(new Promise((resolve, reject) => {
             copy.onload = resolve; copy.onerror = () => reject(new Error("CanopyX: print font stylesheet failed to load."));
           }));
-        } else if (applyingImports(rules)) fontLoads.push(new Promise(resolve => { copy.onload = copy.onerror = resolve; }));
+        }
         doc.head.appendChild(copy);
       }
       doc.body.style.cssText = 'margin:0;background:var(--hfx-color-surface);color:var(--hfx-color-text);font:11px/1.4 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);font-variant-numeric:tabular-nums';
