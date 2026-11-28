@@ -109,8 +109,8 @@ public sealed class UiPartAssetsTests {
         // #127: a content page must not pay for the 57 KB tree runtime to reach a 20 KB overlay part.
         // Each lazy UI part adds its version and hashed file names to the entry's part list, about 35 bytes gzip. The part
         // stylesheet lifecycle (one stylesheet per part across templates, host stylesheets, other builds, linked files and
-        // recovery, docs/plugins.md#part-stylesheets), shared by every entry point, adds about 610 bytes.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024 + 768);
+        // recovery, docs/plugins.md#part-stylesheets), shared by every entry point, adds about 680 bytes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024 + 832);
         var script = ReadableAssets.Script(CanopyRuntime.Ui);
         foreach (var marker in new[] { "createTreeGrid", "createDataGrid", "createFlow", "class TreeGrid", "class DataGrid" }) Assert.DoesNotContain(marker, script);
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "ui-toasts", "ui-lightbox", "ui-mask", "ui-signature", "ui-carousel", "ui-rating", "ui-select" },

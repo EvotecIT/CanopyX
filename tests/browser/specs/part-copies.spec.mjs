@@ -51,7 +51,7 @@ const hashPolicy = html => {
 // ["mount-host-takes-over", id] adds one while the runtime's link is held and mounts again; ["mount-host-rescues", id] adds one
 // while the only mount waits; ["host-print"] gives the host's marked stylesheet media="print"; ["host-off"] gives the host's
 // marked style media="not all"; ["host-cssom-off"] sets it through the CSSOM; ["host-style", name] adds a host's marked style
-// with the tabs rules. Disabling the runtime's own stylesheet or changing its media is outside the contract.
+// with the tabs rules; ["css-missing"] answers the stylesheet file with 404 from then on. Disabling the runtime's own stylesheet or changing its media is outside the contract.
 // page: the part markup the page is written with; runtimeLast queues every part before the runtime; hashes serves a policy
 // of hashes with 'self'; cssMissing answers the tabs stylesheet file with 404; holdCss holds the first stylesheet request.
 const TABS_CSS = asset(part("ui-tabs").style), TABS = markup("ui-tabs"), FILES = { styles: 0, links: 1, files: true }, PAGE = { styles: 1, links: 0, files: false };
@@ -151,6 +151,8 @@ const ROWS = [
   { transition: "a titled host stylesheet belongs to a stylesheet set and is not the part's stylesheet",
     page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" title="Set" id="host-style">${TABS_CSS}</style>${TABS}`,
     steps: [["mount", "a"]], styles: 2, links: 0, files: false, applied: 2 },
+  { transition: "a host's stylesheet takes over from a loaded file and stops: the loaded file applies again without a request", page: "",
+    steps: [["mount", "a"], ["host-link"], ["mount", "b"], ["host-print"], ["css-missing"], ["mount", "c"]], styles: 0, links: 2, files: true },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -192,6 +194,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       await insertTabs(value); await insertTabs(value + "2");
       expect(await Promise.all([mount(value), mount(value + "2")])).toEqual([expect.stringContaining("unavailable"), expect.stringContaining("unavailable")]);
     } else if (step === "css-ok") missing = false;
+    else if (step === "css-missing") missing = true;
     else if (step === "host-link") {
       await page.evaluate(version => new Promise(resolve => {
         const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "/canopyx-ui-tabs.css?host", onload: resolve });

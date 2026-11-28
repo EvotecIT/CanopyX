@@ -60,7 +60,10 @@
     // A host's element retagged for another part or build is no longer the part's stylesheet.
     if (owned && (!applies(owned) || host && owned.element !== host || owned.host && (owned.element.dataset.canopyxPart !== part.name || !mine(owned.element)))) {
       owned.abandon?.(again());
-      if (!owned.host) owned.element.remove();
+      // A loaded file a host's stylesheet takes over from stays, disabled, as the spare: it applies again without a request.
+      // (Disabled through the CSSOM: the element's own disabled attribute would drop the loaded sheet.)
+      if (host && !owned.host && !owned.abandon && owned.element.localName === "link" && owned.element.sheet) { owned.element.sheet.disabled = true; SPARE_SHEETS.set(part.name, owned.element); }
+      else if (!owned.host) owned.element.remove();
       PART_SHEETS.delete(part.name); owned = undefined;
     }
     if (!owned) {
@@ -70,7 +73,7 @@
       const spare = SPARE_SHEETS.get(part.name);
       // Adopting a host's stylesheet keeps a detached copy of the template as the spare, for when the host's stops applying.
       if (host) { owned = { element: host, host: true }; if (template) SPARE_SHEETS.set(part.name, clone()); }
-      else if (!template && spare) { document.head.appendChild(spare); if (spare.sheet) owned = { element: spare }; else spare.remove(); }
+      else if (!template && spare) { if (!spare.isConnected) document.head.appendChild(spare); if (spare.sheet) { spare.sheet.disabled = false; owned = { element: spare }; } else spare.remove(); }
       else if (template) {
         const copy = clone(); document.head.appendChild(copy);
         if (copy.sheet) { owned = { element: copy }; SPARE_SHEETS.set(part.name, copy); } else copy.remove();
@@ -84,7 +87,8 @@
         // which takes the host's.
         const hostApplies = () => [...document.querySelectorAll("style[data-canopyx-part],link[data-canopyx-part]")].some(element => element.dataset.canopyxPart === part.name && mine(element) && live(element));
         owned.ready = new Promise((resolve, reject) => { owned.abandon = reject; partFile(part, link, "href", styleFile, "stylesheet").then(resolve, reject); })
-          .then(() => { owned.abandon = null; if (hostApplies()) throw again(); }, error => {
+          // Settled, later loads take the link as it is; only the views that waited are sent on to the host's stylesheet.
+          .then(() => { owned.abandon = null; owned.ready = undefined; if (hostApplies()) throw again(); }, error => {
             if (PART_SHEETS.get(part.name) === owned) PART_SHEETS.delete(part.name);
             link.remove();
             throw hostApplies() ? again() : error;
@@ -92,7 +96,7 @@
       }
       PART_SHEETS.set(part.name, owned);
     }
-    for (const element of elements) if ("canopyxOwned" in element.dataset && element !== owned.element) element.remove();
+    for (const element of elements) if ("canopyxOwned" in element.dataset && element !== owned.element && element !== SPARE_SHEETS.get(part.name)) element.remove();
     return owned.ready;
   }
   /** The part's stylesheet (undefined once it applies), following a replacement when the link it waited for was removed. */
