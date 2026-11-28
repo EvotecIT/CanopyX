@@ -142,6 +142,15 @@ const ROWS = [
   { transition: "an unselected alternate host stylesheet is not the part's stylesheet",
     page: `<link rel="alternate stylesheet" title="Other" href="/canopyx-ui-tabs.css" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">${TABS}`,
     steps: [["mount", "a"]], styles: 1, links: 0, files: true },
+  { transition: "a host's stylesheet used from the start stops after its carrier is gone: the kept template copy applies without a file", cssMissing: true,
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${TABS_CSS}</style><section id="carrier">${TABS}</section>`,
+    steps: [["mount", "a"], ["remove-element", "#carrier"], ["host-off"], ["mount", "b"]], styles: 1, links: 0, files: false },
+  { transition: "a host's stylesheet retagged for another build is no longer the part's stylesheet",
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${TABS_CSS}</style>${TABS}`,
+    steps: [["mount", "a"], ["host-retag"], ["mount", "b"]], styles: 2, links: 0, files: false, applied: 2 },
+  { transition: "a titled host stylesheet belongs to a stylesheet set and is not the part's stylesheet",
+    page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" title="Set" id="host-style">${TABS_CSS}</style>${TABS}`,
+    steps: [["mount", "a"]], styles: 2, links: 0, files: false, applied: 2 },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -239,6 +248,7 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
       else if (step === "remove-element") document.querySelector(value).remove();
       else if (step === "clear-head") applying().forEach(style => style.remove());
       else if (step === "clear-templates") document.querySelectorAll("style[media='not all'][data-canopyx-part]").forEach(style => style.remove());
+      else if (step === "host-retag") document.getElementById("host-style").dataset.cxVersion = "0123456789abcdef";
       else if (step === "host-cssom-off") document.getElementById("host-style").sheet.media.mediaText = "not all";
       else if (step === "host-style") {
         const style = document.createElement("style"); style.id = "host-" + value; style.textContent = key;

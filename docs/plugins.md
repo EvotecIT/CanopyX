@@ -175,7 +175,7 @@ A single-file page carries a part's stylesheet as a template, `<style data-canop
 | A host's marked stylesheet stops applying (disabled, or a media that does not match) | The runtime's copy applies until the host's applies again, also when its fragment is gone: the runtime keeps the copy the host's took over from. A host's stylesheet is never removed. |
 | A view is destroyed | Nothing changes: the stylesheet stays for the page's other and later views. |
 
-The contract covers what hosts do with fragments and their own stylesheets: inserting, removing, replacing and re-inserting fragments, two builds on one page, host preloads and teardown. Tampering with the runtime's own stylesheets (the elements it marks `data-canopyx-owned`) is outside it: disabling them, changing their media, or editing their rules through the CSSOM leaves the part as the host left it; only an element that leaves the document is replaced.
+The contract covers what hosts do with fragments and their own stylesheets: inserting, removing, replacing and re-inserting fragments, two builds on one page, host preloads and teardown. Host stylesheets that belong to stylesheet sets (a `title`, or `rel="alternate stylesheet"`) are not part stylesheets: the runtime ignores them and applies its own. Tampering with the runtime's own stylesheets (the elements it marks `data-canopyx-owned`) is outside it: disabling them, changing their media, or editing their rules through the CSSOM leaves the part as the host left it; only an element that leaves the document is replaced.
 
 ### Serving parts
 
