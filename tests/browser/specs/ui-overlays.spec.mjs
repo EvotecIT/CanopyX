@@ -535,6 +535,14 @@ const DISMISSALS = [
       window.forwardedElement = open.getElementById("forwarded"); window.forwarded = CanopyX.drawer(forwardedElement);
       return forwarded.ready.then(() => forwarded.open());`,
     dismiss: { script: 'document.querySelector("#forward-host [data-cx-cancel]").click();' }, holds: 'window.forwardedElement.dataset.state === "closed"' },
+  { name: 'Cancel slotted into a dialog in a closed shadow root that its host removes on close leaves the popover around it open', open: ['pop'],
+    markup: closablePopover('pop', '<div id="torn-host"><button data-cx-cancel>Cancel slotted</button></div>'), opened: 'pop',
+    afterOpen: `const root = document.getElementById("torn-host").attachShadow({ mode: "closed" });
+      root.innerHTML = '<dialog id="torn" aria-label="torn dialog"><slot></slot></dialog>';
+      const element = root.getElementById("torn"), dialog = CanopyX.dialog(element);
+      element.addEventListener("cx-dialog:close", () => { window.tornRemoved = true; dialog.destroy(); element.remove(); });
+      return dialog.ready.then(() => dialog.open());`,
+    dismiss: { button: 'Cancel slotted', enter: true }, stays: ['pop'], holds: 'window.tornRemoved === true' },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];

@@ -44,9 +44,9 @@
   // without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
   // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once.
   // A named close button outside every overlay (a page toolbar's) is handled by one document listener in the capture phase, so
-  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its overlay, so a host that
-  // destroys the closing overlay from its close event cannot make an outer overlay act later in the same dispatch, while a
-  // click dispatched again starts afresh. Outside presses and native cancel work as before: an outside press dismisses the top
+  // a toolbar that stops propagation does not hide it. The handler that acts marks the click, so a host that destroys the
+  // closing overlay from its close event cannot make an outer overlay act later in the same dispatch, while a click dispatched
+  // again starts afresh. Outside presses and native cancel work as before: an outside press dismisses the top
   // overlay, and a native cancel closes its own overlay only when it is on top. One controller per element is the contract.
   // Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through the DOM's own accessors,
   // which work for nodes of any frame and which a form's named controls cannot shadow.
@@ -82,13 +82,15 @@
   function uiCloseClick(event, owner) {
     const found = uiCloseTarget(event, !!owner);
     if (!found || found.nearest !== owner || !found.target) return;
-    // Within one dispatch, listeners run from the inner overlay outwards: an outer one that the marked overlay is inside (on the
-    // path, or still in its tree) leaves the click to it. The marked overlay's own listener sees a new dispatch. The document's
-    // listener acts only when no overlay is around the button, so it needs no mark.
+    // Within one dispatch, listeners run from the inner overlay outwards. The overlay that acts marks the click with itself and
+    // the overlays around it then, so an outer one leaves the click to it even after a host removed it from its close event; the
+    // marked overlay's own listener sees a new dispatch. The document's listener acts only when no overlay is around the button,
+    // so it needs no mark.
     if (owner) {
       const marked = uiHandledClicks.get(event);
-      if (marked && marked !== owner && (found.path.includes(marked) || uiDeepContains(owner, marked))) return;
-      uiHandledClicks.set(event, owner);
+      if (marked && marked.owner !== owner && marked.around.has(owner)) return;
+      const around = new Set(); for (let node = uiUp(owner); node; node = uiUp(node)) if (uiOverlayRoots.has(node)) around.add(node);
+      uiHandledClicks.set(event, { owner, around });
     }
     // One controller per element is the contract; with several, the open one closes.
     const controllers = uiOverlayRoots.get(found.target);
