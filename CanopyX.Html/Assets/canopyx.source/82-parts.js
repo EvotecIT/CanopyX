@@ -66,13 +66,15 @@
       else if (!owned.host) owned.element.remove();
       PART_SHEETS.delete(part.name); owned = undefined;
     }
+    const allowed = elements.filter(element => mine(element) && "canopyxTemplate" in element.dataset && element.sheet);
+    const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0];
+    const clone = () => { const copy = template.cloneNode(true); copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = ""; return copy; };
+    const spare = SPARE_SHEETS.get(part.name);
+    // While a host's stylesheet applies, a template seen on any load (also one that arrived after the host's was adopted)
+    // leaves a detached copy as the spare, for when the host's stops applying; a spare already kept stays.
+    if (host && template && !spare) SPARE_SHEETS.set(part.name, clone());
     if (!owned) {
-      const allowed = elements.filter(element => mine(element) && "canopyxTemplate" in element.dataset && element.sheet);
-      const template = pageNonce && allowed.find(style => style.nonce === pageNonce) || allowed[0];
-      const clone = () => { const copy = template.cloneNode(true); copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = ""; return copy; };
-      const spare = SPARE_SHEETS.get(part.name);
-      // Adopting a host's stylesheet keeps a detached copy of the template as the spare, for when the host's stops applying.
-      if (host) { owned = { element: host, host: true }; if (template) SPARE_SHEETS.set(part.name, clone()); }
+      if (host) owned = { element: host, host: true };
       else if (!template && spare) { if (!spare.isConnected) document.head.appendChild(spare); if (spare.sheet) { spare.sheet.disabled = false; owned = { element: spare }; } else spare.remove(); }
       else if (template) {
         const copy = clone(); document.head.appendChild(copy);
