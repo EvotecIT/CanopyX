@@ -387,3 +387,182 @@ test('dialog structure and focus states pass accessibility checks', async ({ pag
   const violations = (await new AxeBuilder({ page }).analyze()).violations;
   expect(violations).toEqual([]);
 });
+
+// Close and cancel buttons close the nearest overlay around them, or the one a data-cx-close names by id. Each row opens the
+// overlays it names in order, dismisses one way, and checks which stay open and where the focus lands.
+const closablePopover = (id, body = "") => `<button id="${id}-trigger" aria-controls="${id}" aria-haspopup="dialog" aria-expanded="false">Open ${id}</button>
+  <div id="${id}" class="cx-popover" data-cx-popover data-cx-trigger="${id}-trigger" role="dialog" aria-labelledby="${id}-title" popover="manual" hidden>
+    <h2 id="${id}-title">${id} settings</h2>${body}<button data-cx-close aria-label="Close">Close</button><button data-cx-cancel>Cancel</button>
+    <button data-cx-close="${id}">Close by id</button></div>`;
+// Two drawers on opposite sides, so the top one does not cover the lower one's buttons.
+const SIBLINGS = (left = '', right = '') => overlay('drawer', 'left', left).replace('data-side="end"', 'data-side="start"') + overlay('drawer', 'right', right);
+const SHADOW = `const host = document.getElementById("shadow-host"), root = host.attachShadow({ mode: "open" });
+  root.innerHTML = '<dialog id="shadowed" aria-labelledby="shadowed-title"><h2 id="shadowed-title">shadowed settings</h2><button data-cx-cancel>Cancel</button></dialog>';
+  window.mounted = CanopyX.dialog(root.getElementById("shadowed")); return window.mounted.ready.then(() => window.mounted.open());`;
+// Rows: markup, setup (page script run first), open (overlays opened by their triggers in order; scriptOpen activates the
+// triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
+// the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
+// requestClose() on an overlay, { script } runs a page script, { press } presses and releases the pointer on a button without
+// relying on its click, or on another role's element; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true; data-state is "closed" only after an opening closed).
+const DISMISSALS = [
+  { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Cancel on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { in: 'inner', button: 'Cancel' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Escape on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
+    dismiss: { key: 'Escape' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
+  { name: 'Close on a popover nested in a drawer', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Close' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'Cancel on a popover nested in a drawer', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Cancel' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'a close that names its popover by id', markup: overlay('drawer', 'outer', closablePopover('pop')), open: ['outer', 'pop'],
+    dismiss: { in: 'pop', button: 'Close by id' }, closed: ['pop'], stays: ['outer'], focus: 'pop-trigger' },
+  { name: 'a close in a nested dialog that names the outer drawer', open: ['outer', 'inner'],
+    markup: overlay('drawer', 'outer', overlay('dialog', 'inner', '<button data-cx-close="outer">Close the drawer</button>')),
+    dismiss: { in: 'inner', button: 'Close the drawer' }, closed: ['outer'], stays: [] },
+  { name: 'a close whose id names no overlay closes the nearest one', markup: overlay('drawer', 'outer', '<button data-cx-close="nowhere">Close missing</button>'),
+    open: ['outer'], dismiss: { in: 'outer', button: 'Close missing' }, closed: ['outer'], stays: [] },
+  { name: 'a close whose id names a plain element closes the nearest one', open: ['outer'],
+    markup: overlay('drawer', 'outer', '<p id="note">A note.</p><button data-cx-close="note">Close note</button>'),
+    dismiss: { in: 'outer', button: 'Close note' }, closed: ['outer'], stays: [] },
+  { name: 'Cancel inside a host wrapper that stops click propagation', markup: '<div id="wrap">' + overlay('drawer', 'outer') + '</div>',
+    setup: 'document.getElementById("wrap").addEventListener("click", event => event.stopPropagation());',
+    open: ['outer'], dismiss: { in: 'outer', button: 'Cancel' }, closed: ['outer'], stays: [] },
+  { name: 'a pressed close in the lower drawer that names the top one', markup: SIBLINGS('<button data-cx-close="right">Close the right drawer</button>'),
+    open: ['left', 'right'], scriptOpen: true, dismiss: { in: 'left', button: 'Close the right drawer' }, closed: ['right'], stays: ['left'] },
+  { name: 'Cancel on a plain dialog mounted from code', mounted: 'plain', open: [],
+    markup: '<dialog id="plain" aria-labelledby="plain-title"><h2 id="plain-title">plain settings</h2><button data-cx-cancel>Cancel</button></dialog>',
+    dismiss: { in: 'plain', button: 'Cancel' }, closed: ['plain'], stays: [] },
+  { name: 'a host that destroys a nested popover from its close event keeps the drawer open', markup: overlay('drawer', 'outer', closablePopover('pop')),
+    setup: 'document.getElementById("pop").addEventListener("cx-popover:close", () => CanopyX.popover("#pop").destroy());',
+    open: ['outer', 'pop'], dismiss: { in: 'pop', button: 'Close' }, closed: ['pop'], stays: ['outer'] },
+  { name: 'a cancel event that bubbles from a file input leaves the nested popover open', open: ['outer', 'pop'],
+    markup: overlay('drawer', 'outer', '<input type="file" id="upload" aria-label="Upload">' + closablePopover('pop')),
+    dismiss: { script: 'document.getElementById("upload").dispatchEvent(new Event("cancel", { bubbles: true }));' }, closed: [], stays: ['outer', 'pop'] },
+  { name: 'a press on a disabled named close outside the drawer dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<button data-cx-close="outer" disabled>Close from the page</button>',
+    dismiss: { press: 'Close from the page' }, closed: ['outer'], stays: [] },
+  { name: 'Close on a drawer also closes its popover triggered from a shadow root inside it', open: ['outer'],
+    markup: overlay('drawer', 'outer', '<div id="trigger-host"></div><div id="shadow-pop" class="cx-popover" role="dialog" aria-label="Shadow popover" hidden><p>Popover</p></div>'),
+    afterOpen: `const root = document.getElementById("trigger-host").attachShadow({ mode: "open" }); root.innerHTML = '<button>Open shadow popover</button>';
+      window.pop = CanopyX.popover(document.getElementById("shadow-pop"), { trigger: root.querySelector("button") });
+      return window.pop.ready.then(() => window.pop.open());`, opened: 'shadow-pop',
+    dismiss: { in: 'outer', button: 'Close' }, closed: ['outer', 'shadow-pop'], stays: [] },
+  { name: 'a self-named close in one of two same-id drawers from separate shadow roots closes its own drawer', open: [],
+    markup: '<div id="first-host"></div><div id="second-host"></div>',
+    setup: `const drawers = ["first", "second"].map(name => {
+        const root = document.getElementById(name + "-host").attachShadow({ mode: "open" });
+        root.innerHTML = '<div id="dup" class="cx-drawer" role="dialog" aria-label="' + name + ' drawer" data-side="' + (name === "first" ? "start" : "end") + '"><button data-cx-close="dup">Close ' + name + '</button></div>';
+        return CanopyX.drawer(root.getElementById("dup"));
+      });
+      return Promise.all(drawers.map(drawer => drawer.ready)).then(() => drawers.forEach(drawer => drawer.open()));`,
+    dismiss: { button: 'Close second' }, closedLabels: ['second drawer'], staysLabels: ['first drawer'] },
+  { name: 'a click event dispatched again after reopening still closes the drawer', open: ['outer'], markup: overlay('drawer', 'outer'),
+    dismiss: { script: `const cancel = document.querySelector("#outer [data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); document.getElementById("outer-trigger").click(); cancel.dispatchEvent(click);` }, closed: ['outer'], stays: [] },
+  { name: 'a close in a nested shadow root naming its enclosing shadow drawer leaves a same-id page drawer open', open: [],
+    markup: '<div id="dup" class="cx-drawer" role="dialog" aria-label="page drawer" data-side="end"><p>Page drawer</p></div><div id="first-host"></div>',
+    setup: `const outer = document.getElementById("first-host").attachShadow({ mode: "open" });
+      outer.innerHTML = '<div id="dup" class="cx-drawer" role="dialog" aria-label="shadow drawer" data-side="start"><div id="inner-host"></div></div>';
+      const inner = outer.getElementById("inner-host").attachShadow({ mode: "open" });
+      inner.innerHTML = '<dialog id="nested" aria-label="nested dialog"><button data-cx-close="dup">Close the shadow drawer</button></dialog>';
+      const views = [CanopyX.drawer(document.getElementById("dup")), CanopyX.drawer(outer.getElementById("dup")), CanopyX.dialog(inner.getElementById("nested"))];
+      return Promise.all(views.map(view => view.ready)).then(() => views.forEach(view => view.open()));`,
+    // Enter, not a press: a press inside an overlay in a shadow root reads as outside it, as before (the follow-up issue).
+    dismiss: { button: 'Close the shadow drawer', enter: true }, closedLabels: ['shadow drawer', 'nested dialog'], staysLabels: ['page drawer'] },
+  { name: 'a press on a form field named matches outside the drawer dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<form><input name="matches" aria-label="Matches"></form>',
+    dismiss: { press: 'Matches', role: 'textbox' }, closed: ['outer'], stays: [] },
+  { name: 'a click event dispatched again in a shadow root after reopening still closes the dialog', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); window.mounted.open(); cancel.dispatchEvent(click);` }, closed: ['shadowed'], stays: [] },
+  { name: 'Close on a drawer closes its nested dialog in a form whose outside control is named parentNode', open: ['outer', 'inner'],
+    setup: 'document.addEventListener("submit", event => event.preventDefault());',
+    markup: overlay('drawer', 'outer', '<form id="named-form">' + overlay('dialog', 'inner') + '</form>') + '<input form="named-form" name="parentNode" aria-label="Parent">',
+    dismiss: { script: 'document.querySelector("#outer > header [data-cx-close]").click();' }, closed: ['inner', 'outer'] },
+  { name: 'Close on a drawer closes its nested dialog in a form whose own control is named parentNode', open: ['outer', 'inner'], scriptOpen: true,
+    setup: 'document.addEventListener("submit", event => event.preventDefault());',
+    // Read from the page: the test runner's own locators walk parentNode and loop on such a form.
+    markup: overlay('drawer', 'outer', '<form><input name="parentNode" aria-label="Parent">' + overlay('dialog', 'inner') + '</form>'),
+    dismiss: { script: 'document.querySelector("#outer > header [data-cx-close]").click();' }, holds: '!document.getElementById("inner").open && !document.getElementById("outer").open' },
+  { name: 'a close slotted into a drawer in a closed shadow root closes that drawer, not a same-id page drawer', open: [],
+    markup: '<div id="dup" class="cx-drawer" role="dialog" aria-label="page drawer" data-side="end"><p>Page drawer</p></div><div id="slot-host"><button data-cx-close="dup">Close slotted</button></div>',
+    setup: `const root = document.getElementById("slot-host").attachShadow({ mode: "closed" });
+      root.innerHTML = '<dialog id="dup" class="cx-drawer" aria-label="shadow drawer" data-side="start"><slot></slot></dialog>';
+      window.page = CanopyX.drawer(document.getElementById("dup")); window.shadowDrawer = CanopyX.drawer(window.shadowElement = root.getElementById("dup"));
+      return Promise.all([page.ready, shadowDrawer.ready]).then(() => { page.open(); shadowDrawer.open(); });`,
+    dismiss: { button: 'Close slotted' }, staysLabels: ['page drawer'], holds: 'window.shadowElement.dataset.state === "closed"' },
+  { name: 'Cancel on a dialog in a same-origin frame mounted through the page closes it', open: [], markup: '<iframe id="frame" title="Frame"></iframe>',
+    setup: `const frame = document.getElementById("frame").contentDocument;
+      frame.body.innerHTML = '<dialog id="framed" aria-label="framed dialog"><button data-cx-cancel>Cancel</button></dialog>';
+      window.framed = CanopyX.dialog(frame.getElementById("framed")); return framed.ready.then(() => framed.open());`,
+    dismiss: { script: 'document.getElementById("frame").contentDocument.querySelector("[data-cx-cancel]").click();' }, holds: 'document.getElementById("frame").contentDocument.getElementById("framed").dataset.state === "closed"' },
+  { name: 'a press on a close naming a closed drawer outside the open one dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + overlay('drawer', 'other') + '<button data-cx-close="other">Close other</button>',
+    dismiss: { press: 'Close other' }, closed: ['outer'], stays: [] },
+  { name: 'a click event dispatched again in a shadow root after its button moved deeper still closes the dialog', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); window.mounted.open(); const wrap = document.createElement("span"); cancel.before(wrap); wrap.append(cancel); cancel.dispatchEvent(click);` },
+    closed: ['shadowed'], stays: [] },
+  { name: 'a form-backed drawer with a field named getRootNode mounts and Cancel closes it', open: [],
+    // Driven from the page: the test runner's own locators call getRootNode and would read the field.
+    markup: '<form id="fd" class="cx-drawer" role="dialog" aria-label="form drawer" data-side="end" hidden><input name="getRootNode" aria-label="Root"><button type="button" data-cx-cancel>Cancel</button></form>',
+    setup: 'window.fd = CanopyX.drawer(document.getElementById("fd")); return fd.ready.then(() => fd.open());',
+    dismiss: { script: 'document.querySelector("#fd [data-cx-cancel]").click();' }, holds: 'document.getElementById("fd").dataset.state === "closed"' },
+  { name: 'a click event dispatched again in a shadow root after its dialog moved out of a wrapper still closes it', markup: '<div id="shadow-host"></div>', open: [],
+    setup: SHADOW.replace("root.innerHTML = '<dialog", "root.innerHTML = '<div><dialog").replace("</dialog>';", "</dialog></div>';"),
+    dismiss: { script: `const root = document.getElementById("shadow-host").shadowRoot, cancel = root.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); root.append(root.getElementById("shadowed")); window.mounted.open(); cancel.dispatchEvent(click);` }, closed: ['shadowed'], stays: [] },
+  { name: 'Cancel slotted into a drawer through a slot a closed shadow root forwards closes the drawer', open: [],
+    markup: '<div id="forward-host"><button data-cx-cancel>Cancel forwarded</button></div>',
+    setup: `const closed = document.getElementById("forward-host").attachShadow({ mode: "closed" });
+      closed.innerHTML = '<div id="inner-host"><slot></slot></div>';
+      const open = closed.getElementById("inner-host").attachShadow({ mode: "open" });
+      open.innerHTML = '<dialog id="forwarded" aria-label="forwarded drawer"><slot></slot></dialog>';
+      window.forwardedElement = open.getElementById("forwarded"); window.forwarded = CanopyX.drawer(forwardedElement);
+      return forwarded.ready.then(() => forwarded.open());`,
+    dismiss: { script: 'document.querySelector("#forward-host [data-cx-cancel]").click();' }, holds: 'window.forwardedElement.dataset.state === "closed"' },
+  { name: 'Cancel slotted into a dialog in a closed shadow root that its host removes on close leaves the popover around it open', open: ['pop'],
+    markup: closablePopover('pop', '<div id="torn-host"><button data-cx-cancel>Cancel slotted</button></div>'), opened: 'pop',
+    afterOpen: `const root = document.getElementById("torn-host").attachShadow({ mode: "closed" });
+      root.innerHTML = '<dialog id="torn" aria-label="torn dialog"><slot></slot></dialog>';
+      const element = root.getElementById("torn"), dialog = CanopyX.dialog(element);
+      element.addEventListener("cx-dialog:close", () => { window.tornRemoved = true; dialog.destroy(); element.remove(); });
+      return dialog.ready.then(() => dialog.open());`,
+    dismiss: { button: 'Cancel slotted', enter: true }, stays: ['pop'], holds: 'window.tornRemoved === true' },
+  { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
+];
+for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openUi(page, row.markup);
+  if (row.setup) await page.evaluate(script => new Function(script)(), row.setup);
+  // An overlay that lives in a shadow root is found through its host.
+  const surface = id => id === 'shadow-drawer' ? page.locator('#slot-host').locator('#shadow-drawer') : page.locator('#' + id);
+  if (row.mounted) await page.evaluate(id => { window.mounted = CanopyX.dialog('#' + id); return window.mounted.ready.then(() => window.mounted.open()); }, row.mounted);
+  for (const id of row.open) {
+    const trigger = page.locator('#' + id + '-trigger');
+    if (row.scriptOpen) await trigger.evaluate(element => element.click()); else await trigger.click();
+    await expect(surface(id)).toBeVisible();
+  }
+  if (row.afterOpen) { await page.evaluate(script => new Function(script)(), row.afterOpen); await expect(page.locator('#' + (row.opened || 'shadowed'))).toBeVisible(); }
+  const { dismiss } = row;
+  if (dismiss.key) await page.keyboard.press(dismiss.key);
+  else if (dismiss.script) await page.evaluate(script => new Function(script)(), dismiss.script);
+  else if (dismiss.press) {
+    // A real press without a click: the disabled button produces no activation.
+    const box = await page.getByRole(dismiss.role || 'button', { name: dismiss.press, exact: true }).boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.up();
+  }
+  else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
+  else {
+    const button = (dismiss.in ? surface(dismiss.in) : page).getByRole('button', { name: dismiss.button, exact: true }).first();
+    if (dismiss.enter) { await button.focus(); await page.keyboard.press('Enter'); } else await button.click();
+  }
+  for (const id of row.closed || []) await expect(surface(id)).toBeHidden();
+  for (const id of row.stays || []) await expect(surface(id)).toBeVisible();
+  for (const label of row.closedLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeHidden();
+  for (const label of row.staysLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeVisible();
+  if (row.focus) await expect(page.locator('#' + row.focus)).toBeFocused();
+  if (row.holds) expect(await page.evaluate(expression => new Function('return ' + expression)(), row.holds)).toBe(true);
+});

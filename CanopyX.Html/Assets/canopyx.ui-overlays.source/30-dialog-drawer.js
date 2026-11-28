@@ -44,7 +44,7 @@
       if (drawer && overlay.opened) overlay.setModal(phone || options.modal === true || root.dataset.modal === "true");
     }, signal);
     trigger?.addEventListener("click", () => open(), { signal });
-    root.addEventListener("click", event => { if (event.target.closest("[data-cx-close],[data-cx-cancel]")) overlay.close("cancel"); }, { signal });
+    // Close and cancel buttons are resolved once for every overlay (UI_TOOLS.overlay, 20-overlay-stack.js).
     // Typed actions (CanopyDialogAction) raise a cancelable action event; a host that cancels it answers itself. Otherwise an
     // action with a target submits the footer form natively, once, and one without closes the overlay. A nested overlay's
     // actions are its own. The submit event comes only after the form validates, so a refused submission can be tried again.

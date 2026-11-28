@@ -38,13 +38,66 @@
     }
   }
 
+  // Close and cancel buttons: a close or cancel button inside an overlay closes the nearest overlay around it, so a dialog nested
+  // in a drawer closes alone; a [data-cx-close] that names an overlay by id closes that overlay instead (an id that names no
+  // overlay falls back to the nearest one). Every overlay the controller manages registers its element, also one mounted from
+  // code without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
+  // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once. An
+  // overlay destroyed during the click (a host that removes it from its close event) still counts as the innermost one until
+  // the task ends, so its parent does not act on the same click. Outside presses and native cancel work as before: an outside
+  // press dismisses the top overlay, and a native cancel closes its own overlay only when it is on top. One controller per
+  // element is the contract. Registrations are weak: an overlay removed with its host is not kept alive. Nodes are read through
+  // the DOM's own accessors, which work for nodes of any frame and which a form's named controls cannot shadow.
+  const uiOverlayRoots = new WeakMap(), uiListening = new WeakSet(), uiRetired = new WeakSet();
+  const uiGetter = (type, name) => Object.getOwnPropertyDescriptor(type.prototype, name).get;
+  const uiNodeType = uiGetter(Node, "nodeType"), uiParentNode = uiGetter(Node, "parentNode"), uiSlotOf = uiGetter(Element, "assignedSlot");
+  const uiAttribute = (node, name) => Element.prototype.getAttribute.call(node, name);
+  const uiIsElement = node => { try { return uiNodeType.call(node) === 1; } catch { return false; } };
+  // A node's parent in the flat tree: its slot, else its parent, else a shadow root's host.
+  const uiUp = node => (uiIsElement(node) ? uiSlotOf.call(node) : node.assignedSlot) || uiParentNode.call(node) || (uiNodeType.call(node) === 11 && node.host) || null;
+  /** The close or cancel button a click came from, the innermost overlay around it on the path its listener sees, and the overlay it closes. */
+  function uiCloseTarget(event) {
+    const path = event.composedPath(), at = path.findIndex(node => uiIsElement(node) && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
+    if (at < 0) return null;
+    const button = path[at], around = path.slice(at).filter(node => uiOverlayRoots.has(node) || uiRetired.has(node));
+    const nearest = around[0], name = uiAttribute(button, "data-cx-close");
+    // A name is looked up among the overlays around the button first (two may share an id in separate shadow roots), then in
+    // the button's root and the document. An id that names an element without an overlay in one scope does not hide an overlay
+    // of that id in the next.
+    const named = name && [around.find(node => uiAttribute(node, "id") === name), Node.prototype.getRootNode.call(button).getElementById?.(name), document.getElementById(name)]
+      .find(node => node && uiOverlayRoots.has(node));
+    return { nearest, target: named || (uiOverlayRoots.has(nearest) ? nearest : null) };
+  }
+  function uiCloseClick(event, owner) {
+    const found = uiCloseTarget(event);
+    if (!found || found.nearest !== owner || !found.target) return;
+    // One controller per element is the contract; with several, the open one closes.
+    const controllers = uiOverlayRoots.get(found.target);
+    (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
+  }
+  function uiOverlayRegister(element, controller) {
+    uiRetired.delete(element);
+    uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
+    // One click listener per element; it acts only while the element is registered.
+    if (!uiListening.has(element)) { uiListening.add(element); element.addEventListener("click", event => uiCloseClick(event, element)); }
+  }
+  function uiOverlayUnregister(element, controller) {
+    const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
+    if (controllers.length) { uiOverlayRoots.set(element, controllers); return; }
+    uiOverlayRoots.delete(element);
+    uiRetired.add(element); setTimeout(() => uiRetired.delete(element));
+  }
+
   // A portalled descendant still belongs to its trigger's open surface.
+  // Containment that crosses shadow boundaries: an overlay mounted inside a shadow root hosted in another still belongs to it.
+  // It follows a slotted node's slot, so a dialog projected into a drawer's shadow root belongs to the drawer.
+  const uiDeepContains = (container, node) => { for (let at = node; at; at = uiUp(at)) if (at === container) return true; return false; };
   UI_TOOLS.owns = (container, node) => {
-    if (container.contains(node)) return true;
+    if (uiDeepContains(container, node)) return true;
     for (const entry of uiOverlayStack) {
-      if (!entry.element.contains(node)) continue;
+      if (!uiDeepContains(entry.element, node)) continue;
       for (let owner = entry; owner; owner = owner.parent)
-        if (container.contains(owner.element) || owner.trigger && container.contains(owner.trigger)) return true;
+        if (uiDeepContains(container, owner.element) || owner.trigger && uiDeepContains(container, owner.trigger)) return true;
     }
     return false;
   };
@@ -95,8 +148,8 @@
       generation++;
       const trigger = triggerOf(), host = options.host || trigger || originalParent || element;
       // Capture the open context before moving the surface. Focus alone does not make a sibling a child.
-      entry.parent = uiOverlayStack.slice().reverse().find(owner => owner.element.contains(element) ||
-        trigger && owner.element.contains(trigger)) || null;
+      entry.parent = uiOverlayStack.slice().reverse().find(owner => uiDeepContains(owner.element, element) ||
+        trigger && uiDeepContains(owner.element, trigger)) || null;
       returnFocus = settings.returnFocus || trigger || document.activeElement;
       modal = settings.modal ?? options.modal ?? false;
       const position = () => UI_TOOLS.position(element, trigger, options.placement || element.dataset.placement, settings.point);
@@ -167,9 +220,11 @@
       if (value) element.setAttribute("aria-modal", "true"); else element.removeAttribute("aria-modal");
       if (active && element.contains(active)) active.focus({ preventScroll: true });
     }
-    const destroy = () => { close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
+    const destroy = () => { uiOverlayUnregister(element, controller); close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
     signal?.addEventListener("abort", destroy, { once: true });
     // An open overlay that now shows another record returns focus to that record's control.
     const setReturnFocus = target => { if (opened && target) returnFocus = target; };
-    return { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
+    const controller = { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
+    if (kind !== "tooltip") uiOverlayRegister(element, controller);
+    return controller;
   };
