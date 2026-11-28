@@ -8,7 +8,8 @@
   // install before it. The runtime never turns page text into script or style (docs/security.md).
   const PART_URL = typeof document !== "undefined" && document.currentScript?.src;
   // Where each accepted registration came from, which decides its stylesheet (docs/plugins.md#part-stylesheets): "entry" (the
-  // entry point registered it while its own script still ran; a microtask ends that), "page" (a part script the page carries),
+  // entry point registered it while its own script still ran; a microtask ends that), "page" (an inline part script the page
+  // carries; one with a src is the host's),
   // "file" (the loader's script for the part file) or "host" (a host preload).
   const PART_SOURCE = new Map(), LOADER_SCRIPTS = new WeakSet();
   let drainingParts = false, entryRunning = true;
@@ -29,7 +30,7 @@
     if (!current || current.version !== part.version && current.version !== wanted) {
       PART_CODE.set(name, part);
       const script = from !== undefined ? from : typeof document !== "undefined" ? document.currentScript : null;
-      PART_SOURCE.set(name, LOADER_SCRIPTS.has(script) ? "file" : script?.dataset?.canopyxPart === name ? "page" : entryRunning && !drainingParts ? "entry" : "host");
+      PART_SOURCE.set(name, LOADER_SCRIPTS.has(script) ? "file" : script?.dataset?.canopyxPart === name && !script.hasAttribute("src") ? "page" : entryRunning && !drainingParts ? "entry" : "host");
     }
   }
   // Part stylesheets (docs/plugins.md#part-stylesheets). The page's <style data-canopyx-part media="not all"
