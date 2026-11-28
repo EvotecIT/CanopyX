@@ -45,34 +45,40 @@
   // without data-cx-* markup. Each overlay listens on its own element, so a host wrapper that stops propagation or a shadow
   // root does not hide the click, and only the innermost overlay on the event's path acts, so a click is handled once.
   // A named close button outside every overlay (a page toolbar's) is handled by one document listener in the capture phase, so
-  // a toolbar that stops propagation does not hide it. The first handler marks the click, so a host that destroys the closing
-  // overlay from its close event cannot make its parent act on the same click. Registrations are weak: an overlay removed with
-  // its host is not kept alive by the runtime.
-  const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakSet();
+  // a toolbar that stops propagation does not hide it. The handler that acts marks the click with its place on the path, so a
+  // host that destroys the closing overlay from its close event cannot make an outer overlay act later in the same dispatch,
+  // while a click dispatched again starts afresh. Registrations are weak: an overlay removed with its host is not kept alive.
+  // Path entries are read through Element's own methods: a form's named controls shadow its properties.
+  const uiOverlayRoots = new WeakMap(), uiHandledClicks = new WeakMap(), uiListening = new WeakSet(), uiHandledCancels = new WeakSet();
+  const uiAttribute = (node, name) => Element.prototype.getAttribute.call(node, name);
   /** The close or cancel button an event came from, the innermost overlay around it, and the overlay it closes. */
   function uiCloseTarget(event) {
-    const path = event.composedPath(), at = path.findIndex(node => node.matches?.(":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
+    const path = event.composedPath(), at = path.findIndex(node => node instanceof Element && Element.prototype.matches.call(node, ":is([data-cx-close],[data-cx-cancel]):not(:disabled)"));
     if (at < 0) return null;
-    const button = path[at], nearest = path.slice(at).find(node => uiOverlayRoots.has(node)), name = button.dataset.cxClose;
-    // A name is looked up from the nearest overlay outwards: two overlays may share an id in separate shadow roots.
-    const named = name && (nearest?.id === name ? nearest : button.getRootNode().getElementById?.(name) || document.getElementById(name));
-    return { nearest, target: uiOverlayRoots.has(named) ? named : nearest };
+    const button = path[at], around = path.slice(at).filter(node => uiOverlayRoots.has(node)), nearest = around[0], name = uiAttribute(button, "data-cx-close");
+    // A name is looked up among the overlays around the button first (two may share an id in separate shadow roots), then in
+    // the button's root and the document.
+    const named = name && (around.find(node => uiAttribute(node, "id") === name) || Node.prototype.getRootNode.call(button).getElementById?.(name) || document.getElementById(name));
+    return { path, nearest, target: uiOverlayRoots.has(named) ? named : nearest };
   }
   function uiCloseClick(event, owner) {
-    if (uiHandledClicks.has(event)) return;
     const found = uiCloseTarget(event);
     if (!found || found.nearest !== owner || !found.target) return;
-    uiHandledClicks.add(event);
+    // Within one dispatch, listeners run from the inner overlay outwards; one at or inside the marked place is a new dispatch.
+    const place = owner ? found.path.indexOf(owner) : found.path.length;
+    if (place > uiHandledClicks.get(event)) return;
+    uiHandledClicks.set(event, place);
     // Several controllers can share an element (a drawer and a dialog factory on one root): the open one closes.
     const controllers = uiOverlayRoots.get(found.target);
     (controllers.find(controller => controller.opened) || controllers.at(-1)).close("cancel");
   }
   let uiDocumentListening = false;
-  function uiOverlayRegister(element, controller, signal) {
+  function uiOverlayRegister(element, controller) {
     // The document's capture listener runs first in every dispatch, so it clears the handled mark of a redispatched click.
     if (!uiDocumentListening) { uiDocumentListening = true; document.addEventListener("click", event => { uiHandledClicks.delete(event); uiCloseClick(event, undefined); }, true); }
     uiOverlayRoots.set(element, [...(uiOverlayRoots.get(element) || []), controller]);
-    element.addEventListener("click", event => uiCloseClick(event, element), { signal });
+    // One listener per element, however many controllers share it; it acts only while the element is registered.
+    if (!uiListening.has(element)) { uiListening.add(element); element.addEventListener("click", event => uiCloseClick(event, element)); }
   }
   function uiOverlayUnregister(element, controller) {
     const controllers = (uiOverlayRoots.get(element) || []).filter(other => other !== controller);
@@ -191,8 +197,9 @@
     // that one is nested in this one.
     const cancel = event => {
       // Only the dialog's own cancel: one that bubbles from a descendant (a file input's) is not a request to close.
-      if (event.target !== element) return;
-      event.preventDefault();
+      // Controllers sharing the element handle one cancel once, so a host's veto holds.
+      if (event.target !== element || uiHandledCancels.has(event)) return;
+      uiHandledCancels.add(event); event.preventDefault();
       const top = uiTopOverlay();
       if (top === entry) close("cancel"); else if (top && UI_TOOLS.owns(element, top.element)) top.close("cancel");
     };
@@ -224,6 +231,6 @@
     // An open overlay that now shows another record returns focus to that record's control.
     const setReturnFocus = target => { if (opened && target) returnFocus = target; };
     const controller = { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
-    if (kind !== "tooltip") uiOverlayRegister(element, controller, signal);
+    if (kind !== "tooltip") uiOverlayRegister(element, controller);
     return controller;
   };

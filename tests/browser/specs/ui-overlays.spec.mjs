@@ -399,11 +399,15 @@ const SIBLINGS = (left = '', right = '') => overlay('drawer', 'left', left).repl
 const SHADOW = `const host = document.getElementById("shadow-host"), root = host.attachShadow({ mode: "open" });
   root.innerHTML = '<dialog id="shadowed" aria-labelledby="shadowed-title"><h2 id="shadowed-title">shadowed settings</h2><button data-cx-cancel>Cancel</button></dialog>';
   window.mounted = CanopyX.dialog(root.getElementById("shadowed")); return window.mounted.ready.then(() => window.mounted.open());`;
+// A dialog controller shares the drawer's element; the host vetoes only the first cancel.
+const VETO_FIRST = `window.second = CanopyX.dialog(document.getElementById("outer")); window.cancels = 0;
+  document.getElementById("outer").addEventListener("cx-drawer:cancel", event => { if (++window.cancels === 1) event.preventDefault(); });
+  return window.second.ready;`;
 // Rows: markup, setup (page script run first), open (overlays opened by their triggers in order; scriptOpen activates the
 // triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
 // the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
 // requestClose() on an overlay, { script } runs a page script, { press } presses and releases the pointer on a button without
-// relying on its click; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
+// relying on its click, or on another role's element; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards), focus (the focused element) and holds (a page expression that must be true).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -491,6 +495,25 @@ const DISMISSALS = [
   { name: 'a click event dispatched again after reopening still closes the drawer', open: ['outer'], markup: overlay('drawer', 'outer'),
     dismiss: { script: `const cancel = document.querySelector("#outer [data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
       cancel.dispatchEvent(click); document.getElementById("outer-trigger").click(); cancel.dispatchEvent(click);` }, closed: ['outer'], stays: [] },
+  { name: 'requestClose() on a drawer whose element also has a dialog controller emits one cancel and honours its veto', open: ['outer'], markup: overlay('drawer', 'outer'),
+    setup: VETO_FIRST, dismiss: { request: 'outer' }, closed: [], stays: ['outer'], holds: 'window.cancels === 1' },
+  { name: 'Cancel on a drawer whose element also has a dialog controller emits one cancel and honours its veto', open: ['outer'], markup: overlay('drawer', 'outer'),
+    setup: VETO_FIRST, dismiss: { in: 'outer', button: 'Cancel' }, closed: [], stays: ['outer'], holds: 'window.cancels === 1' },
+  { name: 'a close in a nested shadow root naming its enclosing shadow drawer leaves a same-id page drawer open', open: [],
+    markup: '<div id="dup" class="cx-drawer" role="dialog" aria-label="page drawer" data-side="end"><p>Page drawer</p></div><div id="first-host"></div>',
+    setup: `const outer = document.getElementById("first-host").attachShadow({ mode: "open" });
+      outer.innerHTML = '<div id="dup" class="cx-drawer" role="dialog" aria-label="shadow drawer" data-side="start"><div id="inner-host"></div></div>';
+      const inner = outer.getElementById("inner-host").attachShadow({ mode: "open" });
+      inner.innerHTML = '<dialog id="nested" aria-label="nested dialog"><button data-cx-close="dup">Close the shadow drawer</button></dialog>';
+      const views = [CanopyX.drawer(document.getElementById("dup")), CanopyX.drawer(outer.getElementById("dup")), CanopyX.dialog(inner.getElementById("nested"))];
+      return Promise.all(views.map(view => view.ready)).then(() => views.forEach(view => view.open()));`,
+    dismiss: { button: 'Close the shadow drawer' }, closedLabels: ['shadow drawer', 'nested dialog'], staysLabels: ['page drawer'] },
+  { name: 'a press on a form field named matches outside the drawer dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<form><input name="matches" aria-label="Matches"></form>',
+    dismiss: { press: 'Matches', role: 'textbox' }, closed: ['outer'], stays: [] },
+  { name: 'a click event dispatched again in a shadow root after reopening still closes the dialog', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
+    dismiss: { script: `const cancel = document.getElementById("shadow-host").shadowRoot.querySelector("[data-cx-cancel]"), click = new MouseEvent("click", { bubbles: true });
+      cancel.dispatchEvent(click); window.mounted.open(); cancel.dispatchEvent(click);` }, closed: ['shadowed'], stays: [] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
@@ -512,7 +535,7 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
   else if (dismiss.script) await page.evaluate(script => new Function(script)(), dismiss.script);
   else if (dismiss.press) {
     // A real press without a click: the disabled button produces no activation.
-    const box = await page.getByRole('button', { name: dismiss.press, exact: true }).boundingBox();
+    const box = await page.getByRole(dismiss.role || 'button', { name: dismiss.press, exact: true }).boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.up();
   }
   else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
@@ -525,4 +548,5 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
   for (const label of row.closedLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeHidden();
   for (const label of row.staysLabels || []) await expect(page.getByRole('dialog', { name: label })).toBeVisible();
   if (row.focus) await expect(page.locator('#' + row.focus)).toBeFocused();
+  if (row.holds) expect(await page.evaluate(expression => new Function('return ' + expression)(), row.holds)).toBe(true);
 });
