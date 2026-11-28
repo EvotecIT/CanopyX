@@ -402,7 +402,8 @@ const SHADOW = `const host = document.getElementById("shadow-host"), root = host
 // Rows: markup, setup (page script run first), open (overlays opened by their triggers in order; scriptOpen activates the
 // triggers without a pointer press, which would dismiss the top drawer as an outside press), dismiss ({ in, button } presses
 // the button, { key } presses a key, { in, button, enter } focuses the button and presses Enter, { request } calls
-// requestClose() on an overlay; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
+// requestClose() on an overlay, { script } runs a page script, { press } presses and releases the pointer on a button without
+// relying on its click; without in, the button is found in the page), afterOpen (page script run after opening), closed and stays (overlays hidden or visible afterwards) and focus (the focused element).
 const DISMISSALS = [
   { name: 'Close on a dialog nested in a drawer', markup: overlay('drawer', 'outer', overlay('dialog', 'inner')), open: ['outer', 'inner'],
     dismiss: { in: 'inner', button: 'Close' }, closed: ['inner'], stays: ['outer'], focus: 'inner-trigger' },
@@ -452,14 +453,32 @@ const DISMISSALS = [
   { name: 'requestClose() on a drawer whose dialog mounted in a shadow root inside it is on top',
     markup: overlay('drawer', 'outer', '<div id="shadow-host"></div>'), open: ['outer'], afterOpen: SHADOW,
     dismiss: { request: 'outer' }, closed: ['shadowed'], stays: ['outer'] },
+  { name: 'a cancel event that bubbles from a file input leaves the nested popover open', open: ['outer', 'pop'],
+    markup: overlay('drawer', 'outer', '<input type="file" id="upload" aria-label="Upload">' + closablePopover('pop')),
+    dismiss: { script: 'document.getElementById("upload").dispatchEvent(new Event("cancel", { bubbles: true }));' }, closed: [], stays: ['outer', 'pop'] },
+  { name: 'a named close in a page toolbar that stops click propagation still closes its drawer', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<div id="toolbar"><button data-cx-close="outer">Close from the page</button></div>',
+    setup: 'document.getElementById("toolbar").addEventListener("click", event => event.stopPropagation());',
+    dismiss: { button: 'Close from the page' }, closed: ['outer'], stays: [] },
+  { name: 'a press on a disabled named close outside the drawer dismisses it as an outside press', open: ['outer'],
+    markup: overlay('drawer', 'outer') + '<button data-cx-close="outer" disabled>Close from the page</button>',
+    dismiss: { press: 'Close from the page' }, closed: ['outer'], stays: [] },
+  { name: 'requestClose() on a drawer whose dialog is slotted into its shadow root', open: [], markup: '<div id="slot-host"><dialog id="slotted" aria-labelledby="slotted-title"><h2 id="slotted-title">slotted settings</h2></dialog></div>',
+    setup: `const host = document.getElementById("slot-host"), root = host.attachShadow({ mode: "open" });
+      root.innerHTML = '<dialog id="shadow-drawer" aria-label="Shadow drawer"><slot></slot></dialog>';
+      window.drawer = CanopyX.drawer(root.getElementById("shadow-drawer")); window.inner = CanopyX.dialog(document.getElementById("slotted"));
+      return Promise.all([drawer.ready, inner.ready]).then(() => { drawer.open(); inner.open(); });`,
+    dismiss: { script: 'document.getElementById("slot-host").shadowRoot.getElementById("shadow-drawer").requestClose();' },
+    closed: ['slotted'], stays: ['shadow-drawer'] },
   { name: 'Enter on Cancel in a dialog mounted from code in a shadow root', markup: '<div id="shadow-host"></div>', setup: SHADOW, open: [],
     dismiss: { in: 'shadowed', button: 'Cancel', enter: true }, closed: ['shadowed'], stays: [] }
 ];
 for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openUi(page, row.markup);
-  const surface = id => page.locator('#' + id);
   if (row.setup) await page.evaluate(script => new Function(script)(), row.setup);
+  // An overlay that lives in a shadow root is found through its host.
+  const surface = id => id === 'shadow-drawer' ? page.locator('#slot-host').locator('#shadow-drawer') : page.locator('#' + id);
   if (row.mounted) await page.evaluate(id => { window.mounted = CanopyX.dialog('#' + id); return window.mounted.ready.then(() => window.mounted.open()); }, row.mounted);
   for (const id of row.open) {
     const trigger = page.locator('#' + id + '-trigger');
@@ -469,6 +488,12 @@ for (const row of DISMISSALS) test(`dismissal: ${row.name}`, async ({ page }) =>
   if (row.afterOpen) { await page.evaluate(script => new Function(script)(), row.afterOpen); await expect(page.locator('#shadowed')).toBeVisible(); }
   const { dismiss } = row;
   if (dismiss.key) await page.keyboard.press(dismiss.key);
+  else if (dismiss.script) await page.evaluate(script => new Function(script)(), dismiss.script);
+  else if (dismiss.press) {
+    // A real press without a click: the disabled button produces no activation.
+    const box = await page.getByRole('button', { name: dismiss.press, exact: true }).boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.up();
+  }
   else if (dismiss.request) await surface(dismiss.request).evaluate(element => element.requestClose());
   else {
     const button = (dismiss.in ? surface(dismiss.in) : page).getByRole('button', { name: dismiss.button, exact: true }).first();
