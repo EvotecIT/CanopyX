@@ -95,8 +95,8 @@ const ROWS = [
     hashes: true, steps: [["mount", "a"]], ...FILES },
   { transition: "the applied stylesheet leaves the head, so a template applies again", page: TABS,
     steps: [["mount", "a"], ["clear-head"], ["mount", "b"]], ...PAGE },
-  { transition: "the stylesheet and every template leave, so the file loads", page: TABS,
-    steps: [["mount", "a"], ["clear-templates"], ["clear-head"], ["mount", "b"]], ...FILES },
+  { transition: "the stylesheet and every template leave, so the runtime's kept copy applies again", page: TABS,
+    steps: [["mount", "a"], ["clear-templates"], ["clear-head"], ["mount", "b"]], ...PAGE },
   { transition: "the head is rewritten through innerHTML, recreating the link", page: "",
     steps: [["mount", "a"], ["head-reparse"], ["mount", "b"]], ...FILES },
   { transition: "the link is removed, replaced, then the old one put back", page: "",
@@ -110,8 +110,8 @@ const ROWS = [
   { transition: "an inert older fragment beside a host preload adds no stylesheet",
     page: `<link rel="stylesheet" href="/canopyx-ui-tabs.css"><script>${asset(part("ui-tabs").script)}</script>`,
     steps: [["mount", "a"], ["html", markup("ui-tabs", OTHER_BUILD)], ["mount", "b"]], styles: 0, links: 0, files: true },
-  { transition: "a part the page carries loses its template and the runtime's copy, so the file loads", page: `<section id="carrier">${TABS}</section>`,
-    steps: [["mount", "a"], ["remove-element", "#carrier"], ["clear-head"], ["mount", "b"]], ...FILES },
+  { transition: "a part loaded from its file loses its link and has no template, so the file loads again", page: "",
+    steps: [["mount", "a"], ["take-link", "gone"], ["mount", "b"]], ...FILES },
   { transition: "code from its file keeps waiting for its stylesheet on retries", page: "", cssMissing: true,
     steps: [["mount-fails", "a"], ["mount-fails", "b"], ["css-ok"], ["mount", "c"]], ...FILES },
   { transition: "a host's marked stylesheet rescues the only mount waiting on a link that then fails", page: "", holdCss: true, cssMissing: true,
@@ -137,6 +137,11 @@ const ROWS = [
   { transition: "a host's marked style whose CSSOM media stops matching yields to the runtime's copy",
     page: `<style data-canopyx-part="ui-tabs" data-cx-version="${VERSION}" id="host-style">${asset(part("ui-tabs").style)}</style>${TABS}`,
     steps: [["mount", "a"], ["host-cssom-off"], ["mount", "b"]], styles: 2, links: 0, files: false },
+  { transition: "a single file loses its carrier and the runtime's copy: the kept copy applies again without a file", cssMissing: true,
+    page: `<section id="carrier">${TABS}</section>`, steps: [["mount", "a"], ["remove-element", "#carrier"], ["clear-head"], ["mount", "b"]], styles: 1, links: 0, files: false },
+  { transition: "an unselected alternate host stylesheet is not the part's stylesheet",
+    page: `<link rel="alternate stylesheet" title="Other" href="/canopyx-ui-tabs.css" data-canopyx-part="ui-tabs" data-cx-version="${VERSION}">${TABS}`,
+    steps: [["mount", "a"]], styles: 1, links: 0, files: true },
   { transition: "teardown: a destroyed view leaves the stylesheet for later views", page: TABS,
     steps: [["mount", "a"], ["destroy", "a"], ["mount", "b"]], ...PAGE }
 ];
@@ -248,7 +253,8 @@ for (const { transition, page: carried, steps, runtimeLast, module, hashes, cssM
   }
   const state = await page.evaluate(markers => {
     // A grouping rule (@layer, @media) serializes the rules inside it too; a template's media never matches.
-    const applies = sheet => !sheet.disabled && (!sheet.media.length || matchMedia(sheet.media.mediaText).matches);
+    // An unselected alternate stylesheet reports itself enabled, but its rules never apply.
+    const applies = sheet => !sheet.disabled && !sheet.ownerNode?.relList?.contains("alternate") && (!sheet.media.length || matchMedia(sheet.media.mediaText).matches);
     const count = marker => [...document.styleSheets].filter(sheet => applies(sheet) && [...sheet.cssRules].some(rule => rule.cssText.includes(marker))).length;
     return {
       styles: document.querySelectorAll('style[data-canopyx-part="ui-tabs"]:not([media="not all"])').length,

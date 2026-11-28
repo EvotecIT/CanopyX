@@ -39,10 +39,12 @@
   // and without the media, or, with fallback, the part's file, linked. Every load checks it again: one that left the document
   // is replaced, a link removed while it loads is abandoned, a
   // failed file load is shared and then retried, and the runtime's other copies of the part are removed; a host's never are.
-  // A clone a host's stylesheet took over waits in SPARE_SHEETS, so it applies again if the host's stops and no template is left.
+  // The last clone the runtime applied is kept in SPARE_SHEETS, so it applies again once the host's stylesheet stops, or the
+  // clone left the page, and no template is left.
   const PART_SHEETS = new Map(), SPARE_SHEETS = new Map();
-  // A host stylesheet counts while it is enabled and its media (its CSSOM list, which can change without the attribute) matches.
-  const live = element => element.sheet && !element.sheet.disabled && (!element.sheet.media.mediaText || matchMedia(element.sheet.media.mediaText).matches);
+  // A host stylesheet counts while it is enabled, is not an alternate one (an unselected alternate never applies) and its
+  // media (its CSSOM list, which can change without the attribute) matches.
+  const live = element => element.sheet && !element.sheet.disabled && !/alternate/i.test(element.rel) && (!element.sheet.media.mediaText || matchMedia(element.sheet.media.mediaText).matches);
   // The runtime's own copy applies while it is in the document; disabling it or changing its media is outside the contract.
   const applies = owned => owned.element.getRootNode() === document && (owned.abandon || (owned.host ? live(owned.element) : owned.element.sheet));
   function partSheet(part, fallback) {
@@ -57,7 +59,6 @@
     // A host's marked stylesheet takes over from the runtime's copy, also while the runtime's link still loads.
     if (owned && (!applies(owned) || host && owned.element !== host)) {
       owned.abandon?.(again());
-      if (host && !owned.host && owned.element.localName === "style") SPARE_SHEETS.set(part.name, owned.element);
       if (!owned.host) owned.element.remove();
       PART_SHEETS.delete(part.name); owned = undefined;
     }
@@ -70,7 +71,7 @@
       else if (template) {
         const copy = template.cloneNode(true);
         copy.removeAttribute("media"); copy.nonce = template.nonce; copy.dataset.canopyxOwned = ""; document.head.appendChild(copy);
-        if (copy.sheet) owned = { element: copy }; else copy.remove();
+        if (copy.sheet) { owned = { element: copy }; SPARE_SHEETS.set(part.name, copy); } else copy.remove();
       }
       if (!owned) {
         if (!fallback) return;
